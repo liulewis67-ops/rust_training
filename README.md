@@ -20,6 +20,14 @@ Vite 开发地址以终端输出为准。静态部署需要将 `/lesson/*`、`/r
 
 `pnpm check:backend` 为后续 Cargo workspace 的入口：依次执行 fmt/check/clippy/test/doc；当前没有 `backend/Cargo.toml`，命令明确报“未运行”并失败。CI 同样注明后端未运行，不能视为后端验收通过。
 
+课程包结构由 `schemas/course-pack.schema.json` 定义，私有评测单独使用 `schemas/private-assessment.schema.json`。校验示例课包和配套私有包：
+
+```powershell
+pnpm content:validate
+```
+
+校验其他文件时运行 `node scripts/course-content.mjs validate <course-pack.json> [--private <assessment-pack.json>]`。校验器会检查稳定 ID、版本、先修关系、来源/资源/练习引用、题型、环境版本和公开/私有路径边界；错误输出带字段路径。
+
 ## 项目结构
 
 ```text
@@ -55,4 +63,4 @@ Git 默认分支为 `main`，仅初始化本地仓库；没有配置远程仓库
 
 ## 本轮完成范围
 
-已完成 I01-F01（Git 基线）、I01-F02（质量入口）和新增的 I01-R01（现有前端重构），各自独立提交。总台账为 3/231；I01 其余内容工程和隔离运行验证尚未完成。下一个内容任务是 I01-F03。完整平台、后端、正式课包和云端评测没有被计为已交付。
+已完成 I01-F01（Git 基线）、I01-F02（质量入口）、I01-R01（现有前端重构）和 I01-F03（课程包结构校验），各自独立提交。总台账为 4/231；I01 其余内容工程和隔离运行验证尚未完成。下一个内容任务是 I01-F04。完整平台、后端、正式课程和云端评测没有被计为已交付。

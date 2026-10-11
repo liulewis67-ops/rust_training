@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0.0",
+  "course_id": "borrowed-text",
+  "version": "1.0.0",
+  "title": "借用文本并安全返回切片",
+  "locale": "zh-CN",
+  "visibility": "public",
+  "environment": {
+    "id": "rust-core",
+    "version": "1.0.0",
+    "rust_version": "1.90.0",
+    "edition": "2024",
+    "target": "x86_64-unknown-linux-gnu",
+    "dependency_lock": "Cargo.lock",
+    "image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "resource_tier": "R1"
+  },
+  "lessons": [
+    {
+      "id": "borrowed-text-first-token",
+      "version": "1.0.0",
+      "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "title": "返回文本中的第一个单词",
+      "objectives": ["解释返回切片为何需要与输入文本保持有效期关系"],
+      "prerequisites": [],
+      "source_ids": ["rust-book-slices"],
+      "resource_ids": ["lesson-notes"],
+      "exercise_ids": ["borrowed-text-prediction"],
+      "blocks": [
+        {
+          "type": "markdown",
+          "text": "切片借用原字符串中的一段内容，不会自行拥有底层文本。"
+        }
+      ]
+    }
+  ],
+  "exercises": [
+    {
+      "id": "borrowed-text-prediction",
+      "version": "1.0.0",
+      "lesson_id": "borrowed-text-first-token",
+      "type": "code_prediction",
+      "prompt": "说明返回 &str 与输入 String 的生命周期关系。",
+      "environment_id": "rust-core",
+      "source_ids": ["rust-book-slices"],
+      "public_test_ids": ["first-token-empty-input"],
+      "private_assessment_id": "borrowed-text-hidden-check"
+    }
+  ],
+  "sources": [
+    {
+      "id": "rust-book-slices",
+      "url": "https://doc.rust-lang.org/book/ch04-03-slices.html",
+      "author": "The Rust Project Developers",
+      "accessed_at": "2026-10-11",
+      "revision": "Rust Book 2024 edition",
+      "license_status": "review_required",
+      "adaptation_notes": "原创讲解；来源仅用于概念核对，发布前需复核许可。"
+    }
+  ],
+  "resources": [
+    {
+      "id": "lesson-notes",
+      "visibility": "public",
+      "path": "public/borrowed-text/notes.md",
+      "media_type": "text/markdown"
+    }
+  ]
+}

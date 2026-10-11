@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rust-backend-training.local/schemas/course-pack.schema.json",
+  "title": "Rust Academy course pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "course_id",
+    "version",
+    "title",
+    "locale",
+    "visibility",
+    "environment",
+    "lessons",
+    "exercises",
+    "sources",
+    "resources"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "course_id": { "$ref": "#/$defs/stableId" },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "locale": { "type": "string", "minLength": 2 },
+    "visibility": { "enum": ["public", "private"] },
+    "environment": { "$ref": "#/$defs/environment" },
+    "lessons": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/lesson" }
+    },
+    "exercises": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/exercise" }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "resources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/resource" }
+    }
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "idList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stableId" }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "rust_version",
+        "edition",
+        "target",
+        "dependency_lock",
+        "image_digest",
+        "resource_tier"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+        },
+        "rust_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "edition": { "enum": ["2018", "2021", "2024"] },
+        "target": { "type": "string", "minLength": 1 },
+        "dependency_lock": { "type": "string", "minLength": 1 },
+        "image_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "resource_tier": { "enum": ["R1", "R2", "R3"] }
+      }
+    },
+    "lesson": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "content_hash",
+        "title",
+        "objectives",
+        "prerequisites",
+        "source_ids",
+        "resource_ids",
+        "exercise_ids",
+        "blocks"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+        },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "objectives": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "prerequisites": { "$ref": "#/$defs/idList" },
+        "source_ids": { "$ref": "#/$defs/idList" },
+        "resource_ids": { "$ref": "#/$defs/idList" },
+        "exercise_ids": { "$ref": "#/$defs/idList" },
+        "blocks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/contentBlock" }
+        }
+      }
+    },
+    "contentBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "text"],
+      "properties": {
+        "type": { "enum": ["markdown", "callout"] },
+        "text": { "type": "string", "minLength": 1 }
+      }
+    },
+    "exercise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "lesson_id",
+        "type",
+        "prompt",
+        "environment_id",
+        "source_ids",
+        "public_test_ids",
+        "private_assessment_id"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+        },
+        "lesson_id": { "$ref": "#/$defs/stableId" },
+        "type": {
+          "enum": [
+            "multiple_choice",
+            "code_prediction",
+            "code_fix",
+            "concept_question",
+            "code_completion",
+            "true_false",
+            "architecture_question"
+          ]
+        },
+        "prompt": { "type": "string", "minLength": 1 },
+        "environment_id": { "$ref": "#/$defs/stableId" },
+        "source_ids": { "$ref": "#/$defs/idList" },
+        "public_test_ids": { "$ref": "#/$defs/idList" },
+        "private_assessment_id": {
+          "anyOf": [{ "$ref": "#/$defs/stableId" }, { "type": "null" }]
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "url",
+        "author",
+        "accessed_at",
+        "revision",
+        "license_status",
+        "adaptation_notes"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "url": { "type": "string", "pattern": "^https://[^\\s]+$" },
+        "author": { "type": "string", "minLength": 1 },
+        "accessed_at": {
+          "type": "string",
+          "format": "date"
+        },
+        "revision": { "type": "string", "minLength": 1 },
+        "license_status": {
+          "enum": ["approved", "review_required", "original"]
+        },
+        "adaptation_notes": { "type": "string", "minLength": 1 }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "visibility", "path", "media_type"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "visibility": { "enum": ["public", "private"] },
+        "path": { "type": "string", "minLength": 1 },
+        "media_type": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

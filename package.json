@@ -9,14 +9,15 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --pretty",
     "test": "vitest run",
+    "content:validate": "node scripts/course-content.mjs validate content/borrowed-text.course.json --private content/borrowed-text.assessment.json",
     "check:backend": "node scripts/check-backend.mjs",
     "lint": "eslint src",
-    "format:check": "prettier --check src scripts *.json *.ts *.js .github/workflows/*.yml",
+    "format:check": "prettier --check src scripts content/*.json schemas/*.json *.json *.ts *.js .github/workflows/*.yml",
     "check:frontend": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "preview": "vite preview",
     "test:watch": "vitest",
     "check": "pnpm check:frontend",
-    "format": "prettier --write src scripts *.json *.ts *.js .github/workflows/*.yml"
+    "format": "prettier --write src scripts content/*.json schemas/*.json *.json *.ts *.js .github/workflows/*.yml"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",

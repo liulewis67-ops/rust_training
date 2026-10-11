@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "course_id": "borrowed-text",
+  "version": "1.0.0",
+  "assessments": [
+    {
+      "id": "borrowed-text-hidden-check",
+      "exercise_id": "borrowed-text-prediction",
+      "reference_answer": "返回的切片借用输入文本，因此其有效期不能超过输入文本。",
+      "private_tests": ["empty-input", "unicode-boundary"]
+    }
+  ],
+  "resources": [
+    {
+      "id": "private-answer",
+      "path": "private-assessment/borrowed-text/answer.md",
+      "media_type": "text/markdown"
+    }
+  ]
+}
