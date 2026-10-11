@@ -68,6 +68,19 @@ it('响应历史导航及未知页面恢复', async () => {
   expect(window.location.pathname).toBe('/lesson/ownership')
 })
 
+// The author preview is reachable from the workspace and does not become a learner lesson.
+it('opens the local borrowed-text course preview', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: '打开课包预览' }))
+
+  expect(window.location.pathname).toBe('/preview/borrowed-text')
+  expect(
+    screen.getByRole('heading', { name: '借用文本并安全返回切片' }),
+  ).toBeTruthy()
+})
+
 // 移动目录支持键盘关闭，并恢复触发按钮的焦点。
 it('Escape 关闭抽屉并恢复焦点', async () => {
   const user = userEvent.setup()

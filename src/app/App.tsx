@@ -5,6 +5,7 @@ import { useTheme } from '../features/preferences'
 import { LessonPage } from '../pages/LessonPage'
 import { ReviewPage } from '../pages/ReviewPage'
 import { ProgressPage } from '../pages/ProgressPage'
+import { CoursePreviewPage } from '../pages/CoursePreviewPage'
 import type { Exercise, Lesson } from '../types/lesson'
 import { AppShell } from './AppShell'
 import { useRoute } from './router'
@@ -101,6 +102,19 @@ export default function App(): JSX.Element {
         accuracy={summarizeProgress(progress).accuracy}
       />
     )
+  } else if (route.page === 'course-preview') {
+    page =
+      route.courseId === 'borrowed-text' ? (
+        <CoursePreviewPage />
+      ) : (
+        <section className="utility-page">
+          <h1>未找到课程或页面</h1>
+          <p>该链接不存在，课程可能尚未发布。</p>
+          <button className="primary-button" onClick={openFirstLesson}>
+            返回课程目录
+          </button>
+        </section>
+      )
   } else {
     page = (
       <section className="utility-page">

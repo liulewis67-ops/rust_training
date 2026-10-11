@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Circle,
   Flame,
+  Eye,
   Menu,
   Moon,
   RotateCcw,
@@ -128,6 +129,18 @@ export function AppShell({
         <div className="topbar-divider" />
         <span className="workspace-label">Backend Engineer Track</span>
         <div className="topbar-right">
+          <button
+            className="theme-toggle"
+            onClick={() => {
+              // Open the unpublished local author preview without changing progress.
+              nav({ page: 'course-preview', courseId: 'borrowed-text' })
+            }}
+            aria-label="打开课包预览"
+            title="打开课包预览"
+          >
+            <Eye size={15} />
+            <span>预览</span>
+          </button>
           <button
             className="theme-toggle"
             onClick={onToggleTheme}

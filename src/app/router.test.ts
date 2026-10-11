@@ -9,6 +9,14 @@ it.each(['/lesson/ownership', '/lesson/borrowing/', '/review', '/progress/'])(
   },
 )
 
+// The author preview is reachable without changing the learner's saved course route.
+it('parses the borrowed-text author preview route', () => {
+  expect(readRoute('/preview/borrowed-text')).toEqual({
+    page: 'course-preview',
+    courseId: 'borrowed-text',
+  })
+})
+
 // 无效链接不应被伪装成首课；损坏编码不能造成白屏。
 it.each(['/lesson/missing', '/lesson/%E0%A4%A', '/missing', '/review/extra'])(
   '拒绝未知路径 %s',

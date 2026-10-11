@@ -3,6 +3,7 @@ import { lessons } from '../features/catalog'
 
 export type Route =
   | { page: 'lesson'; lessonId: string }
+  | { page: 'course-preview'; courseId: string }
   | { page: 'review' | 'progress' }
   | { page: 'not-found'; path: string }
 
@@ -19,6 +20,8 @@ export function readRoute(pathname: string, resumeLesson = 'ownership'): Route {
     return { page: 'review' }
   if (pathname === '/progress' || pathname === '/progress/')
     return { page: 'progress' }
+  const previewMatch = /^\/preview\/([a-z0-9-]+)\/?$/.exec(pathname)
+  if (previewMatch) return { page: 'course-preview', courseId: previewMatch[1] }
   const match = /^\/lesson\/([^/]+)\/?$/.exec(pathname)
   try {
     const id = match ? decodeURIComponent(match[1]) : ''
@@ -39,6 +42,8 @@ export function readRoute(pathname: string, resumeLesson = 'ownership'): Route {
 function routePath(route: Route): string {
   if (route.page === 'lesson')
     return `/lesson/${encodeURIComponent(route.lessonId)}`
+  if (route.page === 'course-preview')
+    return `/preview/${encodeURIComponent(route.courseId)}`
   if (route.page === 'not-found') return route.path
   return `/${route.page}`
 }

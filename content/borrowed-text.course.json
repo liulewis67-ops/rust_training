@@ -26,6 +26,11 @@
       "source_ids": ["rust-book-slices"],
       "resource_ids": ["lesson-notes"],
       "exercise_ids": ["borrowed-text-prediction"],
+      "example_ids": [
+        "first-word-runnable",
+        "first-word-fragment",
+        "borrow-conflict-compile-fail"
+      ],
       "blocks": [
         {
           "type": "markdown",
@@ -44,7 +49,8 @@
       "environment_id": "rust-core",
       "source_ids": ["rust-book-slices"],
       "public_test_ids": ["first-token-empty-input"],
-      "private_assessment_id": "borrowed-text-hidden-check"
+      "private_assessment_id": "borrowed-text-hidden-check",
+      "hints": ["先找到空白字符边界，再返回原字符串的切片。"]
     }
   ],
   "sources": [

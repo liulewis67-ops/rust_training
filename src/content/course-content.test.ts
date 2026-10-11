@@ -18,11 +18,16 @@ interface CoursePackFixture {
     source_ids: string[]
     resource_ids: string[]
     exercise_ids: string[]
+    example_ids: string[]
     [key: string]: unknown
   }>
   exercises: Array<Record<string, unknown>>
   sources: Array<Record<string, unknown>>
   resources: Array<Record<string, unknown>>
+}
+
+interface SampleManifestFixture {
+  examples: Array<{ id: string }>
 }
 
 const root = resolve(import.meta.dirname, '../..')
@@ -45,6 +50,13 @@ async function privateFixture(): Promise<Record<string, unknown>> {
   >
 }
 
+/** 加载样例清单，供课程与代码示例引用一致性检查使用。 */
+async function sampleFixture(): Promise<SampleManifestFixture> {
+  return JSON.parse(
+    await readFile(resolve(root, 'content/course-samples.json'), 'utf8'),
+  ) as SampleManifestFixture
+}
+
 /** 读取验收样例中已知存在的课程，避免在测试中使用非空断言。 */
 function lessonAt(
   pack: CoursePackFixture,
@@ -62,6 +74,17 @@ describe('课程包结构校验', () => {
     const pack = await fixture()
     const privatePack = await privateFixture()
     expect(validateCoursePack(pack, { privatePack }).errors).toEqual([])
+  })
+
+  // Public lesson example IDs must resolve against the independently verified sample manifest.
+  it('拒绝课程指向不存在的代码样例', async () => {
+    const pack = await fixture()
+    const samples = await sampleFixture()
+    expect(validateCoursePack(pack, { samples }).errors).toEqual([])
+    lessonAt(pack, 0).example_ids.push('missing-example')
+    expect(validateCoursePack(pack, { samples }).errors.join('\n')).toContain(
+      'lessons[0].example_ids[3]',
+    )
   })
 
   // Combine independent shape failures to confirm diagnostics point to the exact field.

@@ -377,6 +377,16 @@ export function validateCoursePack(pack, options = {}) {
   validateReferences(lessons, 'resource_ids', resourceIds, 'lessons', errors)
   validateReferences(lessons, 'exercise_ids', exerciseIds, 'lessons', errors)
   validatePrerequisiteCycles(lessons, lessonIds, errors)
+  if (options.samples !== undefined) {
+    const sampleEntries = Array.isArray(options.samples?.examples)
+      ? options.samples.examples
+      : []
+    if (!Array.isArray(options.samples?.examples)) {
+      errors.push('samples.examples: expected an array of verified example IDs')
+    }
+    const sampleIds = indexEntities(sampleEntries, 'samples.examples', errors)
+    validateReferences(lessons, 'example_ids', sampleIds, 'lessons', errors)
+  }
 
   // Reject dangling lesson, environment and source references from exercise metadata.
   for (const [index, exercise] of exercises.entries()) {
@@ -449,7 +459,7 @@ export function validateLegacyCourseMap(mapping, expectedIds) {
 /** Print CLI usage and return the usage-error exit status. */
 function printUsage() {
   console.error(
-    'Usage: node scripts/course-content.mjs validate <course-pack.json> [--private <assessment-pack.json>]',
+    'Usage: node scripts/course-content.mjs validate <course-pack.json> [--private <assessment-pack.json>] [--samples <sample-manifest.json>]',
   )
   return 2
 }
@@ -466,25 +476,33 @@ async function readJsonFile(filePath) {
 
 /** Run the course-pack validator when this module is called as a command. */
 async function runCli(argumentsList) {
-  const [command, coursePath, privateFlag, privatePath, ...extraArguments] =
-    argumentsList
-  if (
-    command !== 'validate' ||
-    !coursePath ||
-    extraArguments.length ||
-    (privateFlag && privateFlag !== '--private')
-  ) {
-    return printUsage()
+  const [command, coursePath, ...optionArguments] = argumentsList
+  if (command !== 'validate' || !coursePath) return printUsage()
+  const paths = new Map()
+  for (let index = 0; index < optionArguments.length; index += 2) {
+    const flag = optionArguments[index]
+    const value = optionArguments[index + 1]
+    if (
+      !['--private', '--samples'].includes(flag) ||
+      !value ||
+      paths.has(flag)
+    ) {
+      return printUsage()
+    }
+    paths.set(flag, value)
   }
-  if (privateFlag === '--private' && !privatePath) return printUsage()
-  if (!privateFlag && privatePath) return printUsage()
 
   try {
     const pack = await readJsonFile(resolve(process.cwd(), coursePath))
+    const privatePath = paths.get('--private')
+    const samplesPath = paths.get('--samples')
     const privatePack = privatePath
       ? await readJsonFile(resolve(process.cwd(), privatePath))
       : undefined
-    const { errors } = validateCoursePack(pack, { privatePack })
+    const samples = samplesPath
+      ? await readJsonFile(resolve(process.cwd(), samplesPath))
+      : undefined
+    const { errors } = validateCoursePack(pack, { privatePack, samples })
     if (errors.length) {
       console.error(errors.map((error) => `- ${error}`).join('\n'))
       return 1

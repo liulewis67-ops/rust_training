@@ -110,3 +110,43 @@
 :root[data-theme="light"] .saved-answer-note { color: #777a81; }
 :root[data-theme="light"] .empty-state h2 { color: #303238; }
 :root[data-theme="light"] .empty-state p { color: #6e7179; }
+
+/* Local course author preview: readable as a single document on wide and narrow screens. */
+.course-preview { width: min(100%, 920px); margin: 0 auto; padding: 8px 0 48px; color: #e5e6e8; }
+.preview-status { display: inline-flex; align-items: center; gap: 7px; margin: 0 0 20px; padding: 7px 10px; border: 1px solid #3c493f; border-radius: 6px; background: #202823; color: #a8d0ad; font-size: 11px; }
+.preview-heading { padding: 26px 28px; border: 1px solid #34363c; border-radius: 10px; background: linear-gradient(135deg, #242528, #1b1c1f); }
+.preview-heading > span, .preview-example-heading small { color: #9b9da4; font-size: 11px; }
+.preview-heading h1 { margin: 12px 0 6px; color: #f2f2f3; font-size: clamp(24px, 4vw, 34px); letter-spacing: -.035em; }
+.preview-heading h2 { margin: 0; color: #d0d1d5; font-size: 16px; font-weight: 550; }
+.preview-heading p { margin: 14px 0 0; color: #b9bbc1; font-size: 13px; line-height: 1.7; }
+.preview-section { margin-top: 18px; padding: 22px 24px; border: 1px solid #303238; border-radius: 9px; background: #1d1e21; }
+.preview-section > h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; color: #e7e8ea; font-size: 15px; }
+.preview-section > h2 svg { color: #eaa267; }
+.course-markdown p, .preview-exercise > p { margin: 0; color: #c9cacf; font-size: 13px; line-height: 1.8; }
+.course-markdown a { color: #efaa79; }
+.preview-example + .preview-example { margin-top: 16px; }
+.preview-example-heading { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border: 1px solid #303238; border-bottom: 0; border-radius: 7px 7px 0 0; background: #232428; }
+.preview-example-heading h3 { margin: 0 0 4px; color: #e5e6e8; font-size: 12px; }
+.preview-example-heading > span { color: #d9a27d; font-size: 10px; }
+.preview-example .code-card { border-radius: 0 0 7px 7px; }
+.preview-exercise details { margin-top: 14px; padding: 12px 14px; border: 1px solid #34363c; border-radius: 7px; color: #d2d3d7; font-size: 12px; }
+.preview-exercise summary { cursor: pointer; color: #e3a578; }
+.preview-exercise ol { margin: 10px 0 0; padding-left: 20px; color: #bfc1c6; line-height: 1.7; }
+.preview-sources { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.preview-sources li { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px; border: 1px solid #303238; border-radius: 7px; background: #222327; font-size: 11px; }
+.preview-sources a { color: #efaa79; }
+.preview-sources span, .preview-sources small { color: #9b9da4; }
+.preview-sources small { grid-column: 1 / -1; }
+:root[data-theme="light"] .course-preview { color: #303238; }
+:root[data-theme="light"] .preview-status { border-color: #cfe0d1; background: #f0f7f1; color: #3d7548; }
+:root[data-theme="light"] .preview-heading { border-color: #e1e3e7; background: linear-gradient(135deg, #fff, #f8f9fb); }
+:root[data-theme="light"] .preview-heading > span, :root[data-theme="light"] .preview-example-heading small, :root[data-theme="light"] .preview-sources span, :root[data-theme="light"] .preview-sources small { color: #74777f; }
+:root[data-theme="light"] .preview-heading h1, :root[data-theme="light"] .preview-section > h2, :root[data-theme="light"] .preview-example-heading h3 { color: #292b30; }
+:root[data-theme="light"] .preview-heading h2, :root[data-theme="light"] .course-markdown p, :root[data-theme="light"] .preview-exercise > p { color: #555860; }
+:root[data-theme="light"] .preview-section, :root[data-theme="light"] .preview-example-heading, :root[data-theme="light"] .preview-sources li { border-color: #e1e3e7; background: #fff; }
+:root[data-theme="light"] .preview-exercise details { border-color: #e1e3e7; color: #4e5158; }
+:root[data-theme="light"] .preview-exercise ol { color: #555860; }
+@media (max-width: 720px) {
+  .course-preview { padding: 0 0 32px; }
+  .preview-heading, .preview-section { padding: 18px; }
+}
