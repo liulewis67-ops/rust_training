@@ -10,6 +10,7 @@
     "typecheck": "tsc -b --pretty",
     "test": "vitest run",
     "content:validate": "node scripts/course-content.mjs validate content/borrowed-text.course.json --private content/borrowed-text.assessment.json",
+    "content:check-samples": "node scripts/validate-course-samples.mjs validate content/course-samples.json",
     "check:backend": "node scripts/check-backend.mjs",
     "lint": "eslint src",
     "format:check": "prettier --check src scripts content/*.json schemas/*.json *.json *.ts *.js .github/workflows/*.yml",

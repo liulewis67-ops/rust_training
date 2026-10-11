@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "rust_version": "1.95.0",
+  "edition": "2024",
+  "examples": [
+    {
+      "id": "first-word-runnable",
+      "kind": "runnable",
+      "source": "first-word-runnable.rs",
+      "expected_stdout": "first word: Rust\n"
+    },
+    {
+      "id": "first-word-fragment",
+      "kind": "fragment",
+      "source": "first-word-fragment.rs",
+      "runnable": false,
+      "execution_note": "依赖前文定义的 text: &str；这是教学片段，不提供运行按钮。"
+    },
+    {
+      "id": "borrow-conflict-compile-fail",
+      "kind": "compile_fail",
+      "source": "borrow-conflict-compile-fail.rs",
+      "expected_error_code": "E0502"
+    },
+    {
+      "id": "first-word-correct-solution",
+      "kind": "solution",
+      "source": "first-word-correct-solution.rs",
+      "expected_outcome": "pass"
+    },
+    {
+      "id": "first-word-incorrect-solution",
+      "kind": "solution",
+      "source": "first-word-incorrect-solution.rs",
+      "expected_outcome": "test_failure"
+    }
+  ],
+  "validator_cases": [
+    {
+      "id": "syntax-error-is-not-borrow-error",
+      "source": "invalid-syntax.rs",
+      "must_not_match_error_code": "E0502"
+    }
+  ]
+}
