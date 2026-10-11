@@ -11,9 +11,14 @@ pnpm install --frozen-lockfile
 pnpm dev
 pnpm typecheck
 pnpm build
+pnpm check
 ```
 
 Vite 开发地址以终端输出为准。静态部署需要将 `/lesson/*`、`/review`、`/progress` 回退到 `index.html`。
+
+`pnpm check` 依次执行格式检查、ESLint（含 Hook 规则）、类型检查、Vitest 回归测试和生产构建。`pnpm format` 应用共享格式；原型课程数据与旧样式暂不全量格式化。CI 使用相同步骤和 frozen lockfile 安装，失败步骤单独显示。
+
+`pnpm check:backend` 为后续 Cargo workspace 的入口：依次执行 fmt/check/clippy/test/doc；当前没有 `backend/Cargo.toml`，命令明确报“未运行”并失败。CI 同样注明后端未运行，不能视为后端验收通过。
 
 ## 原型资产
 

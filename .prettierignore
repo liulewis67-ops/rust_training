@@ -1,0 +1,9 @@
+node_modules
+dist
+pnpm-lock.yaml
+.verification
+coverage
+# 原型课程和既有样式在对应内容/样式任务中再迁移。
+src/data/
+src/styles.css
+src/theme.css

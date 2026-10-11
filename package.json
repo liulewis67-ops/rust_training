@@ -7,7 +7,16 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "typecheck": "tsc -b --pretty"
+    "typecheck": "tsc -b --pretty",
+    "test": "vitest run",
+    "check:backend": "node scripts/check-backend.mjs",
+    "lint": "eslint src",
+    "format:check": "prettier --check src scripts *.json *.ts *.js .github/workflows/*.yml",
+    "check:frontend": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "preview": "vite preview",
+    "test:watch": "vitest",
+    "check": "pnpm check:frontend",
+    "format": "prettier --write src scripts *.json *.ts *.js .github/workflows/*.yml"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
@@ -17,10 +26,23 @@
     "vite": "^6.0.5"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.1",
     "@tailwindcss/vite": "^4.0.0",
-    "tailwindcss": "^4.0.0",
+    "@testing-library/react": "16.3.0",
+    "@testing-library/user-event": "14.6.1",
+    "@types/node": "22.18.10",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "typescript": "~5.7.2"
+    "eslint": "9.39.1",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "jsdom": "26.1.0",
+    "prettier": "3.6.2",
+    "tailwindcss": "^4.0.0",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "8.46.1",
+    "vitest": "3.2.4"
+  },
+  "engines": {
+    "node": ">=22.19.0 <23"
   }
 }

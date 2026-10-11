@@ -1,0 +1,48 @@
+name: Quality
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.19.0
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Formatting
+        run: pnpm format:check
+      - name: Lint and React hooks
+        run: pnpm lint
+      - name: TypeScript
+        run: pnpm typecheck
+      - name: Regression tests
+        run: pnpm test
+      - name: Production build
+        run: pnpm build
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect backend delivery
+        id: backend
+        shell: bash
+        run: |
+          if [ -f backend/Cargo.toml ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Backend checks NOT RUN: no Cargo workspace."
+            echo "Backend checks: NOT RUN (no Cargo workspace)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.backend.outputs.available == 'true'
+        with:
+          node-version: 22.19.0
+      - name: Rust checks using repository toolchain
+        if: steps.backend.outputs.available == 'true'
+        run: node scripts/check-backend.mjs
