@@ -8,7 +8,7 @@
 
 本文作为后续开发和代码评审的执行标准。“必须／禁止”为验收要求，“建议”为默认选择，可在任务记录中说明调整原因。新增与修改的函数必须同步满足注释要求；既有代码随所在模块开发逐步补齐，不用无关的全量改写扩大当前任务。
 
-当前项目使用 React 18、TypeScript 5、Vite 6，包管理器按 `package.json` 的 `packageManager` 固定为 pnpm。已有 `src/app/App.tsx`、`src/lib/storage.ts`、课程数据、类型文件及全局样式；已接入 lint、格式化和界面回归测试，尚未建立完整路由和 API 客户端。本文中的目标目录和待接入工具不表示已经实现。
+当前项目使用 React 18、TypeScript 5、Vite 6，包管理器按 `package.json` 的 `packageManager` 固定为 pnpm。I01-R01 已将原型拆为 app/pages/features/components/lib；学习状态在 `src/features/learning/`，存储适配在 `src/lib/browserStorage.ts`。已接入原型 History 路由、lint、格式化及回归测试；新主线导航和 API 客户端尚未交付。下方目标目录按实际功能逐步建立。
 
 开发前阅读对应小阶段、技术方案与两端规范。范围、验收或接口发生变化时同步更新文档；不能以规范文档已完成替代功能验收。依赖升级单独验证，不能在业务开发中顺手升级框架。
 
