@@ -25,14 +25,23 @@ it.each(['/lesson/missing', '/lesson/%E0%A4%A', '/missing', '/review/extra'])(
   },
 )
 
-// 首页恢复最近课程，直接课程链接优先于存储。
-it('区分首页恢复与直接链接', () => {
-  expect(readRoute('/', 'borrowing')).toEqual({
-    page: 'lesson',
-    lessonId: 'borrowing',
+// 新首页与路线可直达，已有课程链接继续映射到原型课程。
+it('解析首页与已规划路线', () => {
+  expect(readRoute('/')).toEqual({ page: 'home' })
+  expect(readRoute('/tracks/rust-backend')).toEqual({
+    page: 'track',
+    trackSlug: 'rust-backend',
   })
-  expect(readRoute('/lesson/ownership', 'borrowing')).toEqual({
+})
+
+// 旧课程链接保持稳定；无效路线不能显示成可学习课程。
+it('保留旧课程链接并拒绝未知路线', () => {
+  expect(readRoute('/lesson/ownership')).toEqual({
     page: 'lesson',
     lessonId: 'ownership',
+  })
+  expect(readRoute('/tracks/unknown')).toEqual({
+    page: 'not-found',
+    path: '/tracks/unknown',
   })
 })

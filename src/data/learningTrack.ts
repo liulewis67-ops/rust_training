@@ -1,0 +1,65 @@
+/** 公开展示课程方案中的主线阶段；规划数据不代表课程已经开放。 */
+export const learningTrack = {
+  slug: 'rust-backend',
+  title: 'Rust 后端工程师路线',
+  duration: '240 小时规划基准',
+  modules: '24 个模块规划',
+  phases: [
+    {
+      id: 'S1',
+      title: '开发循环与语言入门',
+      moduleRange: 'M01–M03',
+      hours: 10,
+      outcome: '独立创建、测试并修复一个小程序。',
+    },
+    {
+      id: 'S2',
+      title: '所有权与借用设计',
+      moduleRange: 'M04–M06',
+      hours: 28,
+      outcome: '为文本处理库设计合理的参数与返回值。',
+    },
+    {
+      id: 'S3',
+      title: '类型、集合与错误',
+      moduleRange: 'M07–M09',
+      hours: 30,
+      outcome: '构建带有错误模型的可复用业务核心库。',
+    },
+    {
+      id: 'S4',
+      title: '工程化与同步并发',
+      moduleRange: 'M10–M12',
+      hours: 30,
+      outcome: 'P1：交付日志分析 CLI。',
+    },
+    {
+      id: 'S5',
+      title: 'Tokio 异步工程',
+      moduleRange: 'M13–M15',
+      hours: 32,
+      outcome: 'P2：实现受限并发任务执行器。',
+    },
+    {
+      id: 'S6',
+      title: 'Axum API 与持久化',
+      moduleRange: 'M16–M18',
+      hours: 36,
+      outcome: 'P3：完成接口与数据里程碑。',
+    },
+    {
+      id: 'S7',
+      title: '安全、可靠性与观测',
+      moduleRange: 'M19–M21',
+      hours: 32,
+      outcome: '完成 P3 验收并提交故障报告。',
+    },
+    {
+      id: 'S8',
+      title: '发布、优化与交付',
+      moduleRange: 'M22–M24',
+      hours: 42,
+      outcome: 'P4：交付可部署服务并完成答辩。',
+    },
+  ],
+} as const

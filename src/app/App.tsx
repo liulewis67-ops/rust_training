@@ -6,6 +6,8 @@ import { LessonPage } from '../pages/LessonPage'
 import { ReviewPage } from '../pages/ReviewPage'
 import { ProgressPage } from '../pages/ProgressPage'
 import { CoursePreviewPage } from '../pages/CoursePreviewPage'
+import { HomePage } from '../pages/HomePage'
+import { TrackPage } from '../pages/TrackPage'
 import type { Exercise, Lesson } from '../types/lesson'
 import { AppShell } from './AppShell'
 import { useRoute } from './router'
@@ -19,7 +21,7 @@ export default function App(): JSX.Element {
     completeLesson,
     submitAttempt,
   } = useProgress()
-  const { route, navigate } = useRoute(progress.currentLesson)
+  const { route, navigate } = useRoute()
   const { theme, toggleTheme } = useTheme()
   const lessonId = route.page === 'lesson' ? route.lessonId : undefined
   const current =
@@ -69,7 +71,11 @@ export default function App(): JSX.Element {
   }
 
   let page: JSX.Element
-  if (route.page === 'lesson') {
+  if (route.page === 'home') {
+    page = <HomePage onNavigate={navigate} />
+  } else if (route.page === 'track') {
+    page = <TrackPage onNavigate={navigate} />
+  } else if (route.page === 'lesson') {
     page = (
       <LessonPage
         key={current.id}

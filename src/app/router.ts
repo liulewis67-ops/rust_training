@@ -2,24 +2,25 @@ import { useEffect, useState } from 'react'
 import { lessons } from '../features/catalog'
 
 export type Route =
+  | { page: 'home' }
   | { page: 'lesson'; lessonId: string }
+  | { page: 'track'; trackSlug: string }
   | { page: 'course-preview'; courseId: string }
   | { page: 'review' | 'progress' }
   | { page: 'not-found'; path: string }
 
 /** 解析现有路径；未知课程或非法编码明确显示未找到，不偷偷跳到首课。 */
-export function readRoute(pathname: string, resumeLesson = 'ownership'): Route {
-  if (pathname === '/') {
-    const known = lessons.some((lesson) => {
-      // 历史课程已下线时仅对首页恢复使用首课回退。
-      return lesson.id === resumeLesson
-    })
-    return { page: 'lesson', lessonId: known ? resumeLesson : 'ownership' }
-  }
+export function readRoute(pathname: string): Route {
+  if (pathname === '/') return { page: 'home' }
   if (pathname === '/review' || pathname === '/review/')
     return { page: 'review' }
   if (pathname === '/progress' || pathname === '/progress/')
     return { page: 'progress' }
+  if (
+    pathname === '/tracks/rust-backend' ||
+    pathname === '/tracks/rust-backend/'
+  )
+    return { page: 'track', trackSlug: 'rust-backend' }
   const previewMatch = /^\/preview\/([a-z0-9-]+)\/?$/.exec(pathname)
   if (previewMatch) return { page: 'course-preview', courseId: previewMatch[1] }
   const match = /^\/lesson\/([^/]+)\/?$/.exec(pathname)
@@ -40,8 +41,11 @@ export function readRoute(pathname: string, resumeLesson = 'ownership'): Route {
 
 /** 将路由意图映射为原型兼容 URL。 */
 function routePath(route: Route): string {
+  if (route.page === 'home') return '/'
+  if (route.page === 'track')
+    return `/tracks/${encodeURIComponent(route.trackSlug)}`
   if (route.page === 'lesson')
-    return `/lesson/${encodeURIComponent(route.lessonId)}`
+    return `/lesson/${encodeURIComponent(route.lessonId ?? '')}`
   if (route.page === 'course-preview')
     return `/preview/${encodeURIComponent(route.courseId)}`
   if (route.page === 'not-found') return route.path
@@ -49,26 +53,26 @@ function routePath(route: Route): string {
 }
 
 /** 管理 History 订阅；卸载时清理监听，浏览器前进后退与页面一致。 */
-export function useRoute(resumeLesson: string): {
+export function useRoute(): {
   route: Route
   navigate: (target: Route) => void
 } {
   const [route, setRoute] = useState<Route>(() => {
-    // 首页只在初始化时恢复历史课程，直接链接始终优先。
-    return readRoute(window.location.pathname, resumeLesson)
+    // 直接打开首页显示路线入口，旧课程仅通过原链接访问。
+    return readRoute(window.location.pathname)
   })
   useEffect(() => {
     // popstate 同时接收浏览器历史变更和内部导航事件。
     /** 根据当前 URL 恢复页面，沿用有效的最近阅读课程。 */
     function handlePopState(): void {
-      setRoute(readRoute(window.location.pathname, resumeLesson))
+      setRoute(readRoute(window.location.pathname))
     }
     window.addEventListener('popstate', handlePopState)
     return () => {
       // 避免热更新、严格模式和重复挂载累积事件处理器。
       window.removeEventListener('popstate', handlePopState)
     }
-  }, [resumeLesson])
+  }, [])
   /** 仅在地址变化时增加历史条目，再通知所有路由订阅者。 */
   function navigate(target: Route): void {
     const path = routePath(target)
