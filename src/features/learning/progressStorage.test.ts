@@ -4,6 +4,7 @@ import {
   loadProgress,
   parseProgress,
   PROGRESS_KEY,
+  progressStorageKey,
   saveProgress,
 } from './progressStorage'
 
@@ -11,6 +12,17 @@ import {
 afterEach(() => {
   vi.restoreAllMocks()
   localStorage.clear()
+})
+
+// Signed-in learners never share one browser's private progress namespace.
+it('uses a distinct local storage key for each server account', () => {
+  expect(progressStorageKey()).toBe(PROGRESS_KEY)
+  expect(progressStorageKey('learner/a')).toBe(
+    `${PROGRESS_KEY}:account:learner%2Fa`,
+  )
+  expect(progressStorageKey('learner-a')).not.toBe(
+    progressStorageKey('learner-b'),
+  )
 })
 
 // 原型旧版本的记录和自评分来源必须完整保留。

@@ -1,0 +1,139 @@
+openapi: 3.1.0
+info:
+  title: Rust Path Learning API
+  version: 1.0.0
+  description: Owner-scoped learner reported progress, reflections, self-assessments, and IANA account time zones.
+servers:
+  - url: /
+security:
+  - sessionCookie: []
+paths:
+  /api/v1/learning/state:
+    get:
+      summary: Read the caller's current learning snapshot
+      operationId: getLearningState
+      responses:
+        '200':
+          description: Account learning snapshot
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LearningSnapshot' }
+        '401': { description: No authenticated session }
+        '404': { description: The account has not synchronized learning state yet }
+        '500': { description: Learning storage unavailable }
+  /api/v1/learning/sync:
+    post:
+      summary: Merge an idempotent device snapshot into the account state
+      operationId: syncLearningState
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SyncLearningRequest' }
+      responses:
+        '200':
+          description: Merged account state; event_id retries do not add a second activity day
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LearningSnapshot' }
+        '400': { description: Invalid time zone, timestamp, identifier, score, or payload size }
+        '401': { description: No authenticated session }
+        '413': { description: Request body exceeds the configured limit }
+        '500': { description: Learning storage unavailable }
+  /api/v1/learning/time-zone:
+    put:
+      summary: Change the account IANA time zone and re-evaluate stored activity days
+      operationId: setLearningTimeZone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [time_zone]
+              properties:
+                time_zone: { type: string, maxLength: 128, example: Asia/Shanghai }
+      responses:
+        '200':
+          description: Account time zone and recalculated learning dates
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LearningSnapshot' }
+        '400': { description: Invalid IANA time zone }
+        '401': { description: No authenticated session }
+        '500': { description: Learning storage unavailable }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: rust-path-session
+      description: Development cookie name; production uses __Host-rust-path-session.
+  schemas:
+    SyncLearningRequest:
+      type: object
+      additionalProperties: false
+      required: [event_id, occurred_at, current_position_at, time_zone, current_lesson, completed, reflections, self_assessments]
+      properties:
+        event_id: { type: string, minLength: 1, maxLength: 128 }
+        occurred_at: { type: string, format: date-time }
+        current_position_at: { type: string, format: date-time }
+        time_zone: { type: string, maxLength: 128, example: America/Los_Angeles }
+        current_lesson: { type: string, minLength: 1, maxLength: 128 }
+        completed:
+          type: array
+          maxItems: 500
+          items: { type: string, minLength: 1, maxLength: 128 }
+        reflections:
+          type: array
+          maxItems: 200
+          items: { $ref: '#/components/schemas/Reflection' }
+        self_assessments:
+          type: array
+          maxItems: 2000
+          items: { $ref: '#/components/schemas/SelfAssessment' }
+    Reflection:
+      type: object
+      additionalProperties: false
+      required: [lesson_id, content, updated_at]
+      properties:
+        lesson_id: { type: string, minLength: 1, maxLength: 128 }
+        content: { type: string, maxLength: 16384 }
+        updated_at: { type: string, format: date-time }
+    SelfAssessment:
+      type: object
+      additionalProperties: false
+      required: [lesson_id, exercise_id, score, updated_at]
+      properties:
+        lesson_id: { type: string, minLength: 1, maxLength: 128 }
+        exercise_id: { type: string, minLength: 1, maxLength: 128 }
+        score: { type: integer, minimum: 1, maximum: 5 }
+        updated_at: { type: string, format: date-time }
+    LearningSnapshot:
+      type: object
+      required: [time_zone, current_lesson, current_position_at, revision, completed, reflections, self_assessments, study_days, streak]
+      properties:
+        time_zone: { type: string }
+        current_lesson: { type: string }
+        current_position_at: { type: string, format: date-time }
+        revision: { type: integer, minimum: 1 }
+        completed:
+          type: array
+          items:
+            type: object
+            required: [lesson_id, completed_at]
+            properties:
+              lesson_id: { type: string }
+              completed_at: { type: string, format: date-time }
+        reflections:
+          type: array
+          items: { $ref: '#/components/schemas/Reflection' }
+        self_assessments:
+          type: array
+          items: { $ref: '#/components/schemas/SelfAssessment' }
+        study_days:
+          type: array
+          maxItems: 366
+          items: { type: string, format: date }
+        streak: { type: integer, minimum: 0 }

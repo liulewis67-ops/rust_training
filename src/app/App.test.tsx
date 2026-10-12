@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
@@ -13,8 +13,17 @@ function renderLegacyLesson() {
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
   localStorage.clear()
   window.history.replaceState({}, '', '/')
+})
+
+beforeEach(() => {
+  // Local-only UI scenarios run with an explicit anonymous server session.
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(null, { status: 401 })),
+  )
 })
 
 // 数据损坏后仍可阅读和导航，并保留旧数据用于恢复。
@@ -22,7 +31,9 @@ it('损坏存储不会白屏或被导航覆盖', async () => {
   localStorage.setItem('rust-backend-training:v1', '{broken')
   const user = userEvent.setup()
   renderLegacyLesson()
-  expect(screen.getByRole('alert').textContent).toContain('原数据已保留')
+  expect((await screen.findByRole('alert')).textContent).toContain(
+    '原数据已保留',
+  )
   await user.click(
     within(
       screen.getByRole('navigation', { name: 'Rust 学习路线' }),
@@ -39,12 +50,13 @@ it('存储额度不足时显示保存失败', async () => {
   })
   const user = userEvent.setup()
   renderLegacyLesson()
+  await screen.findByText(/登录后可跨设备同步/)
   await user.click(
     within(
       screen.getByRole('navigation', { name: 'Rust 学习路线' }),
     ).getAllByRole('button')[1],
   )
-  expect(screen.getByRole('alert').textContent).toContain('保存失败')
+  expect((await screen.findByRole('alert')).textContent).toContain('保存失败')
   expect(screen.queryByText('本地进度已保存')).toBeNull()
 })
 
@@ -57,7 +69,7 @@ it('作答后重新挂载恢复结果', async () => {
   expect(screen.getByRole('button', { name: /重新作答/ })).toBeTruthy()
   mounted.unmount()
   renderLegacyLesson()
-  expect(screen.getByRole('button', { name: /重新作答/ })).toBeTruthy()
+  expect(await screen.findByRole('button', { name: /重新作答/ })).toBeTruthy()
 })
 
 // 浏览器导航事件必须更新页面，未知链接提供可操作恢复入口。

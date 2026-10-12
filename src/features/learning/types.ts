@@ -11,10 +11,13 @@ export interface Attempt {
 export interface Progress {
   completed: string[]
   currentLesson: string
+  currentPositionAt: string | null
   attempts: Attempt[]
+  reflections: Record<string, { content: string; updatedAt: string }>
   weakness: Record<string, number>
   streak: number
   lastStudyDate: string | null
+  timeZone: string
 }
 
 export interface ProgressSummary {

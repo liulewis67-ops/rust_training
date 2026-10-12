@@ -7,6 +7,13 @@ import { createProgress } from './model'
 import type { Attempt, Progress } from './types'
 
 export const PROGRESS_KEY = 'rust-backend-training:v1'
+
+/** Scope authenticated local snapshots to one server identity; keep v1 as the anonymous legacy key. */
+export function progressStorageKey(ownerId?: string): string {
+  return ownerId
+    ? `${PROGRESS_KEY}:account:${encodeURIComponent(ownerId)}`
+    : PROGRESS_KEY
+}
 export interface LoadedProgress {
   progress: Progress
   message: string
@@ -45,8 +52,11 @@ export function parseProgress(value: unknown): Progress | null {
   const attempts = value.attempts ?? initial.attempts
   const weakness = value.weakness ?? initial.weakness
   const currentLesson = value.currentLesson ?? initial.currentLesson
+  const currentPositionAt = value.currentPositionAt ?? null
+  const reflections = value.reflections ?? initial.reflections
   const streak = value.streak ?? initial.streak
   const lastStudyDate = value.lastStudyDate ?? null
+  const timeZone = value.timeZone ?? initial.timeZone
   if (
     !Array.isArray(completed) ||
     !completed.every((id) => {
@@ -72,11 +82,37 @@ export function parseProgress(value: unknown): Progress | null {
   }
   if (
     typeof currentLesson !== 'string' ||
+    (currentPositionAt !== null &&
+      (typeof currentPositionAt !== 'string' ||
+        !Number.isFinite(Date.parse(currentPositionAt)))) ||
+    typeof timeZone !== 'string' ||
+    timeZone.length === 0 ||
     typeof streak !== 'number' ||
     !Number.isInteger(streak) ||
     streak < 0
   )
     return null
+  if (!isRecord(reflections)) return null
+  const validReflections: Progress['reflections'] = {}
+  for (const [lessonId, reflection] of Object.entries(reflections)) {
+    if (
+      !lessonId ||
+      !isRecord(reflection) ||
+      typeof reflection.content !== 'string' ||
+      reflection.content.length > 16 * 1024 ||
+      typeof reflection.updatedAt !== 'string' ||
+      !Number.isFinite(Date.parse(reflection.updatedAt))
+    ) {
+      return null
+    }
+    Object.defineProperty(validReflections, lessonId, {
+      value: {
+        content: reflection.content,
+        updatedAt: reflection.updatedAt,
+      },
+      enumerable: true,
+    })
+  }
   if (
     lastStudyDate !== null &&
     (typeof lastStudyDate !== 'string' ||
@@ -86,7 +122,10 @@ export function parseProgress(value: unknown): Progress | null {
   return {
     completed: [...new Set(completed)],
     attempts,
+    currentPositionAt,
     weakness: validWeakness,
+    reflections: validReflections,
+    timeZone,
     currentLesson,
     streak,
     lastStudyDate,
@@ -94,8 +133,8 @@ export function parseProgress(value: unknown): Progress | null {
 }
 
 /** 加载兼容的原型记录；损坏原文保持在原键中，当前会话禁止自动覆盖。 */
-export function loadProgress(): LoadedProgress {
-  const stored = readStoredValue(PROGRESS_KEY)
+export function loadProgress(key = PROGRESS_KEY): LoadedProgress {
+  const stored = readStoredValue(key)
   if (!stored.ok)
     return {
       progress: createProgress(),
@@ -123,6 +162,9 @@ export function loadProgress(): LoadedProgress {
 }
 
 /** 以原 v1 键保存已验证的本地记录，不引入云同步或成绩升级。 */
-export function saveProgress(progress: Progress): StorageResult<void> {
-  return writeStoredValue(PROGRESS_KEY, JSON.stringify(progress))
+export function saveProgress(
+  progress: Progress,
+  key = PROGRESS_KEY,
+): StorageResult<void> {
+  return writeStoredValue(key, JSON.stringify(progress))
 }

@@ -1,5 +1,5 @@
 import type { JSX } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type { Exercise } from '../../../types/lesson'
 import type { Attempt } from '../../learning'
@@ -24,6 +24,12 @@ export function OpenExercise({
   )
   const [showReference, setShowReference] = useState(Boolean(existing))
   const [score, setScore] = useState<number | null>(existing?.selfScore ?? null)
+  useEffect(() => {
+    // Restore a server-merged answer after the account snapshot arrives.
+    setAnswer(typeof existing?.answer === 'string' ? existing.answer : '')
+    setShowReference(Boolean(existing))
+    setScore(existing?.selfScore ?? null)
+  }, [existing])
   const submitted = showReference
   return (
     <div className="open-answer">

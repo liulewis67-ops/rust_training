@@ -7,6 +7,7 @@ use openidconnect::{IssuerUrl, core::CoreProviderMetadata};
 use tower_sessions::{Expiry, SessionManagerLayer};
 
 mod identity;
+mod learning;
 mod sessions;
 mod workspaces;
 
@@ -42,6 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let session_store = sessions::SqliteSessionStore::connect(&database_url).await?;
     let workspace_store = workspaces::WorkspaceStore::connect(&database_url).await?;
+    let learning_store = learning::LearningStore::connect(&database_url).await?;
     let cleanup_store = session_store.clone();
     // Expiry cleanup runs separately so a transient cleanup error cannot interrupt API requests.
     tokio::spawn(async move {
@@ -70,6 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .with_state(state.clone())
         .merge(workspaces::router(workspace_store))
+        .merge(learning::router(learning_store))
         .layer(session_layer)
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),

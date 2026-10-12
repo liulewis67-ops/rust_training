@@ -1,5 +1,5 @@
 import type { JSX } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowRight, CheckCircle2, XCircle } from 'lucide-react'
 import type { Exercise } from '../../../types/lesson'
 import type { Attempt } from '../../learning'
@@ -23,6 +23,11 @@ export function ChoiceExercise({
     typeof existing?.answer === 'number' ? existing.answer : null,
   )
   const [submitted, setSubmitted] = useState(Boolean(existing))
+  useEffect(() => {
+    // Apply a stored or cloud-restored answer when progress finishes loading.
+    setSelected(typeof existing?.answer === 'number' ? existing.answer : null)
+    setSubmitted(Boolean(existing))
+  }, [existing])
   const correct = selected === exercise.correctAnswer
   return (
     <>

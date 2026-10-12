@@ -5,6 +5,7 @@ import {
   markLessonComplete,
   recordActivity,
   recordAttempt,
+  studyDate,
   summarizeProgress,
 } from './model'
 
@@ -19,6 +20,24 @@ it('统一同题提交并保持不可变更新', () => {
   expect(retried.attempts).toHaveLength(1)
   expect(retried.attempts[0].correct).toBe(true)
   expect(retried.weakness[exercise.tags[0]]).toBe(0)
+})
+
+// An account zone can place the same UTC instant on a different calendar day than the device zone.
+it('uses an IANA account time zone for activity dates', () => {
+  const instant = new Date('2026-03-09T04:30:00.000Z')
+  expect(studyDate(instant, 'America/Los_Angeles')).toBe('2026-03-08')
+  expect(studyDate(instant, 'Asia/Shanghai')).toBe('2026-03-09')
+  expect(
+    recordActivity(
+      {
+        ...createProgress(),
+        streak: 1,
+        timeZone: 'America/Los_Angeles',
+        lastStudyDate: '2026-03-07',
+      },
+      instant,
+    ).streak,
+  ).toBe(2)
 })
 
 // 自评通过不能提高客观题正确率，但仍保留为个人学习记录。

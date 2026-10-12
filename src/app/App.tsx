@@ -20,6 +20,10 @@ export default function App(): JSX.Element {
     saveStatus,
     rememberLesson,
     completeLesson,
+    saveReflection,
+    setTimeZone,
+    retrySync,
+    syncStatus,
     submitAttempt,
   } = useProgress()
   const { route, navigate } = useRoute()
@@ -62,6 +66,10 @@ export default function App(): JSX.Element {
   function finishLesson(): void {
     completeLesson(current.id)
   }
+  /** 保存当前课程的学习反思。 */
+  function saveLessonReflection(content: string): void {
+    saveReflection(current.id, content)
+  }
   /** 打开薄弱点复习。 */
   function openReview(): void {
     navigate({ page: 'review' })
@@ -91,6 +99,8 @@ export default function App(): JSX.Element {
         )}
         onAttempt={saveAttempt}
         onComplete={finishLesson}
+        reflection={progress.reflections[current.id]?.content ?? ''}
+        onReflectionSave={saveLessonReflection}
         onNavigate={selectLesson}
         onReview={openReview}
       />
@@ -109,6 +119,9 @@ export default function App(): JSX.Element {
       <ProgressPage
         progress={progress}
         accuracy={summarizeProgress(progress).accuracy}
+        onTimeZoneSave={setTimeZone}
+        canRetrySync={syncStatus === 'error'}
+        onRetrySync={retrySync}
       />
     )
   } else if (route.page === 'course-preview') {

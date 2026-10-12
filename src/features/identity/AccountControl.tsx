@@ -53,8 +53,10 @@ export function AccountControl(): JSX.Element {
         method: 'POST',
         credentials: 'same-origin',
       })
-      if (response.ok) setIdentity({ status: 'anonymous' })
-      else setIdentity({ status: 'error' })
+      if (response.ok) {
+        setIdentity({ status: 'anonymous' })
+        window.dispatchEvent(new Event('rust-path-session-changed'))
+      } else setIdentity({ status: 'error' })
     } catch {
       setIdentity({ status: 'error' })
     }

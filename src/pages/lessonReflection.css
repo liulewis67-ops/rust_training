@@ -1,0 +1,70 @@
+.reflection-panel {
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+  margin-top: 22px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+}
+
+.reflection-panel label {
+  color: var(--soft);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.reflection-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.reflection-panel textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--soft);
+  font: 10px/1.6 var(--mono);
+}
+
+.reflection-panel textarea:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.account-time-zone label {
+  display: block;
+  margin: 10px 0 5px;
+  color: var(--soft);
+  font-size: 9px;
+}
+
+.account-time-zone > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-time-zone input {
+  min-width: 0;
+  width: min(280px, 100%);
+  height: 31px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--soft);
+  font: 10px var(--mono);
+}
+
+.account-time-zone input:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}

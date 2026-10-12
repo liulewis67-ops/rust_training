@@ -1,4 +1,5 @@
 import type { JSX } from 'react'
+import { useEffect, useState } from 'react'
 import { Check, ChevronRight, Flame, X } from 'lucide-react'
 import { lessons, categories } from '../features/catalog'
 import type { Progress } from '../features/learning'
@@ -15,10 +16,21 @@ function dateText(date: string): string {
 export function ProgressPage({
   progress,
   accuracy,
+  onTimeZoneSave,
+  canRetrySync,
+  onRetrySync,
 }: {
   progress: Progress
   accuracy: number | null
+  onTimeZoneSave: (timeZone: string) => void
+  canRetrySync: boolean
+  onRetrySync: () => void
 }): JSX.Element {
+  const [timeZoneDraft, setTimeZoneDraft] = useState(progress.timeZone)
+  useEffect(() => {
+    // Follow the account's canonical time zone after a successful cloud update.
+    setTimeZoneDraft(progress.timeZone)
+  }, [progress.timeZone])
   const categoryStats = categories.map((category) => {
     // 按完整课程分类计算阅读完成数。
 
@@ -91,6 +103,43 @@ export function ProgressPage({
           )
         })}
       </section>
+      <section className="mastery-section account-time-zone">
+        <h2>账户时区</h2>
+        <p>学习日和连续记录按此 IANA 时区计算，例如 Asia/Shanghai。</p>
+        <label htmlFor="account-time-zone-input">IANA 时区</label>
+        <div>
+          <input
+            id="account-time-zone-input"
+            value={timeZoneDraft}
+            onChange={(event) => setTimeZoneDraft(event.currentTarget.value)}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={
+              !timeZoneDraft.trim() || timeZoneDraft === progress.timeZone
+            }
+            onClick={() => onTimeZoneSave(timeZoneDraft.trim())}
+          >
+            保存时区
+          </button>
+        </div>
+      </section>
+      {canRetrySync && (
+        <section className="mastery-section">
+          <h2>云端同步失败</h2>
+          <p>本机记录仍可用；网络恢复后可以安全重试同步。</p>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={onRetrySync}
+          >
+            重试同步
+          </button>
+        </section>
+      )}
       <section className="mastery-section recent-section">
         <h2>最近答题</h2>
         {recent.length ? (

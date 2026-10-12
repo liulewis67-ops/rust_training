@@ -6,15 +6,34 @@ export function createProgress(): Progress {
   return {
     completed: [],
     currentLesson: 'ownership',
+    currentPositionAt: null,
     attempts: [],
+    reflections: {},
     weakness: {},
     streak: 0,
     lastStudyDate: null,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
   }
 }
 
-/** 按设备本地日历生成学习日，不依赖 UTC 或 locale 的日期格式。 */
-export function studyDate(date: Date): string {
+/** 按传入的账户时区生成学习日，不依赖设备时区或 locale 日期格式。 */
+export function studyDate(date: Date, timeZone?: string): string {
+  if (timeZone) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(date)
+      const values = Object.fromEntries(
+        parts.map((part) => [part.type, part.value]),
+      )
+      return `${values.year}-${values.month}-${values.day}`
+    } catch {
+      // 未验证的时区名不阻断本地记录，使用设备日历并由服务端校验账号时区。
+    }
+  }
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
@@ -22,15 +41,18 @@ export function studyDate(date: Date): string {
 export function recordActivity(
   progress: Progress,
   now: Date = new Date(),
+  timeZone = progress.timeZone,
 ): Pick<Progress, 'streak' | 'lastStudyDate'> {
-  const today = studyDate(now)
+  const today = studyDate(now, timeZone)
   if (progress.lastStudyDate === today)
     return { streak: progress.streak, lastStudyDate: today }
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterday = new Date(`${today}T00:00:00.000Z`)
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1)
   return {
     streak:
-      progress.lastStudyDate === studyDate(yesterday) ? progress.streak + 1 : 1,
+      progress.lastStudyDate === studyDate(yesterday, 'UTC')
+        ? progress.streak + 1
+        : 1,
     lastStudyDate: today,
   }
 }
@@ -90,6 +112,7 @@ export function markLessonComplete(
     ...progress,
     ...recordActivity(progress, now),
     currentLesson: lessonId,
+    currentPositionAt: now.toISOString(),
     completed: [...new Set([...progress.completed, lessonId])],
   }
 }
