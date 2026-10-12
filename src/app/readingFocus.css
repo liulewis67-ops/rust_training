@@ -1,0 +1,82 @@
+.app-grid-reading-focus {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-grid-reading-focus > .sidebar,
+.app-grid-reading-focus > .right-rail {
+  display: none;
+}
+
+.app-grid-reading-focus > .main-content {
+  max-width: 1080px;
+  padding-right: clamp(18px, 6vw, 80px);
+  padding-left: clamp(18px, 6vw, 80px);
+}
+
+.reading-focus-toggle[aria-pressed='true'] {
+  border-color: var(--orange);
+}
+
+@media (max-width: 740px) {
+  .app-grid-reading-focus > .main-content {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    gap: 6px;
+    padding-right: 8px;
+    padding-left: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .topbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .brand {
+    gap: 5px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .top-nav,
+  .topbar-right {
+    flex-shrink: 0;
+  }
+
+  .top-nav button {
+    white-space: nowrap;
+  }
+
+  .top-nav button {
+    padding-right: 4px;
+    padding-left: 4px;
+    font-size: 8px;
+  }
+
+  .topbar-right {
+    gap: 5px;
+  }
+
+  .topbar-right .theme-toggle span {
+    display: none;
+  }
+
+  .topbar-right .reading-focus-toggle span {
+    display: inline;
+    font-size: 8px;
+  }
+
+  .topbar-right [aria-label='打开课包预览'] {
+    display: none;
+  }
+
+  .account-control {
+    gap: 4px;
+    font-size: 9px;
+  }
+}

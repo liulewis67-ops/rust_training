@@ -46,6 +46,30 @@ it('损坏存储不会白屏或被导航覆盖', async () => {
   expect(localStorage.getItem(progressStorageKey())).toBe('{broken')
 })
 
+// Focus mode removes the side panels, exposes its active state in text, and can always be exited.
+it('toggles and persists the reading focus layout', async () => {
+  const user = userEvent.setup()
+  renderLegacyLesson()
+  await screen.findByText(/登录后可跨设备同步/)
+  await user.click(screen.getByRole('button', { name: '进入专注模式' }))
+  expect(
+    document
+      .querySelector('.app-grid')
+      ?.classList.contains('app-grid-reading-focus'),
+  ).toBe(true)
+  expect(localStorage.getItem('rust-backend-training:reading-focus')).toBe(
+    'true',
+  )
+  const exit = screen.getByRole('button', { name: '退出专注模式' })
+  expect(exit.getAttribute('aria-pressed')).toBe('true')
+  await user.click(exit)
+  expect(
+    document
+      .querySelector('.app-grid')
+      ?.classList.contains('app-grid-reading-focus'),
+  ).toBe(false)
+})
+
 // 写入失败时必须在页面中提示，不能持续显示“已保存”。
 it('存储额度不足时显示保存失败', async () => {
   vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {

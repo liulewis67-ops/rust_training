@@ -12,6 +12,23 @@ textarea:focus-visible {
   outline-offset: 3px;
 }
 
+input[type='range']:focus-visible {
+  outline: 2px solid #e87b43;
+  outline-offset: 3px;
+}
+
+body,
+.app-grid,
+.main-content,
+.code-section {
+  min-width: 0;
+}
+
+.code-pre {
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+}
+
 .mobile-menu {
   display: none;
 }

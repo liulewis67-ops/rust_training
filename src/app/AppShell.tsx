@@ -24,6 +24,16 @@ import type { Lesson } from '../types/lesson'
 import type { Route } from './router'
 import type { Theme } from '../features/preferences'
 import { AccountControl } from '../features/identity/AccountControl'
+import { readStoredValue, writeStoredValue } from '../lib/browserStorage'
+import './readingFocus.css'
+
+const READING_FOCUS_KEY = 'rust-backend-training:reading-focus'
+
+/** Restore the optional focus layout without making storage availability a requirement. */
+function readReadingFocus(): boolean {
+  const result = readStoredValue(READING_FOCUS_KEY)
+  return result.ok && result.value === 'true'
+}
 
 /** 组合原型导航、学习概览与页面内容；抽屉状态只属于布局。 */
 export function AppShell({
@@ -47,7 +57,12 @@ export function AppShell({
 }): JSX.Element {
   const [drawer, setDrawer] = useState(false)
   const [showAll, setShowAll] = useState(true)
+  const [readingFocus, setReadingFocus] = useState(readReadingFocus)
   const sidebar = useRef<HTMLElement>(null)
+  useEffect(() => {
+    // Focus layout is a lightweight preference; storage errors leave the current UI usable.
+    writeStoredValue(READING_FOCUS_KEY, String(readingFocus))
+  }, [readingFocus])
   useEffect(() => {
     // 移动抽屉打开时约束键盘焦点，关闭或卸载后恢复触发控件。
     if (!drawer) return
@@ -190,6 +205,21 @@ export function AppShell({
             <span>{theme === 'dark' ? '浅色' : '深色'}</span>
           </button>
           {hasLegacyWorkspace && (
+            <button
+              className="theme-toggle reading-focus-toggle"
+              onClick={() => {
+                // Keep a visible way to leave focus mode in every route.
+                setReadingFocus((active) => !active)
+              }}
+              aria-pressed={readingFocus}
+              aria-label={readingFocus ? '退出专注模式' : '进入专注模式'}
+              title={readingFocus ? '退出专注模式' : '进入专注模式'}
+            >
+              <Eye size={15} />
+              <span>{readingFocus ? '退出专注' : '专注模式'}</span>
+            </button>
+          )}
+          {hasLegacyWorkspace && (
             <>
               <span className="status-live" role="status">
                 <i /> {saveStatus}
@@ -200,7 +230,7 @@ export function AppShell({
         </div>
       </header>
       <div
-        className={`app-grid ${hasLegacyWorkspace ? '' : 'app-grid-simple'}`}
+        className={`app-grid ${hasLegacyWorkspace ? '' : 'app-grid-simple'} ${readingFocus ? 'app-grid-reading-focus' : ''}`}
       >
         {hasLegacyWorkspace && (
           <aside
