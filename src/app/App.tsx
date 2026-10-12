@@ -8,6 +8,7 @@ import { ProgressPage } from '../pages/ProgressPage'
 import { CoursePreviewPage } from '../pages/CoursePreviewPage'
 import { HomePage } from '../pages/HomePage'
 import { TrackPage } from '../pages/TrackPage'
+import { SearchPage } from '../pages/SearchPage'
 import type { Exercise, Lesson } from '../types/lesson'
 import { AppShell } from './AppShell'
 import { useRoute } from './router'
@@ -75,6 +76,8 @@ export default function App(): JSX.Element {
     page = <HomePage onNavigate={navigate} />
   } else if (route.page === 'track') {
     page = <TrackPage onNavigate={navigate} />
+  } else if (route.page === 'search') {
+    page = <SearchPage onNavigate={navigate} />
   } else if (route.page === 'lesson') {
     page = (
       <LessonPage

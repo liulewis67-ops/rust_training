@@ -28,6 +28,7 @@ it.each(['/lesson/missing', '/lesson/%E0%A4%A', '/missing', '/review/extra'])(
 // 新首页与路线可直达，已有课程链接继续映射到原型课程。
 it('解析首页与已规划路线', () => {
   expect(readRoute('/')).toEqual({ page: 'home' })
+  expect(readRoute('/search')).toEqual({ page: 'search' })
   expect(readRoute('/tracks/rust-backend')).toEqual({
     page: 'track',
     trackSlug: 'rust-backend',

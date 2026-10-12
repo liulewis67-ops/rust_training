@@ -3,6 +3,7 @@ import { lessons } from '../features/catalog'
 
 export type Route =
   | { page: 'home' }
+  | { page: 'search' }
   | { page: 'lesson'; lessonId: string }
   | { page: 'track'; trackSlug: string }
   | { page: 'course-preview'; courseId: string }
@@ -12,6 +13,8 @@ export type Route =
 /** 解析现有路径；未知课程或非法编码明确显示未找到，不偷偷跳到首课。 */
 export function readRoute(pathname: string): Route {
   if (pathname === '/') return { page: 'home' }
+  if (pathname === '/search' || pathname === '/search/')
+    return { page: 'search' }
   if (pathname === '/review' || pathname === '/review/')
     return { page: 'review' }
   if (pathname === '/progress' || pathname === '/progress/')
@@ -42,6 +45,7 @@ export function readRoute(pathname: string): Route {
 /** 将路由意图映射为原型兼容 URL。 */
 function routePath(route: Route): string {
   if (route.page === 'home') return '/'
+  if (route.page === 'search') return '/search'
   if (route.page === 'track')
     return `/tracks/${encodeURIComponent(route.trackSlug)}`
   if (route.page === 'lesson')

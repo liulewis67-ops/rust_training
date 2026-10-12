@@ -11,6 +11,7 @@ import {
   Menu,
   Moon,
   RotateCcw,
+  Search,
   Sparkles,
   Sun,
   Target,
@@ -90,7 +91,8 @@ export function AppShell({
   }, [drawer])
   const { completedCount, answered, accuracy, weakTags } =
     summarizeProgress(progress)
-  const hasLegacyWorkspace = route.page !== 'home' && route.page !== 'track'
+  const hasLegacyWorkspace =
+    route.page !== 'home' && route.page !== 'track' && route.page !== 'search'
   /** 关闭移动目录后导航到目标页面。 */
   const nav = (target: Route): void => {
     setDrawer(false)
@@ -150,6 +152,16 @@ export function AppShell({
             }}
           >
             学习路线
+          </button>
+          <button
+            className={route.page === 'search' ? 'selected' : ''}
+            aria-current={route.page === 'search' ? 'page' : undefined}
+            onClick={() => {
+              // 打开只检索已公开课程内容的搜索页。
+              return nav({ page: 'search' })
+            }}
+          >
+            <Search size={13} /> 搜索
           </button>
         </nav>
         <div className="topbar-right">

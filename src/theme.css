@@ -161,6 +161,13 @@
 :root[data-theme="light"] .preview-section, :root[data-theme="light"] .preview-example-heading, :root[data-theme="light"] .preview-sources li { border-color: #e1e3e7; background: #fff; }
 :root[data-theme="light"] .preview-exercise details { border-color: #e1e3e7; color: #4e5158; }
 :root[data-theme="light"] .preview-exercise ol { color: #555860; }
+:root[data-theme="light"] .search-intro, :root[data-theme="light"] .search-results p, :root[data-theme="light"] .search-empty > p { color: #666a72; }
+:root[data-theme="light"] .search-form, :root[data-theme="light"] .search-results a, :root[data-theme="light"] .search-empty { border-color: #e1e3e7; background: #fff; color: #44474e; }
+:root[data-theme="light"] .search-form input { color: #303238; }
+:root[data-theme="light"] .search-form input::placeholder { color: #858891; }
+:root[data-theme="light"] .search-suggestions h2, :root[data-theme="light"] .search-results > h2, :root[data-theme="light"] .search-empty h2, :root[data-theme="light"] .search-results h3 { color: #303238; }
+:root[data-theme="light"] .search-suggestions button, :root[data-theme="light"] .search-empty button { border-color: #e1e3e7; background: #f7f8fa; color: #44474e; }
+:root[data-theme="light"] .search-clear { color: #656871; }
 @media (max-width: 720px) {
   .course-preview { padding: 0 0 32px; }
   .preview-heading, .preview-section { padding: 18px; }

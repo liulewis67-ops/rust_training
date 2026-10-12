@@ -159,3 +159,27 @@ it('打开路线详情并把所有阶段标为规划中', async () => {
   expect(screen.getAllByText('规划中')).toHaveLength(8)
   expect(screen.getByText('240 小时规划基准')).toBeTruthy()
 })
+
+// 搜索页展示公开索引命中、课程定位链接和无结果恢复入口。
+it('搜索中文词与错误码并可恢复空结果', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+
+  await user.click(screen.getByRole('button', { name: /搜索/ }))
+  const input = screen.getByRole('searchbox', {
+    name: '搜索课程标题、正文、术语或错误码',
+  })
+  await user.type(input, 'E0382')
+
+  const ownershipResult = screen.getByRole('link', { name: /所有权 Ownership/ })
+  expect(ownershipResult.getAttribute('href')).toBe('/lesson/ownership')
+  expect(screen.getByText('E0382：值被移动后再次使用')).toBeTruthy()
+
+  await user.clear(input)
+  await user.type(input, 'unknown-search-term')
+  expect(screen.getByRole('heading', { name: '没有找到匹配课程' })).toBeTruthy()
+  await user.click(screen.getByRole('button', { name: '查看学习路线' }))
+  expect(
+    screen.getByRole('heading', { name: 'Rust 后端工程师路线' }),
+  ).toBeTruthy()
+})
