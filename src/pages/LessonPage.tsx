@@ -13,6 +13,7 @@ import { lessons, tagLabel, difficultyLabel } from '../features/catalog'
 import { ChoiceExercise, OpenExercise } from '../features/practice'
 import { CodeExamples } from '../features/reading'
 import { CodeBlock } from '../components/CodeBlock'
+import { DraftEditor } from '../features/workspace/DraftEditor'
 import type { Progress } from '../features/learning'
 import type { Lesson, Exercise } from '../types/lesson'
 
@@ -132,8 +133,10 @@ export function LessonPage({
               </div>
             </section>
           )}
-          <CodeExamples examples={lesson.examples} />
         </>
+      )}
+      {lesson.examples.length > 0 && (
+        <CodeExamples examples={lesson.examples} lessonId={lesson.id} />
       )}
       {exercises.length > 0 && (
         <section className="exercise-card" id="exercise">
@@ -155,6 +158,14 @@ export function LessonPage({
             </span>
           </div>
           {exercise.code && <CodeBlock code={exercise.code} compact />}
+          {exercise.code && (
+            <DraftEditor
+              lessonId={lesson.id}
+              itemId={`exercise-${exercise.id}`}
+              template={exercise.code}
+              label={`练习 ${activeExercise + 1}`}
+            />
+          )}
           {exercise.prompt !== '提交后预测：程序会怎样？' &&
             lesson.order === 1 &&
             activeExercise === 0 && (
@@ -298,7 +309,6 @@ export function LessonPage({
               </div>
             </section>
           )}
-          <CodeExamples examples={lesson.examples} />
         </>
       )}
       <section className="comparison-block">

@@ -168,6 +168,11 @@
 :root[data-theme="light"] .search-suggestions h2, :root[data-theme="light"] .search-results > h2, :root[data-theme="light"] .search-empty h2, :root[data-theme="light"] .search-results h3 { color: #303238; }
 :root[data-theme="light"] .search-suggestions button, :root[data-theme="light"] .search-empty button { border-color: #e1e3e7; background: #f7f8fa; color: #44474e; }
 :root[data-theme="light"] .search-clear { color: #656871; }
+:root[data-theme="light"] .draft-editor { border-color: #e1e3e7; background: #fff; }
+:root[data-theme="light"] .draft-editor-heading strong { color: #303238; }
+:root[data-theme="light"] .draft-editor-heading small, :root[data-theme="light"] .draft-editor-heading > span { color: #737780; }
+:root[data-theme="light"] .draft-editor-input { border-color: #d8dbe0; background: #f7f8fa; color: #292c31; }
+:root[data-theme="light"] .draft-editor-actions button { border-color: #d8dbe0; background: #f7f8fa; color: #464a52; }
 @media (max-width: 720px) {
   .course-preview { padding: 0 0 32px; }
   .preview-heading, .preview-section { padding: 18px; }

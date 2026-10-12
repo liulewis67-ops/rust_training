@@ -17,9 +17,12 @@ it('复制失败可重试且不伪报成功', async () => {
     .mockRejectedValueOnce(new DOMException('Denied', 'NotAllowedError'))
     .mockResolvedValueOnce(undefined)
   render(
-    <CodeExamples examples={[{ language: 'rust', code: 'let value = 1;' }]} />,
+    <CodeExamples
+      lessonId="copy-test"
+      examples={[{ language: 'rust', code: 'let value = 1;' }]}
+    />,
   )
-  await user.click(screen.getByRole('button', { name: '复制' }))
+  await user.click(screen.getByRole('button', { name: '复制原始示例' }))
   expect(screen.queryByRole('button', { name: '已复制' })).toBeNull()
   await user.click(screen.getByRole('button', { name: '复制失败，重试' }))
   expect(screen.getByRole('button', { name: '已复制' })).toBeTruthy()
