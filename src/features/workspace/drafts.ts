@@ -40,9 +40,10 @@ export function draftKey(
   lessonId: string,
   itemId: string,
   template: string,
+  ownerScope = 'anonymous',
 ): string {
   const scope = [lessonId, itemId].map(encodeURIComponent).join(':')
-  return `rust-path:v1:anonymous:${scope}:${templateVersion(template)}`
+  return `rust-path:v1:${encodeURIComponent(ownerScope)}:${scope}:${templateVersion(template)}`
 }
 
 /** Open the versioned IndexedDB database and create its draft store on first use. */

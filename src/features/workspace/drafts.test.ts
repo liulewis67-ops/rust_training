@@ -59,6 +59,8 @@ it('does not load a draft for another lesson, item, or template version', async 
     'example-1',
     'fn first() { todo!() }',
   )
+  const ownerA = draftKey('ownership', 'example-1', template, 'learner-a')
+  const otherOwner = draftKey('ownership', 'example-1', template, 'learner-b')
   const record = {
     key,
     lessonId: 'ownership',
@@ -69,10 +71,15 @@ it('does not load a draft for another lesson, item, or template version', async 
   }
 
   await indexedDbDraftStore.save(record)
+  await indexedDbDraftStore.save({ ...record, key: ownerA })
 
   expect(await indexedDbDraftStore.load(otherLesson)).toBeNull()
   expect(await indexedDbDraftStore.load(otherItem)).toBeNull()
   expect(await indexedDbDraftStore.load(updatedTemplate)).toBeNull()
+  expect(await indexedDbDraftStore.load(otherOwner)).toBeNull()
+  expect(await indexedDbDraftStore.load(ownerA)).toMatchObject({
+    content: record.content,
+  })
   expect(templateVersion(template)).not.toBe(
     templateVersion('fn first() { todo!() }'),
   )

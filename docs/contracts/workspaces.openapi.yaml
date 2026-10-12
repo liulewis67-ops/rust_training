@@ -1,0 +1,199 @@
+openapi: 3.1.0
+info:
+  title: Rust Path Workspace API
+  version: 1.0.0
+  description: Owner-scoped, revisioned cloud drafts. Ownership is always read from the server session.
+servers:
+  - url: /
+security:
+  - sessionCookie: []
+paths:
+  /api/v1/workspaces:
+    post:
+      summary: Create or retrieve the caller's workspace for a template scope
+      operationId: createWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkspace'
+      responses:
+        '200':
+          description: The scope already exists for this owner
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Workspace' }
+        '201':
+          description: Workspace created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Workspace' }
+        '400': { description: Invalid scope or draft content }
+        '401': { description: No authenticated session }
+        '413': { description: Request body exceeds the configured limit }
+        '500': { description: Storage failure }
+  /api/v1/workspaces/by-scope:
+    get:
+      summary: Find the caller's workspace for a template scope
+      operationId: getWorkspaceByScope
+      parameters:
+        - in: query
+          name: lesson_id
+          required: true
+          schema: { type: string, maxLength: 128 }
+        - in: query
+          name: item_id
+          required: true
+          schema: { type: string, maxLength: 128 }
+        - in: query
+          name: template_version
+          required: true
+          schema: { type: string, maxLength: 128 }
+      responses:
+        '200':
+          description: Owner's workspace
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Workspace' }
+        '400': { description: Invalid scope }
+        '401': { description: No authenticated session }
+        '404': { description: Workspace not found for this owner }
+  /api/v1/workspaces/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: string }
+    get:
+      summary: Read a workspace owned by the caller
+      operationId: getWorkspace
+      responses:
+        '200':
+          description: Owner's workspace
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Workspace' }
+        '401': { description: No authenticated session }
+        '404': { description: Workspace not found for this owner }
+    put:
+      summary: Save against an exact revision; retain stale submitted content on conflict
+      operationId: saveWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RevisionWrite' }
+      responses:
+        '200':
+          description: New revision saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Workspace' }
+        '400': { description: Invalid revision or oversized content }
+        '401': { description: No authenticated session }
+        '404': { description: Workspace not found for this owner }
+        '409':
+          description: Latest cloud version and submitted local version are both preserved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WorkspaceConflict' }
+        '413': { description: Request body exceeds the configured limit }
+  /api/v1/workspaces/{id}/resolve:
+    post:
+      summary: Keep a local version and archive the displaced cloud version
+      operationId: resolveWorkspaceConflict
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RevisionWrite' }
+      responses:
+        '200':
+          description: Local version is now the latest revision and prior cloud text remains in conflict history
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Workspace' }
+        '400': { description: Invalid revision or oversized content }
+        '401': { description: No authenticated session }
+        '404': { description: Workspace not found for this owner }
+        '409': { description: Another device changed the workspace during resolution }
+        '413': { description: Request body exceeds the configured limit }
+  /api/v1/workspaces/{id}/conflicts:
+    get:
+      summary: List up to 50 most recent preserved conflict copies
+      operationId: listWorkspaceConflicts
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Bounded history of preserved versions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [conflicts]
+                properties:
+                  conflicts:
+                    type: array
+                    maxItems: 50
+                    items: { $ref: '#/components/schemas/ConflictCopy' }
+        '401': { description: No authenticated session }
+        '404': { description: Workspace not found for this owner }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: rust-path-session
+      description: Development cookie name; production uses __Host-rust-path-session.
+  schemas:
+    CreateWorkspace:
+      type: object
+      additionalProperties: false
+      required: [lesson_id, item_id, template_version, content]
+      properties:
+        lesson_id: { type: string, minLength: 1, maxLength: 128 }
+        item_id: { type: string, minLength: 1, maxLength: 128 }
+        template_version: { type: string, minLength: 1, maxLength: 128 }
+        content: { type: string, maxLength: 65536 }
+    RevisionWrite:
+      type: object
+      additionalProperties: false
+      required: [revision, content]
+      properties:
+        revision: { type: integer, minimum: 1 }
+        content: { type: string, maxLength: 65536 }
+    Workspace:
+      type: object
+      required: [id, lesson_id, item_id, template_version, content, revision]
+      properties:
+        id: { type: string }
+        lesson_id: { type: string }
+        item_id: { type: string }
+        template_version: { type: string }
+        content: { type: string }
+        revision: { type: integer, minimum: 1 }
+    ConflictCopy:
+      type: object
+      required: [id, submitted_revision, content]
+      properties:
+        id: { type: string }
+        submitted_revision: { type: integer, minimum: 1 }
+        content: { type: string }
+    WorkspaceConflict:
+      type: object
+      required: [code, message, latest, conflict]
+      properties:
+        code: { const: workspace_revision_conflict }
+        message: { type: string }
+        latest: { $ref: '#/components/schemas/Workspace' }
+        conflict: { $ref: '#/components/schemas/ConflictCopy' }

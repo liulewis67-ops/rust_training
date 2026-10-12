@@ -8,6 +8,7 @@ use tower_sessions::{Expiry, SessionManagerLayer};
 
 mod identity;
 mod sessions;
+mod workspaces;
 
 /// 读取运行配置、发现 OIDC 提供方并启动 API 服务。
 #[tokio::main]
@@ -40,6 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = identity::build_client(provider, client_id, client_secret, redirect_url)?;
 
     let session_store = sessions::SqliteSessionStore::connect(&database_url).await?;
+    let workspace_store = workspaces::WorkspaceStore::connect(&database_url).await?;
     let cleanup_store = session_store.clone();
     // Expiry cleanup runs separately so a transient cleanup error cannot interrupt API requests.
     tokio::spawn(async move {
@@ -66,12 +68,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/api/v1/private/workspaces",
             get(identity::private_workspace),
         )
+        .with_state(state.clone())
+        .merge(workspaces::router(workspace_store))
         .layer(session_layer)
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             identity::csrf_origin_guard,
-        ))
-        .with_state(state);
+        ));
 
     let listener = tokio::net::TcpListener::bind(address).await?;
     println!("API listening on {address}");

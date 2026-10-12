@@ -1,0 +1,54 @@
+.draft-cloud-status {
+  margin: -7px 0 10px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.draft-cloud-status-ready {
+  color: var(--green);
+}
+
+.draft-cloud-status-conflict,
+.draft-cloud-status-error {
+  color: #e6a565;
+}
+
+.draft-cloud-conflict {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #72533a;
+  border-radius: 7px;
+  background: #211d19;
+}
+
+.draft-cloud-conflict p {
+  margin: 0;
+  color: #e6c9ab;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.draft-cloud-conflict details {
+  min-width: 0;
+  color: var(--soft);
+  font-size: 10px;
+}
+
+.draft-cloud-conflict summary {
+  cursor: pointer;
+}
+
+.draft-cloud-conflict pre {
+  max-height: 220px;
+  overflow: auto;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--soft);
+  font: 10px/1.6 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
