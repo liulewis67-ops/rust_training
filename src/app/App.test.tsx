@@ -2,6 +2,10 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
+import {
+  progressStorageKey,
+  PROGRESS_KEY,
+} from '../features/learning/progressStorage'
 
 /** 从保留的旧课程 URL 挂载原型学习界面，隔离新首页行为。 */
 function renderLegacyLesson() {
@@ -28,7 +32,7 @@ beforeEach(() => {
 
 // 数据损坏后仍可阅读和导航，并保留旧数据用于恢复。
 it('损坏存储不会白屏或被导航覆盖', async () => {
-  localStorage.setItem('rust-backend-training:v1', '{broken')
+  localStorage.setItem(progressStorageKey(), '{broken')
   const user = userEvent.setup()
   renderLegacyLesson()
   expect((await screen.findByRole('alert')).textContent).toContain(
@@ -39,7 +43,7 @@ it('损坏存储不会白屏或被导航覆盖', async () => {
       screen.getByRole('navigation', { name: 'Rust 学习路线' }),
     ).getAllByRole('button')[1],
   )
-  expect(localStorage.getItem('rust-backend-training:v1')).toBe('{broken')
+  expect(localStorage.getItem(progressStorageKey())).toBe('{broken')
 })
 
 // 写入失败时必须在页面中提示，不能持续显示“已保存”。
@@ -70,6 +74,45 @@ it('作答后重新挂载恢复结果', async () => {
   mounted.unmount()
   renderLegacyLesson()
   expect(await screen.findByRole('button', { name: /重新作答/ })).toBeTruthy()
+})
+
+// Legacy data remains untouched until explicit confirmation, then keeps its evidence source.
+it('previews legacy progress before importing it into the active local record', async () => {
+  const original = JSON.stringify({
+    completed: ['ownership', 'removed-course'],
+    currentLesson: 'ownership',
+    attempts: [
+      {
+        lessonId: 'ownership',
+        exerciseId: 'old-open-question',
+        answer: 'legacy explanation',
+        correct: true,
+        selfScore: 5,
+        at: '2024-04-05T10:00:00.000Z',
+      },
+    ],
+  })
+  localStorage.setItem(PROGRESS_KEY, original)
+  window.history.replaceState({}, '', '/progress')
+  const user = userEvent.setup()
+  render(<App />)
+
+  expect(await screen.findByText(/未知课程；保留在原始备份/)).toBeTruthy()
+  expect(
+    JSON.parse(localStorage.getItem(progressStorageKey()) ?? '{}').completed,
+  ).toEqual([])
+  await user.click(screen.getByRole('button', { name: '导入预览中的记录' }))
+
+  expect(
+    await screen.findByText(/历史自评 5\/5 · legacy_self_reported/),
+  ).toBeTruthy()
+  expect(localStorage.getItem(PROGRESS_KEY)).toBe(original)
+  expect(
+    JSON.parse(localStorage.getItem(progressStorageKey()) ?? '{}'),
+  ).toMatchObject({
+    completed: ['ownership'],
+    attempts: [{ source: 'legacy_self_reported', selfScore: 5 }],
+  })
 })
 
 // 浏览器导航事件必须更新页面，未知链接提供可操作恢复入口。

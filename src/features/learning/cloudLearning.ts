@@ -15,6 +15,7 @@ export interface CloudLearningSnapshot {
     lesson_id: string
     exercise_id: string
     score: number
+    source: 'learner_reported' | 'legacy_self_reported'
     updated_at: string
   }>
   study_days: string[]
@@ -71,6 +72,7 @@ export async function syncCloudLearning(
   userId: string,
   eventId: string,
   fetcher: typeof fetch = fetch,
+  recordActivity = true,
 ): Promise<CloudLearningSnapshot> {
   await requireSameOwner(fetcher, userId)
   const reflections = Object.entries(progress.reflections).map(
@@ -88,6 +90,7 @@ export async function syncCloudLearning(
             lesson_id: attempt.lessonId,
             exercise_id: attempt.exerciseId,
             score: attempt.selfScore,
+            source: attempt.source ?? 'learner_reported',
             updated_at: attempt.at,
           },
         ],
@@ -98,6 +101,7 @@ export async function syncCloudLearning(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       event_id: eventId,
+      record_activity: recordActivity,
       occurred_at: new Date().toISOString(),
       current_position_at:
         progress.currentPositionAt ?? new Date().toISOString(),
@@ -156,6 +160,7 @@ export function mergeCloudLearning(
         answer: '',
         correct: false,
         selfScore: assessment.score,
+        source: assessment.source,
         at: assessment.updated_at,
       })
     }
@@ -297,6 +302,8 @@ function parseSnapshot(value: unknown): CloudLearningSnapshot {
         Number.isInteger(item.score) &&
         item.score >= 1 &&
         item.score <= 5 &&
+        (item.source === 'learner_reported' ||
+          item.source === 'legacy_self_reported') &&
         isTimestamp(item.updated_at),
     ) ||
     !value.study_days.every(
@@ -320,6 +327,9 @@ function parseSnapshot(value: unknown): CloudLearningSnapshot {
     lesson_id: (item as Record<string, unknown>).lesson_id as string,
     exercise_id: (item as Record<string, unknown>).exercise_id as string,
     score: (item as Record<string, unknown>).score as number,
+    source: (item as Record<string, unknown>).source as
+      | 'learner_reported'
+      | 'legacy_self_reported',
     updated_at: (item as Record<string, unknown>).updated_at as string,
   }))
   return {

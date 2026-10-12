@@ -43,6 +43,18 @@ impl LearningStore {
         sqlx::raw_sql(include_str!("../migrations/0003_learning.sql"))
             .execute(&pool)
             .await?;
+        if !has_assessment_source_column(&pool).await? {
+            sqlx::raw_sql(include_str!("../migrations/0004_learning_provenance.sql"))
+                .execute(&pool)
+                .await?;
+        }
+        if !has_study_activity_column(&pool).await? {
+            sqlx::raw_sql(include_str!(
+                "../migrations/0005_learning_event_activity.sql"
+            ))
+            .execute(&pool)
+            .await?;
+        }
         Ok(Self { pool })
     }
 
@@ -88,13 +100,14 @@ impl LearningStore {
 
         let event_id = &request.event_id;
         let inserted = sqlx::query(
-            "INSERT INTO learning_events (owner_id, event_id, study_date, occurred_at, created_at) VALUES (?, ?, ?, ?, ?) \
+            "INSERT INTO learning_events (owner_id, event_id, study_date, occurred_at, is_study_activity, created_at) VALUES (?, ?, ?, ?, ?, ?) \
              ON CONFLICT (owner_id, event_id) DO NOTHING",
         )
         .bind(owner_id)
         .bind(event_id)
         .bind(&study_date)
         .bind(&event_time)
+        .bind(request.record_activity)
         .bind(now)
         .execute(&mut *transaction)
         .await?;
@@ -103,13 +116,15 @@ impl LearningStore {
             return self.get(owner_id).await?.ok_or(sqlx::Error::RowNotFound);
         }
 
-        sqlx::query(
-            "INSERT INTO learning_study_days (owner_id, study_date) VALUES (?, ?) ON CONFLICT DO NOTHING",
-        )
-        .bind(owner_id)
-        .bind(&study_date)
-        .execute(&mut *transaction)
-        .await?;
+        if request.record_activity {
+            sqlx::query(
+                "INSERT INTO learning_study_days (owner_id, study_date) VALUES (?, ?) ON CONFLICT DO NOTHING",
+            )
+            .bind(owner_id)
+            .bind(&study_date)
+            .execute(&mut *transaction)
+            .await?;
+        }
 
         if position_time >= current_position_at {
             sqlx::query(
@@ -156,14 +171,15 @@ impl LearningStore {
         }
         for assessment in &request.self_assessments {
             sqlx::query(
-                "INSERT INTO learning_self_assessments (owner_id, lesson_id, exercise_id, score, updated_at) VALUES (?, ?, ?, ?, ?) \
-                 ON CONFLICT (owner_id, lesson_id, exercise_id) DO UPDATE SET score = excluded.score, updated_at = excluded.updated_at \
+                "INSERT INTO learning_self_assessments (owner_id, lesson_id, exercise_id, score, source, updated_at) VALUES (?, ?, ?, ?, ?, ?) \
+                 ON CONFLICT (owner_id, lesson_id, exercise_id) DO UPDATE SET score = excluded.score, source = excluded.source, updated_at = excluded.updated_at \
                  WHERE excluded.updated_at > learning_self_assessments.updated_at",
             )
             .bind(owner_id)
             .bind(&assessment.lesson_id)
             .bind(&assessment.exercise_id)
             .bind(assessment.score)
+            .bind(assessment.source.as_str())
             .bind(&assessment.updated_at)
             .execute(&mut *transaction)
             .await?;
@@ -219,7 +235,7 @@ impl LearningStore {
         })
         .collect::<Result<Vec<_>, sqlx::Error>>()?;
         let self_assessments = sqlx::query(
-            "SELECT lesson_id, exercise_id, score, updated_at FROM learning_self_assessments WHERE owner_id = ? ORDER BY updated_at DESC LIMIT ?",
+            "SELECT lesson_id, exercise_id, score, source, updated_at FROM learning_self_assessments WHERE owner_id = ? ORDER BY updated_at DESC LIMIT ?",
         )
         .bind(owner_id)
         .bind(MAX_SELF_ASSESSMENTS as i64)
@@ -228,10 +244,12 @@ impl LearningStore {
         .into_iter()
         .map(|row| {
             // Keep personal self-ratings distinct from objective answer results.
+            let source: String = row.try_get("source")?;
             Ok(SelfAssessment {
                 lesson_id: row.try_get("lesson_id")?,
                 exercise_id: row.try_get("exercise_id")?,
                 score: row.try_get("score")?,
+                source: SelfAssessmentSource::parse(&source).map_err(sqlx::Error::Protocol)?,
                 updated_at: row.try_get("updated_at")?,
             })
         })
@@ -287,13 +305,14 @@ impl LearningStore {
             .execute(&mut *transaction)
             .await?;
         let events =
-            sqlx::query("SELECT event_id, occurred_at FROM learning_events WHERE owner_id = ?")
+            sqlx::query("SELECT event_id, occurred_at, is_study_activity FROM learning_events WHERE owner_id = ?")
                 .bind(owner_id)
                 .fetch_all(&mut *transaction)
                 .await?;
         for event in events {
             let event_id: String = event.try_get("event_id")?;
             let occurred_at: String = event.try_get("occurred_at")?;
+            let is_study_activity: bool = event.try_get("is_study_activity")?;
             let date = study_date(&occurred_at, time_zone).map_err(sqlx::Error::Protocol)?;
             sqlx::query(
                 "UPDATE learning_events SET study_date = ? WHERE owner_id = ? AND event_id = ?",
@@ -303,17 +322,39 @@ impl LearningStore {
             .bind(event_id)
             .execute(&mut *transaction)
             .await?;
-            sqlx::query(
-                "INSERT INTO learning_study_days (owner_id, study_date) VALUES (?, ?) ON CONFLICT DO NOTHING",
-            )
-            .bind(owner_id)
-            .bind(date)
-            .execute(&mut *transaction)
-            .await?;
+            if is_study_activity {
+                sqlx::query(
+                    "INSERT INTO learning_study_days (owner_id, study_date) VALUES (?, ?) ON CONFLICT DO NOTHING",
+                )
+                .bind(owner_id)
+                .bind(date)
+                .execute(&mut *transaction)
+                .await?;
+            }
         }
         transaction.commit().await?;
         Ok(())
     }
+}
+
+/// Check whether the additive provenance migration has already been applied.
+async fn has_assessment_source_column(pool: &SqlitePool) -> Result<bool, sqlx::Error> {
+    let columns = sqlx::query("PRAGMA table_info(learning_self_assessments)")
+        .fetch_all(pool)
+        .await?;
+    Ok(columns
+        .iter()
+        .any(|column| column.try_get::<String, _>("name").ok().as_deref() == Some("source")))
+}
+
+/// Check whether event rows distinguish learning activity from administrative imports.
+async fn has_study_activity_column(pool: &SqlitePool) -> Result<bool, sqlx::Error> {
+    let columns = sqlx::query("PRAGMA table_info(learning_events)")
+        .fetch_all(pool)
+        .await?;
+    Ok(columns.iter().any(|column| {
+        column.try_get::<String, _>("name").ok().as_deref() == Some("is_study_activity")
+    }))
 }
 
 /// Mount session-authenticated learning state routes with a bounded request body.
@@ -515,6 +556,8 @@ fn storage_error() -> Response {
 #[serde(deny_unknown_fields)]
 struct SyncLearningRequest {
     event_id: String,
+    #[serde(default = "default_record_activity")]
+    record_activity: bool,
     occurred_at: String,
     current_position_at: String,
     time_zone: String,
@@ -522,6 +565,11 @@ struct SyncLearningRequest {
     completed: Vec<String>,
     reflections: Vec<LearningReflection>,
     self_assessments: Vec<SelfAssessment>,
+}
+
+/// Treat old clients that omit activity intent as real learning interactions.
+fn default_record_activity() -> bool {
+    true
 }
 
 /// Account time-zone change request.
@@ -545,7 +593,37 @@ struct SelfAssessment {
     lesson_id: String,
     exercise_id: String,
     score: i64,
+    #[serde(default)]
+    source: SelfAssessmentSource,
     updated_at: String,
+}
+
+/// Provenance preserved for learner-entered and imported historical scores.
+#[derive(Clone, Copy, Default, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum SelfAssessmentSource {
+    #[default]
+    LearnerReported,
+    LegacySelfReported,
+}
+
+impl SelfAssessmentSource {
+    /// Return the stable API and database spelling for this evidence source.
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::LearnerReported => "learner_reported",
+            Self::LegacySelfReported => "legacy_self_reported",
+        }
+    }
+
+    /// Parse the checked database representation into its closed provenance type.
+    fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "learner_reported" => Ok(Self::LearnerReported),
+            "legacy_self_reported" => Ok(Self::LegacySelfReported),
+            _ => Err("stored self-assessment source is invalid".to_owned()),
+        }
+    }
 }
 
 /// One course completion with the first recorded completion instant.
@@ -696,6 +774,7 @@ mod tests {
                 "lesson_id": "ownership",
                 "exercise_id": "open-1",
                 "score": 5,
+                "source": "legacy_self_reported",
                 "updated_at": "2026-03-09T04:30:00Z"
             }]
         });
@@ -712,6 +791,10 @@ mod tests {
         assert_eq!(first["study_days"], json!(["2026-03-08"]));
         assert_eq!(first["streak"], 1);
         assert_eq!(first["self_assessments"][0]["score"], 5);
+        assert_eq!(
+            first["self_assessments"][0]["source"],
+            "legacy_self_reported"
+        );
         assert_eq!(first["completed"][0]["lesson_id"], "ownership");
 
         let duplicate = json_request(
@@ -808,6 +891,44 @@ mod tests {
         assert_eq!(foreign_read.status(), StatusCode::NOT_FOUND);
     }
 
+    /// Administrative imports persist records without manufacturing a study day.
+    #[tokio::test]
+    async fn non_activity_sync_does_not_add_a_study_day() {
+        let app = test_app().await;
+        let cookie = session_cookie(&app, "learner-a").await;
+        let response = json_request(
+            &app,
+            Method::POST,
+            "/api/v1/learning/sync",
+            Some(&cookie),
+            Some(json!({
+                "event_id": "legacy-import-1",
+                "record_activity": false,
+                "occurred_at": "2026-10-12T12:00:00Z",
+                "current_position_at": "2026-10-12T12:00:00Z",
+                "time_zone": "Asia/Shanghai",
+                "current_lesson": "ownership",
+                "completed": ["ownership"],
+                "reflections": [],
+                "self_assessments": [{
+                    "lesson_id": "ownership",
+                    "exercise_id": "old-open-question",
+                    "score": 5,
+                    "source": "legacy_self_reported",
+                    "updated_at": "2024-04-05T10:00:00Z"
+                }]
+            })),
+        )
+        .await;
+        let snapshot = response_json(response).await;
+        assert_eq!(snapshot["completed"][0]["lesson_id"], "ownership");
+        assert_eq!(
+            snapshot["self_assessments"][0]["source"],
+            "legacy_self_reported"
+        );
+        assert_eq!(snapshot["study_days"], json!([]));
+    }
+
     /// Calculate streaks only across consecutive calendar dates, including leap-day boundaries.
     #[test]
     fn streak_stops_at_calendar_gaps_and_handles_leap_days() {
@@ -867,6 +988,7 @@ mod tests {
                     "lesson_id": "ownership",
                     "exercise_id": "open-1",
                     "score": 6,
+                    "source": "learner_reported",
                     "updated_at": "2026-03-10T12:00:00Z"
                 }]
             })),

@@ -7,12 +7,13 @@ import { createProgress } from './model'
 import type { Attempt, Progress } from './types'
 
 export const PROGRESS_KEY = 'rust-backend-training:v1'
+export const LEARNING_STORAGE_KEY = 'rust-backend-training:learning:v2'
 
 /** Scope authenticated local snapshots to one server identity; keep v1 as the anonymous legacy key. */
 export function progressStorageKey(ownerId?: string): string {
   return ownerId
-    ? `${PROGRESS_KEY}:account:${encodeURIComponent(ownerId)}`
-    : PROGRESS_KEY
+    ? `${LEARNING_STORAGE_KEY}:account:${encodeURIComponent(ownerId)}`
+    : `${LEARNING_STORAGE_KEY}:anonymous`
 }
 export interface LoadedProgress {
   progress: Progress
@@ -36,6 +37,9 @@ function isAttempt(value: unknown): value is Attempt {
       (typeof value.answer === 'number' && Number.isFinite(value.answer))) &&
     typeof value.at === 'string' &&
     Number.isFinite(Date.parse(value.at)) &&
+    (value.source === undefined ||
+      value.source === 'learner_reported' ||
+      value.source === 'legacy_self_reported') &&
     (value.selfScore === undefined ||
       (typeof value.selfScore === 'number' &&
         Number.isInteger(value.selfScore) &&
@@ -121,7 +125,10 @@ export function parseProgress(value: unknown): Progress | null {
     return null
   return {
     completed: [...new Set(completed)],
-    attempts,
+    attempts: attempts.map((attempt) => ({
+      ...attempt,
+      source: attempt.source ?? 'learner_reported',
+    })),
     currentPositionAt,
     weakness: validWeakness,
     reflections: validReflections,

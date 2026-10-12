@@ -18,6 +18,11 @@ import {
   progressStorageKey,
   saveProgress,
 } from './progressStorage'
+import {
+  importLegacyProgress,
+  readLegacyProgressPreview,
+  type LegacyProgressPreview,
+} from './legacyImport'
 import type { Progress } from './types'
 
 interface LearningState {
@@ -28,6 +33,8 @@ interface LearningState {
   saveReflection: (lessonId: string, content: string) => void
   setTimeZone: (timeZone: string) => void
   retrySync: () => void
+  legacyPreview: LegacyProgressPreview
+  importLegacy: () => void
   syncStatus: CloudSyncStatus
   submitAttempt: (
     lessonId: string,
@@ -50,6 +57,7 @@ interface VersionedProgress {
   progress: Progress
   revision: number
   eventId: string
+  recordActivity: boolean
 }
 
 /** Manage local learning state and idempotently synchronize account-owned study records. */
@@ -59,6 +67,7 @@ export function useProgress(): LearningState {
     progress: createProgress(),
     revision: 0,
     eventId: `${deviceId}:0`,
+    recordActivity: false,
   }))
   const [localSaveStatus, setLocalSaveStatus] = useState('正在读取本地进度…')
   const [syncStatus, setSyncStatus] = useState<CloudSyncStatus>('checking')
@@ -68,6 +77,7 @@ export function useProgress(): LearningState {
   const [isLoaded, setIsLoaded] = useState(false)
   const [cloudInitialized, setCloudInitialized] = useState(false)
   const [retryToken, setRetryToken] = useState(0)
+  const [legacyPreview] = useState(readLegacyProgressPreview)
 
   useEffect(() => {
     let current = true
@@ -101,6 +111,7 @@ export function useProgress(): LearningState {
               : mergeLocalProgress(loaded.progress, latest.progress),
           revision,
           eventId: `${deviceId}:${revision}`,
+          recordActivity: false,
         }
       })
       setIsLoaded(true)
@@ -122,6 +133,7 @@ export function useProgress(): LearningState {
             : latest.progress,
           revision: latest.revision + 1,
           eventId: `${deviceId}:${latest.revision + 1}`,
+          recordActivity: false,
         }))
         setSyncStatus('ready')
         setCloudInitialized(true)
@@ -140,6 +152,7 @@ export function useProgress(): LearningState {
         progress: createProgress(),
         revision: 0,
         eventId: `${deviceId}:0`,
+        recordActivity: false,
       })
       setOwnerId(undefined)
       setStorageKey(undefined)
@@ -180,6 +193,8 @@ export function useProgress(): LearningState {
           state.progress,
           userId,
           state.eventId,
+          fetch,
+          state.recordActivity,
         )
         if (!current) return
         setState((latest) => {
@@ -191,6 +206,7 @@ export function useProgress(): LearningState {
             progress: merged,
             revision: latest.revision + 1,
             eventId: `${deviceId}:${latest.revision + 1}`,
+            recordActivity: false,
           }
         })
         setSyncStatus('ready')
@@ -257,7 +273,7 @@ export function useProgress(): LearningState {
     }
     if (!ownerId) {
       setState((current) =>
-        nextVersion(current, { ...current.progress, timeZone }),
+        nextVersion(current, { ...current.progress, timeZone }, false),
       )
       setLocalSaveStatus('时区仅保存在本机；登录后可保存到账户')
       return
@@ -266,7 +282,11 @@ export function useProgress(): LearningState {
     try {
       const remote = await changeCloudTimeZone(ownerId, timeZone)
       setState((current) =>
-        nextVersion(current, mergeCloudLearning(current.progress, remote)),
+        nextVersion(
+          current,
+          mergeCloudLearning(current.progress, remote),
+          false,
+        ),
       )
       setSyncStatus('ready')
     } catch {
@@ -278,6 +298,20 @@ export function useProgress(): LearningState {
   function retrySync(): void {
     if (!ownerId || syncStatus !== 'error') return
     setRetryToken((token) => token + 1)
+  }
+
+  /** Import the reviewed v1 snapshot once by lesson and exercise identity. */
+  function importLegacy(): void {
+    if (legacyPreview.status !== 'available') return
+    setState((current) =>
+      nextVersion(
+        current,
+        importLegacyProgress(current.progress, legacyPreview),
+        false,
+      ),
+    )
+    setSyncStatus((status) => (ownerId ? 'dirty' : status))
+    setLocalSaveStatus('旧版记录已导入；原始 v1 数据仍保留')
   }
 
   /** Save quiz attempts locally; only self-scored records are selected by the cloud adapter. */
@@ -323,6 +357,8 @@ export function useProgress(): LearningState {
     saveReflection,
     setTimeZone,
     retrySync,
+    legacyPreview,
+    importLegacy,
     syncStatus,
     submitAttempt,
   }
@@ -389,12 +425,14 @@ function mergeLocalProgress(stored: Progress, current: Progress): Progress {
 function nextVersion(
   current: VersionedProgress,
   progress: Progress,
+  recordActivity = true,
 ): VersionedProgress {
   const revision = current.revision + 1
   return {
     progress,
     revision,
     eventId: `${current.eventId.split(':')[0]}:${revision}`,
+    recordActivity,
   }
 }
 

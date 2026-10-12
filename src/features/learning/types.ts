@@ -4,6 +4,7 @@ export interface Attempt {
   lessonId: string
   correct: boolean
   selfScore?: number
+  source?: 'learner_reported' | 'legacy_self_reported'
   answer: string | number
   at: string
 }

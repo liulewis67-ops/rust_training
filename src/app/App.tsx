@@ -23,6 +23,8 @@ export default function App(): JSX.Element {
     saveReflection,
     setTimeZone,
     retrySync,
+    legacyPreview,
+    importLegacy,
     syncStatus,
     submitAttempt,
   } = useProgress()
@@ -122,6 +124,8 @@ export default function App(): JSX.Element {
         onTimeZoneSave={setTimeZone}
         canRetrySync={syncStatus === 'error'}
         onRetrySync={retrySync}
+        legacyPreview={legacyPreview}
+        onLegacyImport={importLegacy}
       />
     )
   } else if (route.page === 'course-preview') {

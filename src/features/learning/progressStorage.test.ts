@@ -2,8 +2,8 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { createProgress } from './model'
 import {
   loadProgress,
+  LEARNING_STORAGE_KEY,
   parseProgress,
-  PROGRESS_KEY,
   progressStorageKey,
   saveProgress,
 } from './progressStorage'
@@ -16,9 +16,9 @@ afterEach(() => {
 
 // Signed-in learners never share one browser's private progress namespace.
 it('uses a distinct local storage key for each server account', () => {
-  expect(progressStorageKey()).toBe(PROGRESS_KEY)
+  expect(progressStorageKey()).toBe(`${LEARNING_STORAGE_KEY}:anonymous`)
   expect(progressStorageKey('learner/a')).toBe(
-    `${PROGRESS_KEY}:account:learner%2Fa`,
+    `${LEARNING_STORAGE_KEY}:account:learner%2Fa`,
   )
   expect(progressStorageKey('learner-a')).not.toBe(
     progressStorageKey('learner-b'),
@@ -42,8 +42,11 @@ it('兼容 v1 完整记录及缺省字段', () => {
       },
     ],
   }
-  localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress))
-  expect(loadProgress().progress).toEqual(progress)
+  localStorage.setItem(progressStorageKey(), JSON.stringify(progress))
+  expect(loadProgress(progressStorageKey()).progress).toMatchObject(progress)
+  expect(loadProgress(progressStorageKey()).progress.attempts[0].source).toBe(
+    'learner_reported',
+  )
   expect(parseProgress({ completed: ['ownership'] })?.currentLesson).toBe(
     'ownership',
   )
@@ -58,11 +61,11 @@ it.each([
   '{"weakness":{"x":"3"}}',
   'null',
 ])('保护损坏记录 %s', (raw) => {
-  localStorage.setItem(PROGRESS_KEY, raw)
-  const loaded = loadProgress()
+  localStorage.setItem(progressStorageKey(), raw)
+  const loaded = loadProgress(progressStorageKey())
   expect(loaded.canSave).toBe(false)
   expect(loaded.message).toContain('原数据已保留')
-  expect(localStorage.getItem(PROGRESS_KEY)).toBe(raw)
+  expect(localStorage.getItem(progressStorageKey())).toBe(raw)
 })
 
 // 安全策略拒绝访问时仍能打开页面，并提供明确的内存模式状态。
@@ -71,7 +74,7 @@ it('处理禁止访问的存储', () => {
     // 模拟浏览器安全策略拒绝。
     throw new DOMException('Blocked', 'SecurityError')
   })
-  expect(loadProgress()).toMatchObject({
+  expect(loadProgress(progressStorageKey())).toMatchObject({
     canSave: false,
     progress: createProgress(),
   })

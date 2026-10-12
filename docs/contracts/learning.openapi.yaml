@@ -77,6 +77,10 @@ components:
       required: [event_id, occurred_at, current_position_at, time_zone, current_lesson, completed, reflections, self_assessments]
       properties:
         event_id: { type: string, minLength: 1, maxLength: 128 }
+        record_activity:
+          type: boolean
+          default: true
+          description: Set false for administrative imports so they do not add a study day.
         occurred_at: { type: string, format: date-time }
         current_position_at: { type: string, format: date-time }
         time_zone: { type: string, maxLength: 128, example: America/Los_Angeles }
@@ -104,11 +108,14 @@ components:
     SelfAssessment:
       type: object
       additionalProperties: false
-      required: [lesson_id, exercise_id, score, updated_at]
+      required: [lesson_id, exercise_id, score, source, updated_at]
       properties:
         lesson_id: { type: string, minLength: 1, maxLength: 128 }
         exercise_id: { type: string, minLength: 1, maxLength: 128 }
         score: { type: integer, minimum: 1, maximum: 5 }
+        source:
+          type: string
+          enum: [learner_reported, legacy_self_reported]
         updated_at: { type: string, format: date-time }
     LearningSnapshot:
       type: object

@@ -2,7 +2,7 @@ import type { JSX } from 'react'
 import { useEffect, useState } from 'react'
 import { Check, ChevronRight, Flame, X } from 'lucide-react'
 import { lessons, categories } from '../features/catalog'
-import type { Progress } from '../features/learning'
+import type { LegacyProgressPreview, Progress } from '../features/learning'
 
 /** 按设备时区显示原型答题日期。 */
 function dateText(date: string): string {
@@ -19,12 +19,16 @@ export function ProgressPage({
   onTimeZoneSave,
   canRetrySync,
   onRetrySync,
+  legacyPreview,
+  onLegacyImport,
 }: {
   progress: Progress
   accuracy: number | null
   onTimeZoneSave: (timeZone: string) => void
   canRetrySync: boolean
   onRetrySync: () => void
+  legacyPreview: LegacyProgressPreview
+  onLegacyImport: () => void
 }): JSX.Element {
   const [timeZoneDraft, setTimeZoneDraft] = useState(progress.timeZone)
   useEffect(() => {
@@ -140,6 +144,44 @@ export function ProgressPage({
           </button>
         </section>
       )}
+      <section className="mastery-section legacy-import-section">
+        <h2>导入旧版学习记录</h2>
+        {legacyPreview.status === 'empty' ? (
+          <p>没有发现 v1 本地记录。</p>
+        ) : legacyPreview.status === 'unavailable' ? (
+          <p role="status">{legacyPreview.message}</p>
+        ) : (
+          <>
+            <p>
+              预览后由你选择是否导入。旧版包含{' '}
+              {legacyPreview.progress.completed.length} 条阅读完成、
+              {legacyPreview.progress.attempts.length} 条练习，其中{' '}
+              {legacyPreview.selfRatedCount} 条自评分会标记为
+              <code> legacy_self_reported</code>，不会计入客观正确率。
+            </p>
+            <ul>
+              {legacyPreview.mappings.map((mapping) => (
+                <li key={mapping.sourceId}>
+                  <code>{mapping.sourceId}</code>
+                  {mapping.targetId ? (
+                    <span> → {mapping.targetId}（可导入）</span>
+                  ) : (
+                    <span> → 未知课程；保留在原始备份，不合并到当前进度</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p>导入不会改写原 v1 数据；重复导入会按课程和练习去重。</p>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={onLegacyImport}
+            >
+              导入预览中的记录
+            </button>
+          </>
+        )}
+      </section>
       <section className="mastery-section recent-section">
         <h2>最近答题</h2>
         {recent.length ? (
@@ -165,8 +207,12 @@ export function ProgressPage({
                   <small>
                     {attempt.exerciseId} ·{' '}
                     {attempt.selfScore === undefined
-                      ? '本地客观练习'
-                      : `自评 ${attempt.selfScore}/5`}
+                      ? attempt.source === 'legacy_self_reported'
+                        ? '历史导入练习 · legacy_self_reported'
+                        : '本地客观练习'
+                      : attempt.source === 'legacy_self_reported'
+                        ? `历史自评 ${attempt.selfScore}/5 · legacy_self_reported`
+                        : `自评 ${attempt.selfScore}/5`}
                   </small>
                 </div>
                 <time>{dateText(attempt.at)}</time>

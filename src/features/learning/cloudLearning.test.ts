@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest'
 import { createProgress } from './model'
+import type { Progress } from './types'
 import {
   mergeCloudLearning,
   readCloudLearning,
@@ -41,6 +42,7 @@ function snapshot(): CloudLearningSnapshot {
         lesson_id: 'ownership',
         exercise_id: 'open-1',
         score: 5,
+        source: 'learner_reported',
         updated_at: '2026-10-11T12:00:00.000Z',
       },
     ],
@@ -71,7 +73,7 @@ it('loads the server session and account-scoped learning snapshot', async () => 
 // The wire format sends ratings, not objective answer correctness or answer text.
 it('syncs self-ratings with a stable idempotency key and account session', async () => {
   const remote = snapshot()
-  const progress = {
+  const progress: Progress = {
     ...createProgress(),
     currentLesson: 'borrowing',
     currentPositionAt: '2026-10-12T12:00:00.000Z',
@@ -83,6 +85,7 @@ it('syncs self-ratings with a stable idempotency key and account session', async
         answer: 'private draft answer',
         correct: true,
         selfScore: 5,
+        source: 'legacy_self_reported',
         at: '2026-10-11T12:00:00.000Z',
       },
       {
@@ -106,6 +109,7 @@ it('syncs self-ratings with a stable idempotency key and account session', async
   const body = JSON.parse(String(request?.body)) as Record<string, unknown>
   expect(request?.method).toBe('POST')
   expect(body.event_id).toBe('device-1:7')
+  expect(body.record_activity).toBe(true)
   expect(body.time_zone).toBe(progress.timeZone)
   expect(body.current_position_at).toBe(progress.currentPositionAt)
   expect(body).not.toHaveProperty('attempts')
@@ -114,9 +118,33 @@ it('syncs self-ratings with a stable idempotency key and account session', async
       lesson_id: 'ownership',
       exercise_id: 'open-1',
       score: 5,
+      source: 'legacy_self_reported',
       updated_at: '2026-10-11T12:00:00.000Z',
     },
   ])
+})
+
+// An imported snapshot is persisted without turning an administrative action into a study day.
+it('can sync an import without creating a learning activity day', async () => {
+  const remote = snapshot()
+  const { calls, fetcher } = responseSequence([
+    new Response('{"user_id":"learner-a"}', { status: 200 }),
+    new Response(JSON.stringify(remote), { status: 200 }),
+  ])
+
+  await syncCloudLearning(
+    createProgress(),
+    'learner-a',
+    'device-import:1',
+    fetcher,
+    false,
+  )
+
+  const body = JSON.parse(String(calls[1].init?.body)) as Record<
+    string,
+    unknown
+  >
+  expect(body.record_activity).toBe(false)
 })
 
 // Cloud self-ratings merge without replacing objective answers or inflating quiz accuracy.

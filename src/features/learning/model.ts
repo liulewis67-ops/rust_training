@@ -73,6 +73,7 @@ export function recordAttempt(
     answer,
     correct,
     selfScore,
+    source: 'learner_reported',
     at: now.toISOString(),
   }
   const weakness = { ...progress.weakness }
@@ -120,8 +121,11 @@ export function markLessonComplete(
 /** 派生本地学习概览，客观题正确率不混入查看答案后的开放题自评分。 */
 export function summarizeProgress(progress: Progress): ProgressSummary {
   const objective = progress.attempts.filter((attempt) => {
-    // 自评分只表示自我感觉，不能充当客观题正确数。
-    return attempt.selfScore === undefined
+    // 历史导入记录及自评都不能增加当前练习的正确率。
+    return (
+      attempt.selfScore === undefined &&
+      attempt.source !== 'legacy_self_reported'
+    )
   })
   const correct = objective.filter((attempt) => {
     // 仅在已区分证据来源的客观题集合上计数。
