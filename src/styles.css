@@ -59,3 +59,19 @@
 .track-home-cta { margin: 15px 0 28px; }
 @media(max-width: 900px) { .home-pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); } .home-hero { gap: 24px; } }
 @media(max-width: 740px) { .app-grid-simple { display: block; } .main-content-wide { padding: 29px 18px 38px; } .top-nav { margin-left: auto; gap: 0; } .top-nav button { padding: 7px; font-size: 9px; } .topbar-right { margin-left: 0; } .home-hero { grid-template-columns: 1fr; padding: 22px 0 34px; } .home-hero h1 { font-size: 37px; } .home-route-card { max-width: 420px; } .home-pillars { gap: 8px; } .home-pillar { min-height: 180px; padding: 12px; } .home-section-heading h2 { font-size: 16px; } .track-heading h1 { font-size: 32px; } .phase-title-row { align-items: flex-start; } }
+.static-course-page { max-width: 780px; margin: 0 auto; padding: 42px 28px 70px; color: #e6e5e3; }
+.static-course-home { color: #e49a6b; font-size: 11px; text-decoration: none; }
+.static-course-heading { padding: 25px 0; border-bottom: 1px solid #2d2e32; }
+.static-course-heading > p:first-child { color: #e58a59; font: 9px var(--mono); }
+.static-course-heading h1 { margin: 12px 0; font-size: 34px; font-weight: 580; }
+.static-course-heading > p { color: #a1a2a8; line-height: 1.8; }
+.static-course-heading dl { display: flex; gap: 10px; color: #92949b; font-size: 10px; }
+.static-course-heading dt { color: #777980; }
+.static-course-heading dd { margin: 0 18px 0 0; }
+.static-course-section { padding: 20px 0; border-bottom: 1px solid #2b2c30; line-height: 1.8; }
+.static-course-section h2 { font-size: 16px; font-weight: 560; }
+.static-course-section h3 { font-size: 12px; font-weight: 550; }
+.static-course-section a { color: #e49a6b; }
+.static-course-example pre { overflow-x: auto; padding: 14px; border: 1px solid #2d2e32; border-radius: 7px; background: #17181b; }
+.static-course-example code { font: 11px/1.7 var(--mono); white-space: pre; }
+@media(max-width: 600px) { .static-course-page { padding: 24px 18px 48px; } .static-course-heading h1 { font-size: 27px; } .static-course-heading dl { flex-wrap: wrap; } }

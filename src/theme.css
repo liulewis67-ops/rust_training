@@ -15,6 +15,11 @@
 :root[data-theme="light"] .phase-marker { background: #fff; border-color: #e3d7cf; }
 :root[data-theme="light"] .track-phase-list::before { background: #dfe1e5; }
 :root[data-theme="light"] .home-disclosure { background: #f9f5f1; color: #5d6067; }
+:root[data-theme="light"] .static-course-page { color: #292b30; }
+:root[data-theme="light"] .static-course-heading { border-color: #e0e2e5; }
+:root[data-theme="light"] .static-course-heading > p:not(:first-child) { color: #5d6067; }
+:root[data-theme="light"] .static-course-section { border-color: #e0e2e5; }
+:root[data-theme="light"] .static-course-example pre { background: #fff; border-color: #e0e2e5; }
 :root[data-theme="light"] .brand-light, :root[data-theme="light"] .workspace-label, :root[data-theme="light"] .status-live { color: #73767d; }
 :root[data-theme="light"] .theme-toggle { background: #fff; border-color: #dfe1e5; color: #565960; }
 :root[data-theme="light"] .theme-toggle:hover { background: #fff8f3; border-color: #e3b79e; color: #a8562d; }
