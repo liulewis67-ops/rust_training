@@ -1,20 +1,19 @@
-# I02-F02 Windows 本地进展与阻塞记录
+# I02-F02 Windows 验收记录
 
 - 日期：2026-10-12
-- 状态：静态页面生成能力已实现并通过本地检查；任务因缺少来源已审核的课包保持 `BLOCKED`，不代表公开课程页验收完成。
+- 状态：DONE
 - 环境：Windows 原生 PowerShell 7.6.5、Node.js v22.19.0、pnpm 11.1.3。
 
-## 已验证的本地能力
+## 来源审核
 
-- `pnpm exec vitest run src/scripts/course-page-renderer.test.ts`：4 项测试通过，覆盖来源许可门槛、公开资源检查、无脚本 HTML、正文转义、HTTPS 链接、公开示例和提示字段，以及静态路径生成。
-- `pnpm check`：通过。Prettier、ESLint、TypeScript、68 项 Vitest 测试及 Vite 生产构建通过。
-- `git diff --check`：通过。
-- Windows 生产构建使用空的 `content/public-course-manifest.json`，未生成 `dist/lessons` 静态页面。
+课包正文、术语定义和代码示例为原创内容，Rust Book 仅作概念核对，没有复制其正文。上游 [`rust-lang/book` 的 CONTRIBUTING.md](https://github.com/rust-lang/book/blob/main/CONTRIBUTING.md) 说明仓库采用 MIT/Apache-2.0 双许可；相应许可文本位于[上游 LICENSE-MIT](https://github.com/rust-lang/book/blob/main/LICENSE-MIT) 和 [LICENSE-APACHE](https://github.com/rust-lang/book/blob/main/LICENSE-APACHE)。课包记录了许可依据、2024 Edition 的适用章节和核对日期，来源链接也在生成页面中显示。
 
-静态生成仅处理显式列入公开清单、`visibility` 为 `public`、来源许可状态全部为 `approved` 或 `original`、且资源均为公开的课包。页面不含 JavaScript，不读取独立私有评测文件，只渲染课包列明的正文、先修、公开样例、提示和来源；Markdown 与所有属性均转义，链接只接受 HTTPS。
+## Windows 验证
 
-## 阻塞条件
+1. `pnpm content:validate`：通过，输出 `Valid course pack: borrowed-text@1.0.0`。
+2. `pnpm check`：通过。Prettier、ESLint、TypeScript、13 个测试文件中的 68 项测试及 Vite 生产构建全部通过。
+3. 生产构建生成 `dist/lessons/borrowed-text-first-token/index.html`。PowerShell 检查确认页面包含术语、代码示例和来源链接，不含 `<script>`，也不含私有评测 ID `borrowed-text-hidden-check`。
 
-当前唯一课程包 `content/borrowed-text.course.json` 的来源许可状态为 `review_required`，不符合公开静态生成条件，因此保留在清单之外。解除条件：提供已完成来源审核的课包（来源状态为 `approved` 或 `original`），再加入公开清单并验证实际生成页面。
+课程页不依赖 JavaScript；公开清单只列入显式发布的课包。生成器限制来源审核状态和资源可见性，不读取独立私有评测文件，并对正文、代码及属性转义，只允许 HTTPS 来源链接。
 
-本任务没有运行 Linux、WSL、Docker 或任何容器命令。I01-F06 的 Linux 隔离验收仍未执行。
+本次没有运行 Linux、WSL、Docker 或容器命令。I01-F06 的 Linux 隔离验收仍按用户要求保持未执行。

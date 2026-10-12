@@ -3,6 +3,7 @@ interface StaticLesson {
   title: string
   version: string
   objectives: string[]
+  terms?: Array<{ term: string; definition: string }>
   prerequisites: string[]
   source_ids: string[]
   resource_ids: string[]

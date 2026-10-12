@@ -131,6 +131,9 @@ export function renderStaticLessonPage({
   const body = lesson.blocks
     .map((block) => renderMarkdown(block.text))
     .join('\n')
+  const termSection = lesson.terms?.length
+    ? `<section class="static-course-section"><h2>术语</h2><dl>${lesson.terms.map((term) => `<dt>${escapeHtml(term.term)}</dt><dd>${escapeHtml(term.definition)}</dd>`).join('\n')}</dl></section>`
+    : ''
   const exampleSections = examples
     .filter((example) => selectedExamples.has(example.id))
     .map((example) => {
@@ -177,6 +180,7 @@ export function renderStaticLessonPage({
         <dl><dt>课程版本</dt><dd>${escapeHtml(course.version)}</dd><dt>先修</dt><dd>${prerequisites}</dd></dl>
       </header>
       <section class="static-course-section"><h2>课程正文</h2>${body}</section>
+      ${termSection}
       ${exampleSections ? `<section class="static-course-section"><h2>代码示例</h2>${exampleSections}</section>` : ''}
       ${exerciseSections ? `<section class="static-course-section">${exerciseSections}</section>` : ''}
       ${sourceList ? `<section class="static-course-section"><h2>来源</h2><ul>${sourceList}</ul></section>` : ''}

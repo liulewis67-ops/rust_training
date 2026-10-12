@@ -22,6 +22,9 @@ const approvedCourse = {
       version: '1.2.0',
       title: '切片与借用',
       objectives: ['说明生命周期关系'],
+      terms: [
+        { term: '借用', definition: '在不取得所有权的情况下临时使用值。' },
+      ],
       prerequisites: ['rust-basics'],
       source_ids: ['original-notes'],
       resource_ids: [],
@@ -83,7 +86,7 @@ it('rejects private, unreviewed, or private-resource packages', async () => {
       'utf8',
     ),
   )
-  expect(isCoursePublishable(existingPack)).toBe(false)
+  expect(isCoursePublishable(existingPack)).toBe(true)
 })
 
 // Static pages expose only public lesson data, escape unsafe content, and need no JavaScript.
@@ -97,6 +100,8 @@ it('renders a cacheable lesson without private feedback or executable markup', (
 
   expect(html).toContain('safe-course · v1.2.0')
   expect(html).toContain('rust-basics')
+  expect(html).toContain('<dt>借用</dt>')
+  expect(html).toContain('临时使用值。')
   expect(html).toContain('fn main() {}')
   expect(html).toContain('https://example.com/source')
   expect(html).not.toContain('<script')

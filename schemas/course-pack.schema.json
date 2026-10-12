@@ -122,6 +122,10 @@
           "minItems": 1,
           "items": { "type": "string", "minLength": 1 }
         },
+        "terms": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/term" }
+        },
         "prerequisites": { "$ref": "#/$defs/idList" },
         "source_ids": { "$ref": "#/$defs/idList" },
         "resource_ids": { "$ref": "#/$defs/idList" },
@@ -140,6 +144,15 @@
       "properties": {
         "type": { "enum": ["markdown", "callout"] },
         "text": { "type": "string", "minLength": 1 }
+      }
+    },
+    "term": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["term", "definition"],
+      "properties": {
+        "term": { "type": "string", "minLength": 1 },
+        "definition": { "type": "string", "minLength": 1 }
       }
     },
     "exercise": {

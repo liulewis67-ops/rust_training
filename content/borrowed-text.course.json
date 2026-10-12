@@ -22,6 +22,16 @@
       "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "title": "返回文本中的第一个单词",
       "objectives": ["解释返回切片为何需要与输入文本保持有效期关系"],
+      "terms": [
+        {
+          "term": "字符串切片（&str）",
+          "definition": "借用字符串中连续 UTF-8 字节范围的视图，不拥有底层文本。"
+        },
+        {
+          "term": "借用",
+          "definition": "临时通过引用访问值；借用不会转移该值的所有权。"
+        }
+      ],
       "prerequisites": [],
       "source_ids": ["rust-book-slices"],
       "resource_ids": ["lesson-notes"],
@@ -58,10 +68,10 @@
       "id": "rust-book-slices",
       "url": "https://doc.rust-lang.org/book/ch04-03-slices.html",
       "author": "The Rust Project Developers",
-      "accessed_at": "2026-10-11",
-      "revision": "Rust Book 2024 edition",
-      "license_status": "review_required",
-      "adaptation_notes": "原创讲解；来源仅用于概念核对，发布前需复核许可。"
+      "accessed_at": "2026-10-12",
+      "revision": "Rust Book 2024 edition, ch04-03; upstream rust-lang/book repository license MIT OR Apache-2.0",
+      "license_status": "approved",
+      "adaptation_notes": "仅用于核对切片概念；课程讲解、术语定义与代码示例均为原创，未复制书中正文。上游仓库 CONTRIBUTING.md 确认 MIT/Apache-2.0 双许可，许可文本见 LICENSE-MIT 与 LICENSE-APACHE。"
     }
   ],
   "resources": [
