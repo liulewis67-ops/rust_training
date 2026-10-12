@@ -79,4 +79,9 @@ self.addEventListener('fetch', (event) => {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), staticCoursePagesPlugin()],
+  server: {
+    proxy: {
+      '/api': 'http://127.0.0.1:3000',
+    },
+  },
 })

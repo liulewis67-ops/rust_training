@@ -115,3 +115,4 @@
 .draft-editor-actions button:hover:not(:disabled) { border-color: #bb704b; color: #f0a879; }
 .draft-editor-actions button:disabled { opacity: .45; cursor: not-allowed; }
 @media(max-width: 560px) { .draft-editor-heading { display: grid; } .draft-editor-heading > span { text-align: left; } .draft-editor-input { min-height: 160px; font-size: 10px; } }
+.account-control{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:11px;white-space:nowrap}.account-control button,.account-control a{border:0;padding:0;color:var(--soft);background:transparent;font:inherit;text-decoration:none;cursor:pointer}.account-control button:hover,.account-control a:hover{color:var(--orange)}

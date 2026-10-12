@@ -23,6 +23,7 @@ import { summarizeProgress, type Progress } from '../features/learning'
 import type { Lesson } from '../types/lesson'
 import type { Route } from './router'
 import type { Theme } from '../features/preferences'
+import { AccountControl } from '../features/identity/AccountControl'
 
 /** 组合原型导航、学习概览与页面内容；抽屉状态只属于布局。 */
 export function AppShell({
@@ -193,9 +194,9 @@ export function AppShell({
               <span className="status-live" role="status">
                 <i /> {saveStatus}
               </span>
-              <div className="avatar">L</div>
             </>
           )}
+          <AccountControl />
         </div>
       </header>
       <div
