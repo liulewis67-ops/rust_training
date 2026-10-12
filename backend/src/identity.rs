@@ -273,6 +273,8 @@ mod tests {
         http::{HeaderMap, HeaderValue, Request as HttpRequest, StatusCode, header},
         routing::get,
     };
+    use openidconnect::core::CoreProviderMetadata;
+    use serde_json::json;
     use tower::ServiceExt;
     use tower_sessions::{Session, SessionManagerLayer};
 
@@ -331,6 +333,124 @@ mod tests {
         super::super::sessions::SqliteSessionStore::connect("sqlite::memory:")
             .await
             .expect("in-memory SQLite session store should initialize")
+    }
+
+    /// Build a local-only client; callback rejection tests must not contact an external issuer.
+    fn callback_test_state() -> super::AppState {
+        let provider = serde_json::from_value::<CoreProviderMetadata>(json!({
+            "issuer": "http://127.0.0.1:4321/test-issuer",
+            "authorization_endpoint": "http://127.0.0.1:4321/authorize",
+            "jwks_uri": "http://127.0.0.1:4321/jwks",
+            "response_types_supported": ["code"],
+            "subject_types_supported": ["public"],
+            "id_token_signing_alg_values_supported": ["RS256"]
+        }))
+        .expect("static test provider metadata should deserialize");
+        let client = super::build_client(
+            provider,
+            "test-client".to_owned(),
+            "test-secret".to_owned(),
+            "http://localhost:3000/api/v1/auth/callback".to_owned(),
+        )
+        .expect("static test client should be valid");
+        let http_client = openidconnect::reqwest::ClientBuilder::new()
+            .build()
+            .expect("test HTTP client should initialize");
+        super::AppState::new(client, http_client, "http://localhost:5173".to_owned())
+    }
+
+    /// Store one-time OIDC values through the same SQLite session middleware as production.
+    async fn seed_oidc_session(session: Session) -> StatusCode {
+        for (key, value) in [
+            (super::STATE_KEY, "expected-state"),
+            (super::NONCE_KEY, "expected-nonce"),
+            (super::VERIFIER_KEY, "expected-verifier"),
+        ] {
+            if session.insert(key, value).await.is_err() {
+                return StatusCode::INTERNAL_SERVER_ERROR;
+            }
+        }
+        StatusCode::NO_CONTENT
+    }
+
+    /// Mount the real callback handler with a local metadata-only client and SQLite session store.
+    async fn callback_test_app() -> Router {
+        Router::new()
+            .route("/seed", get(seed_oidc_session))
+            .route("/callback", get(super::callback))
+            .with_state(callback_test_state())
+            .layer(SessionManagerLayer::new(test_session_store().await).with_secure(false))
+    }
+
+    /// Obtain the cookie minted while seeding one login attempt's state, nonce, and PKCE verifier.
+    async fn oidc_test_cookie(app: &Router) -> String {
+        let seeded = app
+            .clone()
+            .oneshot(
+                HttpRequest::builder()
+                    .uri("/seed")
+                    .body(Body::empty())
+                    .expect("test OIDC seed request should be valid"),
+            )
+            .await
+            .expect("test OIDC seed route should return a response");
+        assert_eq!(seeded.status(), StatusCode::NO_CONTENT);
+        seeded
+            .headers()
+            .get(header::SET_COOKIE)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.split(';').next())
+            .expect("session middleware should issue a cookie")
+            .to_owned()
+    }
+
+    /// Exercise state rejection through the real callback route before any token request is made.
+    #[tokio::test]
+    async fn callback_rejects_mismatched_state_and_consumes_the_attempt() {
+        let app = callback_test_app().await;
+        let cookie = oidc_test_cookie(&app).await;
+        let rejected = app
+            .clone()
+            .oneshot(
+                HttpRequest::builder()
+                    .uri("/callback?state=attacker-state&code=unused")
+                    .header(header::COOKIE, &cookie)
+                    .body(Body::empty())
+                    .expect("mismatched callback request should be valid HTTP"),
+            )
+            .await
+            .expect("callback should return an HTTP response");
+        assert_eq!(rejected.status(), StatusCode::BAD_REQUEST);
+
+        let replayed = app
+            .oneshot(
+                HttpRequest::builder()
+                    .uri("/callback?state=expected-state&code=unused")
+                    .header(header::COOKIE, cookie)
+                    .body(Body::empty())
+                    .expect("callback replay request should be valid HTTP"),
+            )
+            .await
+            .expect("callback replay should return an HTTP response");
+        assert_eq!(replayed.status(), StatusCode::BAD_REQUEST);
+    }
+
+    /// Accept a provider denial only for the active state and return the expected auth failure.
+    #[tokio::test]
+    async fn callback_rejects_provider_error_after_validating_state() {
+        let app = callback_test_app().await;
+        let cookie = oidc_test_cookie(&app).await;
+        let rejected = app
+            .oneshot(
+                HttpRequest::builder()
+                    .uri("/callback?state=expected-state&error=access_denied")
+                    .header(header::COOKIE, cookie)
+                    .body(Body::empty())
+                    .expect("provider rejection request should be valid HTTP"),
+            )
+            .await
+            .expect("provider rejection should return an HTTP response");
+        assert_eq!(rejected.status(), StatusCode::UNAUTHORIZED);
     }
 
     /// 验证匿名请求访问私有工作区会被拒绝。
