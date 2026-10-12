@@ -268,12 +268,20 @@ pub struct PrivateWorkspaceResponse {
 mod tests {
     use super::{callback_state_matches, valid_origin};
     use axum::{
-        Router,
+        Json, Router,
         body::Body,
         http::{HeaderMap, HeaderValue, Request as HttpRequest, StatusCode, header},
         routing::get,
     };
-    use openidconnect::core::CoreProviderMetadata;
+    use chrono::{Duration, Utc};
+    use openidconnect::{
+        AccessToken, Audience, EmptyAdditionalClaims, IssuerUrl, Nonce, StandardClaims,
+        SubjectIdentifier,
+        core::{
+            CoreHmacKey, CoreIdToken, CoreIdTokenClaims, CoreIdTokenFields,
+            CoreJwsSigningAlgorithm, CoreProviderMetadata, CoreTokenResponse, CoreTokenType,
+        },
+    };
     use serde_json::json;
     use tower::ServiceExt;
     use tower_sessions::{Session, SessionManagerLayer};
@@ -336,14 +344,15 @@ mod tests {
     }
 
     /// Build a local-only client; callback rejection tests must not contact an external issuer.
-    fn callback_test_state() -> super::AppState {
+    fn callback_test_state(token_endpoint: &str) -> super::AppState {
         let provider = serde_json::from_value::<CoreProviderMetadata>(json!({
             "issuer": "http://127.0.0.1:4321/test-issuer",
             "authorization_endpoint": "http://127.0.0.1:4321/authorize",
+            "token_endpoint": token_endpoint,
             "jwks_uri": "http://127.0.0.1:4321/jwks",
             "response_types_supported": ["code"],
             "subject_types_supported": ["public"],
-            "id_token_signing_alg_values_supported": ["RS256"]
+            "id_token_signing_alg_values_supported": ["HS256"]
         }))
         .expect("static test provider metadata should deserialize");
         let client = super::build_client(
@@ -374,12 +383,63 @@ mod tests {
     }
 
     /// Mount the real callback handler with a local metadata-only client and SQLite session store.
-    async fn callback_test_app() -> Router {
+    async fn callback_test_app(token_endpoint: &str) -> Router {
         Router::new()
             .route("/seed", get(seed_oidc_session))
             .route("/callback", get(super::callback))
-            .with_state(callback_test_state())
+            .route("/session", get(super::session_info))
+            .with_state(callback_test_state(token_endpoint))
             .layer(SessionManagerLayer::new(test_session_store().await).with_secure(false))
+    }
+
+    /// Create a locally signed ID token using the same test client secret as the callback client.
+    fn test_id_token(nonce: &str, code: &str) -> CoreIdToken {
+        let claims = CoreIdTokenClaims::new(
+            IssuerUrl::new("http://127.0.0.1:4321/test-issuer".to_owned())
+                .expect("test issuer URL should be valid"),
+            vec![Audience::new("test-client".to_owned())],
+            Utc::now() + Duration::minutes(5),
+            Utc::now(),
+            StandardClaims::new(SubjectIdentifier::new("student-oidc-1".to_owned())),
+            EmptyAdditionalClaims {},
+        )
+        .set_nonce(Some(Nonce::new(nonce.to_owned())));
+        CoreIdToken::new(
+            claims,
+            &CoreHmacKey::new("test-secret"),
+            CoreJwsSigningAlgorithm::HmacSha256,
+            None,
+            Some(&openidconnect::AuthorizationCode::new(code.to_owned())),
+        )
+        .expect("test ID token should be signed")
+    }
+
+    /// Start a local token endpoint that returns the supplied signed ID token.
+    async fn local_token_endpoint(id_token: CoreIdToken) -> (String, tokio::task::JoinHandle<()>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("local token endpoint should bind a loopback port");
+        let address = listener
+            .local_addr()
+            .expect("local token endpoint should expose its address");
+        let response = CoreTokenResponse::new(
+            AccessToken::new("test-access-token".to_owned()),
+            CoreTokenType::Bearer,
+            CoreIdTokenFields::new(Some(id_token), openidconnect::EmptyExtraTokenFields {}),
+        );
+        let app = Router::new().route(
+            "/token",
+            axum::routing::post(move || {
+                let response = response.clone();
+                async move { Json(response) }
+            }),
+        );
+        let task = tokio::spawn(async move {
+            axum::serve(listener, app)
+                .await
+                .expect("local token endpoint should serve requests");
+        });
+        (format!("http://{address}/token"), task)
     }
 
     /// Obtain the cookie minted while seeding one login attempt's state, nonce, and PKCE verifier.
@@ -407,7 +467,7 @@ mod tests {
     /// Exercise state rejection through the real callback route before any token request is made.
     #[tokio::test]
     async fn callback_rejects_mismatched_state_and_consumes_the_attempt() {
-        let app = callback_test_app().await;
+        let app = callback_test_app("http://127.0.0.1:4321/token").await;
         let cookie = oidc_test_cookie(&app).await;
         let rejected = app
             .clone()
@@ -438,7 +498,7 @@ mod tests {
     /// Accept a provider denial only for the active state and return the expected auth failure.
     #[tokio::test]
     async fn callback_rejects_provider_error_after_validating_state() {
-        let app = callback_test_app().await;
+        let app = callback_test_app("http://127.0.0.1:4321/token").await;
         let cookie = oidc_test_cookie(&app).await;
         let rejected = app
             .oneshot(
@@ -451,6 +511,85 @@ mod tests {
             .await
             .expect("provider rejection should return an HTTP response");
         assert_eq!(rejected.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    /// Complete a real HTTP token exchange against a loopback issuer and rotate the session ID.
+    #[tokio::test]
+    async fn callback_accepts_valid_local_id_token_and_rotates_session() {
+        let token = test_id_token("expected-nonce", "test-code");
+        let (token_endpoint, issuer) = local_token_endpoint(token).await;
+        let app = callback_test_app(&token_endpoint).await;
+        let cookie = oidc_test_cookie(&app).await;
+        let authenticated = app
+            .clone()
+            .oneshot(
+                HttpRequest::builder()
+                    .uri("/callback?state=expected-state&code=test-code")
+                    .header(header::COOKIE, &cookie)
+                    .body(Body::empty())
+                    .expect("valid callback request should be valid HTTP"),
+            )
+            .await
+            .expect("callback should return an HTTP response");
+        assert_eq!(authenticated.status(), StatusCode::TEMPORARY_REDIRECT);
+        assert_eq!(
+            authenticated.headers().get(header::LOCATION).unwrap(),
+            "http://localhost:5173/"
+        );
+        let rotated_cookie = authenticated
+            .headers()
+            .get(header::SET_COOKIE)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.split(';').next())
+            .expect("successful login should issue a rotated session cookie");
+        assert_ne!(rotated_cookie, cookie);
+
+        let old_cookie_response = app
+            .clone()
+            .oneshot(
+                HttpRequest::builder()
+                    .uri("/session")
+                    .header(header::COOKIE, &cookie)
+                    .body(Body::empty())
+                    .expect("old session request should be valid HTTP"),
+            )
+            .await
+            .expect("old session lookup should return an HTTP response");
+        assert_eq!(old_cookie_response.status(), StatusCode::UNAUTHORIZED);
+
+        let new_cookie_response = app
+            .oneshot(
+                HttpRequest::builder()
+                    .uri("/session")
+                    .header(header::COOKIE, rotated_cookie)
+                    .body(Body::empty())
+                    .expect("rotated session request should be valid HTTP"),
+            )
+            .await
+            .expect("rotated session lookup should return an HTTP response");
+        assert_eq!(new_cookie_response.status(), StatusCode::OK);
+        issuer.abort();
+    }
+
+    /// Reject a correctly signed local ID token when its nonce differs from the login attempt.
+    #[tokio::test]
+    async fn callback_rejects_validly_signed_id_token_with_wrong_nonce() {
+        let token = test_id_token("attacker-nonce", "test-code");
+        let (token_endpoint, issuer) = local_token_endpoint(token).await;
+        let app = callback_test_app(&token_endpoint).await;
+        let cookie = oidc_test_cookie(&app).await;
+        let rejected = app
+            .oneshot(
+                HttpRequest::builder()
+                    .uri("/callback?state=expected-state&code=test-code")
+                    .header(header::COOKIE, cookie)
+                    .body(Body::empty())
+                    .expect("nonce mismatch callback should be valid HTTP"),
+            )
+            .await
+            .expect("callback should return an HTTP response");
+        assert_eq!(rejected.status(), StatusCode::UNAUTHORIZED);
+        issuer.abort();
     }
 
     /// 验证匿名请求访问私有工作区会被拒绝。
