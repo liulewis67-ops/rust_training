@@ -193,7 +193,9 @@ LSP 使用双向 WebSocket 和 JSON-RPC，空闲回收；工作区与模型建�
 
 ### 6.3 Windows 开发与 Linux 运行
 
-当前工作区在 Windows。前端和业务开发可保持原环境；不可信运行器应使用隔离的 Linux 虚拟机／专用测试主机验证，不能用本机 PowerShell 直接执行上传的 Rust 程序。gVisor 和 Firecracker 的宿主条件、虚拟化能力及系统调用兼容性需在技术验证阶段确认。
+开发工作区、Node.js、pnpm、Rust 工具链和脚本均在 Windows 原生环境运行，使用 PowerShell；不要求安装或进入 WSL。本地开发和验证不启动 Linux 容器，也不执行学员代码的 Linux 验证。仓库内可信课程样例可通过 Windows 原生 Rust 工具链检查。Linux 隔离执行仍是目标设计的一部分，但其本地验证暂缓，当前没有实测结论；不得将容器配置或代码审查当作 Linux 沙箱验证结果。
+
+gVisor 和 Firecracker 的宿主条件、虚拟化能力及系统调用兼容性仍需在生产运行环境技术验证阶段确认；本地 R1 容器验证不等同于生产沙箱安全验收。
 
 ## 7. 编译、评测与成绩可信度
 

@@ -18,7 +18,7 @@ I01-F01 已初始化本地 Git 仓库并保存原型源码和设计文档，验�
 
 核心底本为 Rust Book 中文版和 Axum 官方文档；工程知识补充 Tokio、SQLx 等官方文档。后续课程制作沿用已确认的来源范围。
 
-**下一执行任务：I02-F05。** I02-F04 已完成 Windows IndexedDB 草稿验收。用户要求 Windows 开发且不进行 Linux 验证，I01-F06 的 Linux 验收保持阻塞；I02 的发布前置仍为 I01。
+**当前可执行工作：I01-F06 的 Windows 侧工具实现与静态验收。** Linux 容器实测按用户要求暂缓，因此 I01-F06 尚不能标为完成，依赖它的 I01-F07/F08 仍未开始。I02-F05 的 SQLite Session 部分已提交，OIDC 回调验收待本地 issuer/client 配置；I02 的发布前置仍为 I01。
 
 ## 2. 里程碑总览
 

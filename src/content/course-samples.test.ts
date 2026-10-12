@@ -6,7 +6,7 @@ const root = resolve(import.meta.dirname, '../..')
 
 // Run the real locked-toolchain validator against runnable, fragment, failure and solution samples.
 describe('课程代码样例验证', () => {
-  // This must fail if any accepted sample stops compiling, running or matching its declared outcome.
+  // Rust subprocesses can run slower under the parallel suite; keep this a bounded but roomy integration timeout.
   it('校验三类示例、正确解和错误解并识别语法错误', () => {
     const output = execFileSync(
       'node',
@@ -20,5 +20,5 @@ describe('课程代码样例验证', () => {
 
     expect(output).toContain('Verified 5 course samples with rustc 1.95.0')
     expect(output).toContain('rejected syntax-only failure')
-  })
+  }, 15000)
 })

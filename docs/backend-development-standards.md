@@ -12,6 +12,8 @@
 
 当前工作区尚无 Cargo 工程或后端实现。以下目录、检查和契约是开发约定，不能视为已建成的能力。初始化时通过兼容性样例固定 Rust 工具链、Edition、MSRV、依赖组合和镜像 digest，提交 `Cargo.lock` 与工具链配置；不把某个文档的 latest 版本当作已验证组合。
 
+本仓库的日常开发环境为 Windows 原生环境，命令示例使用 PowerShell；不要求 WSL。当前本地工作不启动 Linux 容器或进行 Linux 执行验证；Linux 执行环境属于后续目标，不能把配置审查当作验证证据。CI 使用 Linux runner 是自动化验证环境，不改变本地 Windows 开发方式。
+
 ## 2. 工程组织与模块边界
 
 建议在 `backend/` 建立 Cargo workspace，前端继续保留现有根目录结构。按实际交付创建目录，不提前生成空框架：

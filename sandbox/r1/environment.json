@@ -1,0 +1,31 @@
+{
+  "environment_id": "rust-r1-cli",
+  "version": "1.0.0",
+  "platform": "linux/amd64",
+  "base_image": "rust:1.95.0-slim-bookworm",
+  "base_image_digest": "sha256:d7482085ff5b415f84dba5647ae71606650bdef00db7aeb69f4b3d170c3e4082",
+  "rust_version": "1.95.0",
+  "edition": "2024",
+  "network": "none",
+  "compile_limits": {
+    "cpus": 2,
+    "memory": "2g",
+    "timeout_seconds": 30,
+    "pids": 128,
+    "file_size_bytes": 268435456,
+    "output_bytes": 262144,
+    "temporary_filesystem_bytes": 134217728,
+    "workspace_volume_bytes": 536870912
+  },
+  "run_limits": {
+    "cpus": 1,
+    "memory": "256m",
+    "timeout_seconds": 5,
+    "pids": 32,
+    "output_bytes": 262144,
+    "file_size_bytes": 268435456,
+    "temporary_filesystem_bytes": 134217728,
+    "workspace_volume_bytes": 536870912,
+    "workspace_volume_readonly": true
+  }
+}

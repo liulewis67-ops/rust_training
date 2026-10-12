@@ -6,7 +6,7 @@ React + TypeScript + Vite 的本地学习原型。保留 36 节短课、选择�
 
 ## 本地开发
 
-当前验证环境：Node.js 22.19.0、pnpm 11.1.3。使用 `package.json` 固定的包管理器和已提交的锁文件。
+本项目在 Windows 原生环境开发，使用 PowerShell、Node.js 22.19.0 和 pnpm 11.1.3；不要求安装或进入 WSL。使用 `package.json` 固定的包管理器和已提交的锁文件。以下命令均在 Windows PowerShell 中运行。
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -21,6 +21,8 @@ Vite 开发地址以终端输出为准。静态部署需要将 `/lesson/*`、`/r
 `pnpm check` 依次执行格式检查、ESLint（含 Hook 规则）、类型检查、Vitest 回归测试和生产构建。`pnpm format` 应用共享格式；原型课程数据与旧样式暂不全量格式化。CI 使用相同步骤和 frozen lockfile 安装，失败步骤单独显示。
 
 `pnpm content:check-samples` 使用清单锁定的 Rust 版本校验完整可运行样例、不可运行教学片段、目标编译失败、正确/错误解，并确认语法错误不会误判为指定编译错误。该工具只运行仓库内可信样例；学员代码的执行隔离属于后续 I01-F06。
+
+I01-F06 的 Linux 容器验证目前暂缓，本地开发与验证均在 Windows PowerShell 中进行；不要运行 `pnpm r1:image` 或 `pnpm r1:run`，也不将 R1 Linux 隔离能力视为已验收。`pnpm content:check-samples` 只在 Windows 上校验仓库内可信课程样例。Linux 隔离执行仍是后续目标，其效果和安全性尚无本地实测结论。
 
 `pnpm check:backend` 为后续 Cargo workspace 的入口：依次执行 fmt/check/clippy/test/doc；当前没有 `backend/Cargo.toml`，命令明确报“未运行”并失败。CI 同样注明后端未运行，不能视为后端验收通过。
 
