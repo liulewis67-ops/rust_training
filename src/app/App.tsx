@@ -83,7 +83,7 @@ export default function App(): JSX.Element {
 
   let page: JSX.Element
   if (route.page === 'home') {
-    page = <HomePage onNavigate={navigate} />
+    page = <HomePage onNavigate={navigate} progress={progress} />
   } else if (route.page === 'track') {
     page = <TrackPage onNavigate={navigate} />
   } else if (route.page === 'search') {
