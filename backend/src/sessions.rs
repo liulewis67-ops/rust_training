@@ -151,3 +151,107 @@ fn backend_error() -> session_store::Error {
 fn map_backend_error(_error: sqlx::Error) -> session_store::Error {
     backend_error()
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use axum::{
+        Json, Router,
+        body::to_bytes,
+        http::{Request, StatusCode, header},
+        routing::get,
+    };
+    use serde_json::{Value, json};
+    use tower::ServiceExt;
+    use tower_sessions::{Session, SessionManagerLayer, session::Id};
+
+    use super::SqliteSessionStore;
+
+    /// Seed a browser session so the file-backed test exercises the real session middleware.
+    async fn seed_identity(session: Session) -> StatusCode {
+        session
+            .insert("user_id", "learner-persisted")
+            .await
+            .expect("SQLite should persist a test session");
+        StatusCode::NO_CONTENT
+    }
+
+    /// Read the session value after another store instance opens the same SQLite file.
+    async fn read_identity(session: Session) -> Result<Json<Value>, StatusCode> {
+        session
+            .get::<String>("user_id")
+            .await
+            .map(|user_id| user_id.map(|id| Json(json!({ "user_id": id }))))
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            .ok_or(StatusCode::UNAUTHORIZED)
+    }
+
+    /// Verify that a session remains readable after its original SQLite pool is closed.
+    #[tokio::test]
+    async fn file_backed_session_survives_reopening_the_store() {
+        let file_name = format!("session-persistence-{}.db", Id::default());
+        let database_path = PathBuf::from("target").join(file_name);
+        let database_url = format!(
+            "sqlite://{}",
+            database_path.to_string_lossy().replace('\\', "/")
+        );
+        let store = SqliteSessionStore::connect(&database_url)
+            .await
+            .expect("file-backed SQLite session store should initialize");
+        let app = Router::new()
+            .route("/seed", get(seed_identity))
+            .route("/identity", get(read_identity))
+            .layer(SessionManagerLayer::new(store.clone()).with_secure(false));
+        let seeded = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/seed")
+                    .body(axum::body::Body::empty())
+                    .expect("test seed request should be valid"),
+            )
+            .await
+            .expect("session middleware should seed an identity");
+        assert_eq!(seeded.status(), StatusCode::NO_CONTENT);
+        let cookie = seeded
+            .headers()
+            .get(header::SET_COOKIE)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.split(';').next())
+            .expect("session middleware should issue a cookie")
+            .to_owned();
+
+        drop(app);
+        store.pool.close().await;
+
+        let reopened = SqliteSessionStore::connect(&database_url)
+            .await
+            .expect("a new SQLite pool should reopen the same session database");
+        let app = Router::new()
+            .route("/identity", get(read_identity))
+            .layer(SessionManagerLayer::new(reopened.clone()).with_secure(false));
+        let restored = app
+            .oneshot(
+                Request::builder()
+                    .uri("/identity")
+                    .header(header::COOKIE, cookie)
+                    .body(axum::body::Body::empty())
+                    .expect("test identity request should be valid"),
+            )
+            .await
+            .expect("reopened session middleware should return a response");
+        assert_eq!(restored.status(), StatusCode::OK);
+        let body = to_bytes(restored.into_body(), 1024)
+            .await
+            .expect("session response should fit the test body limit");
+        assert_eq!(
+            serde_json::from_slice::<Value>(&body).expect("session response should be JSON"),
+            json!({ "user_id": "learner-persisted" })
+        );
+
+        reopened.pool.close().await;
+        std::fs::remove_file(&database_path)
+            .expect("temporary SQLite session database should be removed");
+    }
+}

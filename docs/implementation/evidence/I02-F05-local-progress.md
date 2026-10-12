@@ -11,7 +11,7 @@
 - Session Cookie 设置 HttpOnly、SameSite=Lax、Secure 配置；生产 Secure Cookie 使用 `__Host-` 前缀。变更请求经精确 Origin 白名单校验。
 - API Session 使用 SQLite 文件存储，启动时创建幂等表结构，并周期清理过期会话；保存只更新现存记录，避免并发撤销后重新创建会话。
 - 私有 workspace 路由从服务端 SQLite Session 读取身份；Windows 测试覆盖匿名拒绝、登录态读取、退出撤销后旧 Cookie 被拒绝、state 匹配和 Origin 精确校验。
-- `pnpm check:backend` 于 2026-10-12 在 Windows 重新通过：fmt、check、Clippy、15 项 Rust 测试和 rustdoc。SQLx SQLite 在 Windows 完成编译，测试使用独立的内存 SQLite 数据库验证会话写入、读取和撤销，以及工作区、学习记录的跨设备持久化与 owner 隔离。
+- `pnpm check:backend` 于 2026-10-12 在 Windows 重新通过：fmt、check、Clippy、16 项 Rust 测试和 rustdoc。SQLx SQLite 在 Windows 完成编译；测试覆盖内存数据库中的会话写入、读取和撤销、工作区与学习记录的跨设备持久化及 owner 隔离，并通过真实磁盘 SQLite 文件验证关闭连接池后重新打开仍能使用原 Cookie 恢复会话身份。
 - 配置样例 `backend/.env.example` 使用 `DATABASE_URL=sqlite://auth-sessions.db`；本机 `backend/.env` 当前不存在。检查过程中未读取或输出本地 secret。
 - `pnpm content:validate` 与 `git diff --check` 通过。
 
