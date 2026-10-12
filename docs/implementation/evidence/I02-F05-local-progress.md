@@ -9,13 +9,13 @@
 - 前端账号控件提供登录入口、服务端会话状态和退出操作；`pnpm check` 通过，17 个测试文件、79 项测试及生产构建通过。
 - 后端 OIDC 授权码流程使用 PKCE；state、nonce 和 verifier 保存在服务端 Session。回调固定配置的 redirect URI，验证 state、ID token 签名/issuer/audience/nonce，并在 token 提供 `at_hash` 时核验 access token hash。
 - Session Cookie 设置 HttpOnly、SameSite=Lax、Secure 配置；生产 Secure Cookie 使用 `__Host-` 前缀。变更请求经精确 Origin 白名单校验。
-- API Session 已改为 PostgreSQL 存储，加入启动迁移、过期清理和会话删除；保存采用只更新现有记录的语义，避免已撤销会话被并发写入重新创建。
-- 私有 workspace 路由从服务端 Session 读取身份；Windows 测试覆盖匿名拒绝、已登录访问、state 匹配和 Origin 精确校验。
-- `pnpm check:backend` 通过：fmt、check、Clippy、7 项 Rust 测试和 rustdoc。PostgreSQL store 已通过 Windows Rust 编译和 Clippy；Origin Cookie 配置验证也有覆盖。
+- API Session 使用 SQLite 文件存储，启动时创建幂等表结构，并周期清理过期会话；保存只更新现存记录，避免并发撤销后重新创建会话。
+- 私有 workspace 路由从服务端 SQLite Session 读取身份；Windows 测试覆盖匿名拒绝、登录态读取、退出撤销后旧 Cookie 被拒绝、state 匹配和 Origin 精确校验。
+- `pnpm check:backend` 通过：fmt、check、Clippy、7 项 Rust 测试和 rustdoc。SQLx SQLite 在 Windows 完成编译，测试使用独立的内存 SQLite 数据库验证会话写入、读取和撤销。
 - `pnpm content:validate` 与 `git diff --check` 通过。
 
 ## 未完成验收
 
-仓库没有真实 OIDC issuer/client 配置，本次没有执行真实提供方的成功回调、错误 nonce 或提供方拒绝回调的端到端流程。示例配置使用占位值。当前 Windows 环境的 PostgreSQL 5432 端口没有监听，因此没有运行迁移或 Session Store 的数据库集成验收；部署时需配置 `DATABASE_URL` 并验证 PostgreSQL 连接。
+仓库没有真实 OIDC issuer/client 配置，本次没有执行身份提供方的成功回调、错误 nonce 或提供方拒绝回调的端到端流程。示例配置使用占位值。SQLite Session 存储已有内存数据库集成测试；尚未使用真实 provider 配置验证端到端登录回调。
 
-本次开发和验证均在 Windows 完成；未进行 Linux、WSL、Docker 或 Linux 容器验证。因此 I02-F05 保持 DOING，不能据此视为完整验收。
+本次开发和验证均在 Windows 完成；未进行 Linux、WSL、Docker 或 Linux 容器验证。SQLite 存储验收已通过，但 I02-F05 的 OIDC 回调验收仍受真实 issuer/client 配置缺失阻塞，不能标为 DONE。

@@ -274,7 +274,7 @@ mod tests {
         routing::get,
     };
     use tower::ServiceExt;
-    use tower_sessions::{MemoryStore, Session, SessionManagerLayer};
+    use tower_sessions::{Session, SessionManagerLayer};
 
     /// 精确验证 Origin 且拒绝缺失、伪造或带路径的来源。
     #[test]
@@ -318,12 +318,27 @@ mod tests {
         StatusCode::NO_CONTENT
     }
 
+    /// 使用退出流程相同的服务端删除操作撤销测试会话。
+    async fn revoke_session(session: Session) -> StatusCode {
+        match session.delete().await {
+            Ok(()) => StatusCode::NO_CONTENT,
+            Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
+    /// 为每项测试创建独立内存 SQLite 数据库中的真实会话存储。
+    async fn test_session_store() -> super::super::sessions::SqliteSessionStore {
+        super::super::sessions::SqliteSessionStore::connect("sqlite::memory:")
+            .await
+            .expect("in-memory SQLite session store should initialize")
+    }
+
     /// 验证匿名请求访问私有工作区会被拒绝。
     #[tokio::test]
     async fn private_route_rejects_anonymous_requests() {
         let app = Router::new()
             .route("/private", get(super::private_workspace))
-            .layer(SessionManagerLayer::new(MemoryStore::default()).with_secure(false));
+            .layer(SessionManagerLayer::new(test_session_store().await).with_secure(false));
         let response = app
             .oneshot(
                 HttpRequest::builder()
@@ -341,8 +356,9 @@ mod tests {
     async fn private_route_reads_identity_from_server_session() {
         let app = Router::new()
             .route("/seed", get(seed_session))
+            .route("/revoke", axum::routing::post(revoke_session))
             .route("/private", get(super::private_workspace))
-            .layer(SessionManagerLayer::new(MemoryStore::default()).with_secure(false));
+            .layer(SessionManagerLayer::new(test_session_store().await).with_secure(false));
         let seeded = app
             .clone()
             .oneshot(
@@ -360,6 +376,7 @@ mod tests {
             .and_then(|value| value.split(';').next())
             .expect("session middleware should issue a cookie");
         let response = app
+            .clone()
             .oneshot(
                 HttpRequest::builder()
                     .uri("/private")
@@ -370,5 +387,31 @@ mod tests {
             .await
             .expect("router should return an authorized response");
         assert_eq!(response.status(), StatusCode::OK);
+
+        let revoked = app
+            .clone()
+            .oneshot(
+                HttpRequest::builder()
+                    .method(axum::http::Method::POST)
+                    .uri("/revoke")
+                    .header(header::COOKIE, cookie)
+                    .body(Body::empty())
+                    .expect("request builder should accept a session cookie"),
+            )
+            .await
+            .expect("router should revoke the server session");
+        assert_eq!(revoked.status(), StatusCode::NO_CONTENT);
+
+        let after_revoke = app
+            .oneshot(
+                HttpRequest::builder()
+                    .uri("/private")
+                    .header(header::COOKIE, cookie)
+                    .body(Body::empty())
+                    .expect("request builder should accept the revoked session cookie"),
+            )
+            .await
+            .expect("router should reject a revoked session");
+        assert_eq!(after_revoke.status(), StatusCode::UNAUTHORIZED);
     }
 }

@@ -1,27 +1,28 @@
-//! PostgreSQL-backed server session storage.
+//! SQLite-backed server session storage.
 
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
 use async_trait::async_trait;
-use sqlx::{PgPool, Row, postgres::PgPoolOptions};
+use sqlx::{Row, SqlitePool, sqlite::SqliteConnectOptions, sqlite::SqlitePoolOptions};
 use time::OffsetDateTime;
 use tower_sessions::{
     session::{Id, Record},
     session_store::{self, SessionStore},
 };
 
-/// PostgreSQL session backend shared by API instances using the same database.
+/// SQLite session backend shared by API instances using the same database file.
 #[derive(Clone, Debug)]
-pub struct PostgresSessionStore {
-    pool: PgPool,
+pub struct SqliteSessionStore {
+    pool: SqlitePool,
 }
 
-impl PostgresSessionStore {
-    /// Connect to PostgreSQL and apply the additive session schema migration.
+impl SqliteSessionStore {
+    /// Connect to SQLite and apply the additive session schema migration.
     pub async fn connect(database_url: &str) -> Result<Self, sqlx::Error> {
-        let pool = PgPoolOptions::new()
-            .max_connections(10)
-            .connect(database_url)
+        let options = SqliteConnectOptions::from_str(database_url)?.create_if_missing(true);
+        let pool = SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(options)
             .await?;
         let store = Self { pool };
         store.migrate().await?;
@@ -39,10 +40,11 @@ impl PostgresSessionStore {
     /// Remove expired rows periodically so abandoned browser sessions do not accumulate.
     pub async fn delete_expired_periodically(self) {
         let mut interval = tokio::time::interval(Duration::from_secs(300));
-        interval.tick().await;
         loop {
             interval.tick().await;
-            if sqlx::query("DELETE FROM auth_sessions WHERE expiry_date <= now()")
+            let now = OffsetDateTime::now_utc().unix_timestamp();
+            if sqlx::query("DELETE FROM auth_sessions WHERE expiry_unix <= ?")
+                .bind(now)
                 .execute(&self.pool)
                 .await
                 .is_err()
@@ -55,22 +57,21 @@ impl PostgresSessionStore {
 }
 
 #[async_trait]
-impl SessionStore for PostgresSessionStore {
+impl SessionStore for SqliteSessionStore {
     /// Insert a new session and regenerate its ID if a rare collision occurs.
     async fn create(&self, record: &mut Record) -> session_store::Result<()> {
         for _ in 0..3 {
             let data = encode_data(record)?;
-            let result = sqlx::query(
-                "INSERT INTO auth_sessions (id, data, expiry_date) VALUES ($1, $2, $3)",
-            )
-            .bind(record.id.to_string())
-            .bind(data)
-            .bind(record.expiry_date)
-            .execute(&self.pool)
-            .await;
+            let result =
+                sqlx::query("INSERT INTO auth_sessions (id, data, expiry_unix) VALUES (?, ?, ?)")
+                    .bind(record.id.to_string())
+                    .bind(data)
+                    .bind(record.expiry_date.unix_timestamp())
+                    .execute(&self.pool)
+                    .await;
             match result {
                 Ok(_) => return Ok(()),
-                Err(sqlx::Error::Database(error)) if error.code().as_deref() == Some("23505") => {
+                Err(sqlx::Error::Database(error)) if error.is_unique_violation() => {
                     // Never overwrite a different live session when random IDs collide.
                     record.id = Id::default();
                 }
@@ -82,31 +83,35 @@ impl SessionStore for PostgresSessionStore {
 
     /// Update an existing session snapshot without recreating a concurrently revoked session.
     async fn save(&self, record: &Record) -> session_store::Result<()> {
-        sqlx::query("UPDATE auth_sessions SET data = $2, expiry_date = $3 WHERE id = $1")
-            .bind(record.id.to_string())
+        sqlx::query("UPDATE auth_sessions SET data = ?, expiry_unix = ? WHERE id = ?")
             .bind(encode_data(record)?)
-            .bind(record.expiry_date)
+            .bind(record.expiry_date.unix_timestamp())
+            .bind(record.id.to_string())
             .execute(&self.pool)
             .await
-            .map_err(|_| backend_error())?;
+            .map_err(map_backend_error)?;
         Ok(())
     }
 
     /// Load a session only while its server-side expiry remains in the future.
     async fn load(&self, session_id: &Id) -> session_store::Result<Option<Record>> {
+        let now = OffsetDateTime::now_utc().unix_timestamp();
         let row = sqlx::query(
-            "SELECT data, expiry_date FROM auth_sessions WHERE id = $1 AND expiry_date > now()",
+            "SELECT data, expiry_unix FROM auth_sessions WHERE id = ? AND expiry_unix > ?",
         )
         .bind(session_id.to_string())
+        .bind(now)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|_| backend_error())?;
+        .map_err(map_backend_error)?;
         row.map(|row| {
-            let data: serde_json::Value = row.try_get("data").map_err(|_| backend_error())?;
-            let expiry_date: OffsetDateTime =
-                row.try_get("expiry_date").map_err(|_| backend_error())?;
-            let data = serde_json::from_value(data)
+            // Decode both columns before rebuilding the record to reject malformed stored rows.
+            let data: String = row.try_get("data").map_err(map_backend_error)?;
+            let expiry_unix: i64 = row.try_get("expiry_unix").map_err(map_backend_error)?;
+            let data = serde_json::from_str(&data)
                 .map_err(|_| session_store::Error::Decode("invalid session payload".into()))?;
+            let expiry_date = OffsetDateTime::from_unix_timestamp(expiry_unix)
+                .map_err(|_| session_store::Error::Decode("invalid session expiry".into()))?;
             Ok(Record {
                 id: *session_id,
                 data,
@@ -118,22 +123,31 @@ impl SessionStore for PostgresSessionStore {
 
     /// Delete a session immediately to revoke its server-side cookie identity.
     async fn delete(&self, session_id: &Id) -> session_store::Result<()> {
-        sqlx::query("DELETE FROM auth_sessions WHERE id = $1")
+        sqlx::query("DELETE FROM auth_sessions WHERE id = ?")
             .bind(session_id.to_string())
             .execute(&self.pool)
             .await
-            .map_err(|_| backend_error())?;
+            .map_err(map_backend_error)?;
         Ok(())
     }
 }
 
-/// Serialize session data as JSONB without exposing serialization details to callers.
-fn encode_data(record: &Record) -> session_store::Result<serde_json::Value> {
-    serde_json::to_value(&record.data)
-        .map_err(|_| session_store::Error::Encode("session serialization failed".into()))
+/// Serialize session data as JSON text without exposing serialization details to callers.
+fn encode_data(record: &Record) -> session_store::Result<String> {
+    match serde_json::to_string(&record.data) {
+        Ok(data) => Ok(data),
+        Err(_) => Err(session_store::Error::Encode(
+            "session serialization failed".into(),
+        )),
+    }
 }
 
 /// Return a redacted storage error so database details never enter an HTTP response.
 fn backend_error() -> session_store::Error {
-    session_store::Error::Backend("PostgreSQL session store operation failed".into())
+    session_store::Error::Backend("SQLite session store operation failed".into())
+}
+
+/// Replace SQLx diagnostics with one generic error that cannot expose database details.
+fn map_backend_error(_error: sqlx::Error) -> session_store::Error {
+    backend_error()
 }

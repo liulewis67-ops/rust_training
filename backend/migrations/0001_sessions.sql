@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS auth_sessions (
     id TEXT PRIMARY KEY,
-    data JSONB NOT NULL,
-    expiry_date TIMESTAMPTZ NOT NULL
+    data TEXT NOT NULL,
+    expiry_unix INTEGER NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS auth_sessions_expiry_date_idx
-    ON auth_sessions (expiry_date);
+CREATE INDEX IF NOT EXISTS auth_sessions_expiry_unix_idx
+    ON auth_sessions (expiry_unix);

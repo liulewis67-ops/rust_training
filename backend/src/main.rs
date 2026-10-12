@@ -19,9 +19,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let redirect_url = required_env("OIDC_REDIRECT_URL")?;
     let allowed_origin = required_env("APP_ORIGIN")?;
     let database_url = required_env("DATABASE_URL")?;
-    let cookie_secure = env::var("COOKIE_SECURE").map_or(true, |value| value != "false");
+    let cookie_secure = match env::var("COOKIE_SECURE") {
+        Ok(value) => value != "false",
+        Err(_) => true,
+    };
     validate_app_origin(&allowed_origin, cookie_secure)?;
-    let bind_address = env::var("API_BIND_ADDRESS").unwrap_or_else(|_| "127.0.0.1:3000".into());
+    let bind_address = match env::var("API_BIND_ADDRESS") {
+        Ok(value) => value,
+        Err(_) => "127.0.0.1:3000".into(),
+    };
     let address: SocketAddr = bind_address.parse()?;
 
     // 不跟随身份提供方的跳转，避免发现文档或密钥请求被重定向到未授权地址。
@@ -33,8 +39,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         CoreProviderMetadata::discover_async(IssuerUrl::new(issuer)?, &http_client).await?;
     let client = identity::build_client(provider, client_id, client_secret, redirect_url)?;
 
-    let session_store = sessions::PostgresSessionStore::connect(&database_url).await?;
+    let session_store = sessions::SqliteSessionStore::connect(&database_url).await?;
     let cleanup_store = session_store.clone();
+    // Expiry cleanup runs separately so a transient cleanup error cannot interrupt API requests.
     tokio::spawn(async move {
         cleanup_store.delete_expired_periodically().await;
     });
@@ -74,10 +81,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 /// 读取非空环境变量；未配置时阻止服务以不安全的默认值启动。
 fn required_env(name: &str) -> Result<String, Box<dyn std::error::Error>> {
-    env::var(name)
-        .ok()
-        .filter(|value| !value.trim().is_empty())
-        .ok_or_else(|| format!("required environment variable {name} is missing").into())
+    match env::var(name) {
+        Ok(value) if !value.trim().is_empty() => Ok(value),
+        _ => Err(format!("required environment variable {name} is missing").into()),
+    }
 }
 
 /// 只接受站点 origin；非 Secure Cookie 仅允许用于本机 Vite 开发源。
