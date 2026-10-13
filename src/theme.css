@@ -172,6 +172,13 @@
 :root[data-theme="light"] .draft-editor-heading strong { color: #303238; }
 :root[data-theme="light"] .draft-editor-heading small, :root[data-theme="light"] .draft-editor-heading > span { color: #737780; }
 :root[data-theme="light"] .draft-editor-input { border-color: #d8dbe0; background: #f7f8fa; color: #292c31; }
+:root[data-theme="light"] .auth-card { background: linear-gradient(145deg, #fff, #f8f9fa 72%); border-color: #dfe1e5; box-shadow: 0 22px 60px rgb(24 32 43 / 8%); }
+:root[data-theme="light"] .auth-card h1 { color: #292b30; }
+:root[data-theme="light"] .auth-intro, :root[data-theme="light"] .auth-field { color: #5d6067; }
+:root[data-theme="light"] .auth-field input { background: #fff; border-color: #d2d5da; color: #292b30; }
+:root[data-theme="light"] .auth-links { border-color: #e0e2e5; }
+:root[data-theme="light"] .auth-error { background: #fff3f1; border-color: #edc9c3; color: #983d35; }
+:root[data-theme="light"] .auth-message { background: #eff8f1; border-color: #c5e2cd; color: #326845; }
 :root[data-theme="light"] .draft-editor-actions button { border-color: #d8dbe0; background: #f7f8fa; color: #464a52; }
 @media (max-width: 720px) {
   .course-preview { padding: 0 0 32px; }

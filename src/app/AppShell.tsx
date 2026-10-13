@@ -108,7 +108,10 @@ export function AppShell({
   const { completedCount, answered, accuracy, weakTags } =
     summarizeProgress(progress)
   const hasLegacyWorkspace =
-    route.page !== 'home' && route.page !== 'track' && route.page !== 'search'
+    route.page !== 'home' &&
+    route.page !== 'track' &&
+    route.page !== 'search' &&
+    route.page !== 'auth'
   /** 关闭移动目录后导航到目标页面。 */
   const nav = (target: Route): void => {
     setDrawer(false)

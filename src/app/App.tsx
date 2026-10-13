@@ -9,6 +9,7 @@ import { CoursePreviewPage } from '../pages/CoursePreviewPage'
 import { HomePage } from '../pages/HomePage'
 import { TrackPage } from '../pages/TrackPage'
 import { SearchPage } from '../pages/SearchPage'
+import { AuthPage } from '../features/identity/AuthPage'
 import type { Exercise, Lesson } from '../types/lesson'
 import { AppShell } from './AppShell'
 import { useRoute } from './router'
@@ -82,7 +83,15 @@ export default function App(): JSX.Element {
   }
 
   let page: JSX.Element
-  if (route.page === 'home') {
+  if (route.page === 'auth') {
+    page = (
+      <AuthPage
+        mode={route.mode}
+        onAuthenticated={() => navigate({ page: 'home' })}
+        onResetComplete={() => navigate({ page: 'auth', mode: 'login' })}
+      />
+    )
+  } else if (route.page === 'home') {
     page = <HomePage onNavigate={navigate} progress={progress} />
   } else if (route.page === 'track') {
     page = <TrackPage onNavigate={navigate} />

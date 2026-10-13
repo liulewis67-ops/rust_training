@@ -1,4 +1,4 @@
-//! SQLite-backed server session storage.
+//! 基于 SQLite 的服务端 session 存储。
 
 use std::{str::FromStr, time::Duration};
 
@@ -10,13 +10,19 @@ use tower_sessions::{
     session_store::{self, SessionStore},
 };
 
-/// SQLite session backend shared by API instances using the same database file.
+/// 多个 API 实例共享同一数据库文件的 SQLite session 后端。
 #[derive(Clone, Debug)]
 pub struct SqliteSessionStore {
     pool: SqlitePool,
 }
 
 impl SqliteSessionStore {
+    /// 使用现有 SQLite 连接池创建 session 存储，供共享存储集成测试复用。
+    #[cfg(test)]
+    pub(crate) fn from_pool(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+
     /// Connect to SQLite and apply the additive session schema migration.
     pub async fn connect(database_url: &str) -> Result<Self, sqlx::Error> {
         let options = SqliteConnectOptions::from_str(database_url)?.create_if_missing(true);
@@ -58,17 +64,20 @@ impl SqliteSessionStore {
 
 #[async_trait]
 impl SessionStore for SqliteSessionStore {
-    /// Insert a new session and regenerate its ID if a rare collision occurs.
+    /// 插入新 session；发生罕见 ID 冲突时重新生成 ID。
     async fn create(&self, record: &mut Record) -> session_store::Result<()> {
         for _ in 0..3 {
             let data = encode_data(record)?;
-            let result =
-                sqlx::query("INSERT INTO auth_sessions (id, data, expiry_unix) VALUES (?, ?, ?)")
-                    .bind(record.id.to_string())
-                    .bind(data)
-                    .bind(record.expiry_date.unix_timestamp())
-                    .execute(&self.pool)
-                    .await;
+            let user_id = session_owner(&data);
+            let result = sqlx::query(
+                "INSERT INTO auth_sessions (id, data, user_id, expiry_unix) VALUES (?, ?, ?, ?)",
+            )
+            .bind(record.id.to_string())
+            .bind(data)
+            .bind(user_id)
+            .bind(record.expiry_date.unix_timestamp())
+            .execute(&self.pool)
+            .await;
             match result {
                 Ok(_) => return Ok(()),
                 Err(sqlx::Error::Database(error)) if error.is_unique_violation() => {
@@ -81,10 +90,13 @@ impl SessionStore for SqliteSessionStore {
         Err(backend_error())
     }
 
-    /// Update an existing session snapshot without recreating a concurrently revoked session.
+    /// 更新现有 session 快照，不重新创建已并发撤销的 session。
     async fn save(&self, record: &Record) -> session_store::Result<()> {
-        sqlx::query("UPDATE auth_sessions SET data = ?, expiry_unix = ? WHERE id = ?")
-            .bind(encode_data(record)?)
+        let data = encode_data(record)?;
+        let user_id = session_owner(&data);
+        sqlx::query("UPDATE auth_sessions SET data = ?, user_id = ?, expiry_unix = ? WHERE id = ?")
+            .bind(data)
+            .bind(user_id)
             .bind(record.expiry_date.unix_timestamp())
             .bind(record.id.to_string())
             .execute(&self.pool)
@@ -132,7 +144,17 @@ impl SessionStore for SqliteSessionStore {
     }
 }
 
-/// Serialize session data as JSON text without exposing serialization details to callers.
+/// 从序列化的 session 中提取非空顶层账号 UUID。
+fn session_owner(data: &str) -> Option<String> {
+    serde_json::from_str::<serde_json::Value>(data)
+        .ok()?
+        .get("user_id")?
+        .as_str()
+        .filter(|user_id| !user_id.is_empty())
+        .map(ToOwned::to_owned)
+}
+
+/// 将 session 数据序列化为 JSON 文本，不向调用方暴露序列化细节。
 fn encode_data(record: &Record) -> session_store::Result<String> {
     match serde_json::to_string(&record.data) {
         Ok(data) => Ok(data),
@@ -142,12 +164,12 @@ fn encode_data(record: &Record) -> session_store::Result<String> {
     }
 }
 
-/// Return a redacted storage error so database details never enter an HTTP response.
+/// 返回脱敏存储错误，避免数据库细节进入 HTTP 响应。
 fn backend_error() -> session_store::Error {
     session_store::Error::Backend("SQLite session store operation failed".into())
 }
 
-/// Replace SQLx diagnostics with one generic error that cannot expose database details.
+/// 将 SQLx 诊断信息替换为不暴露数据库细节的通用错误。
 fn map_backend_error(_error: sqlx::Error) -> session_store::Error {
     backend_error()
 }

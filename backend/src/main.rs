@@ -1,26 +1,25 @@
 //! Rust Path 业务 API 启动入口。
 
-use std::{env, net::SocketAddr, time::Duration};
+use std::{env, net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{Router, routing::get};
 use openidconnect::{IssuerUrl, core::CoreProviderMetadata};
 use tower_sessions::{Expiry, SessionManagerLayer};
 
+mod accounts;
 mod identity;
 mod learning;
 mod sessions;
 mod workspaces;
 
-/// 读取运行配置、发现 OIDC 提供方并启动 API 服务。
+/// 读取本地账号配置；仅在显式启用时发现 OIDC 提供方并启动 API 服务。
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
-    let issuer = required_env("OIDC_ISSUER_URL")?;
-    let client_id = required_env("OIDC_CLIENT_ID")?;
-    let client_secret = required_env("OIDC_CLIENT_SECRET")?;
-    let redirect_url = required_env("OIDC_REDIRECT_URL")?;
     let allowed_origin = required_env("APP_ORIGIN")?;
     let database_url = required_env("DATABASE_URL")?;
+    let oidc_enabled =
+        env::var("OIDC_ENABLED").is_ok_and(|value| value.eq_ignore_ascii_case("true"));
     let cookie_secure = match env::var("COOKIE_SECURE") {
         Ok(value) => value != "false",
         Err(_) => true,
@@ -32,16 +31,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let address: SocketAddr = bind_address.parse()?;
 
-    // 不跟随身份提供方的跳转，避免发现文档或密钥请求被重定向到未授权地址。
-    let http_client = openidconnect::reqwest::ClientBuilder::new()
-        .redirect(openidconnect::reqwest::redirect::Policy::none())
-        .timeout(Duration::from_secs(10))
-        .build()?;
-    let provider =
-        CoreProviderMetadata::discover_async(IssuerUrl::new(issuer)?, &http_client).await?;
-    let client = identity::build_client(provider, client_id, client_secret, redirect_url)?;
-
     let session_store = sessions::SqliteSessionStore::connect(&database_url).await?;
+    let account_store = accounts::store::AccountStore::connect(&database_url).await?;
+    let cleanup_accounts = account_store.clone();
+    tokio::spawn(async move {
+        cleanup_accounts.cleanup_expired_periodically().await;
+    });
+    let smtp = accounts::mailer::SmtpConfig::from_env()
+        .map_err(|error| format!("SMTP configuration error: {error:?}"))?;
+    let mailer = Arc::new(
+        accounts::mailer::SmtpMailer::new(smtp)
+            .map_err(|error| format!("SMTP configuration error: {error:?}"))?,
+    );
     let workspace_store = workspaces::WorkspaceStore::connect(&database_url).await?;
     let learning_store = learning::LearningStore::connect(&database_url).await?;
     let cleanup_store = session_store.clone();
@@ -60,29 +61,72 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_http_only(true)
         .with_same_site(tower_sessions::cookie::SameSite::Lax)
         .with_expiry(Expiry::OnInactivity(time::Duration::hours(12)));
-    let state = identity::AppState::new(client, http_client, allowed_origin);
-    let app = Router::new()
-        .route("/api/v1/auth/login", get(identity::login))
-        .route("/api/v1/auth/callback", get(identity::callback))
-        .route("/api/v1/auth/session", get(identity::session_info))
-        .route("/api/v1/auth/logout", axum::routing::post(identity::logout))
+    let mut app = Router::new()
+        .merge(accounts::router(
+            account_store,
+            mailer,
+            allowed_origin.clone(),
+        ))
+        .route("/api/v1/auth/session", get(accounts::session_info))
+        .route("/api/v1/auth/logout", axum::routing::post(accounts::logout))
         .route(
             "/api/v1/private/workspaces",
             get(identity::private_workspace),
         )
-        .with_state(state.clone())
         .merge(workspaces::router(workspace_store))
         .merge(learning::router(learning_store))
-        .layer(session_layer)
-        .layer(axum::middleware::from_fn_with_state(
-            state.clone(),
-            identity::csrf_origin_guard,
-        ));
+        .layer(session_layer);
+
+    if oidc_enabled {
+        let issuer = required_env("OIDC_ISSUER_URL")?;
+        let client_id = required_env("OIDC_CLIENT_ID")?;
+        let client_secret = required_env("OIDC_CLIENT_SECRET")?;
+        let redirect_url = required_env("OIDC_REDIRECT_URL")?;
+        // 不跟随身份提供方的跳转，避免 discovery 请求被重定向到未授权地址。
+        let http_client = openidconnect::reqwest::ClientBuilder::new()
+            .redirect(openidconnect::reqwest::redirect::Policy::none())
+            .timeout(Duration::from_secs(10))
+            .build()?;
+        let provider =
+            CoreProviderMetadata::discover_async(IssuerUrl::new(issuer)?, &http_client).await?;
+        let state = identity::AppState::new(
+            identity::build_client(provider, client_id, client_secret, redirect_url)?,
+            http_client,
+            allowed_origin.clone(),
+        );
+        let oidc_routes = Router::new()
+            .route("/api/v1/auth/oidc/login", get(identity::login))
+            .route("/api/v1/auth/oidc/callback", get(identity::callback))
+            .with_state(state);
+        app = app.merge(oidc_routes);
+    }
+    app = app.layer(axum::middleware::from_fn_with_state(
+        allowed_origin,
+        identity::csrf_origin_guard,
+    ));
+    app = app.layer(axum::middleware::from_fn(set_no_referrer));
 
     let listener = tokio::net::TcpListener::bind(address).await?;
     println!("API listening on {address}");
-    axum::serve(listener, app).await?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await?;
     Ok(())
+}
+
+/// 本地认证响应不携带 Referrer，避免令牌意外流向其它页面。
+async fn set_no_referrer(
+    request: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let mut response = next.run(request).await;
+    response.headers_mut().insert(
+        axum::http::header::REFERRER_POLICY,
+        axum::http::HeaderValue::from_static("no-referrer"),
+    );
+    response
 }
 
 /// 读取非空环境变量；未配置时阻止服务以不安全的默认值启动。
@@ -118,6 +162,13 @@ fn validate_app_origin(
 
 #[cfg(test)]
 mod tests {
+    use axum::{
+        Router,
+        http::{Request, StatusCode, header},
+        routing::get,
+    };
+    use tower::ServiceExt;
+
     use super::validate_app_origin;
 
     /// 本地 Vite origin 可用于 Secure=false 的开发 Cookie。
@@ -138,5 +189,23 @@ mod tests {
     fn rejects_app_origin_with_path_or_query() {
         assert!(validate_app_origin("https://academy.example/learn", true).is_err());
         assert!(validate_app_origin("https://academy.example?next=/", true).is_err());
+    }
+
+    /// 所有 API 响应均设置 no-referrer，保护含令牌的浏览器地址。
+    #[tokio::test]
+    async fn auth_responses_include_no_referrer_policy() {
+        let app = Router::new()
+            .route("/", get(|| async { StatusCode::NO_CONTENT }))
+            .layer(axum::middleware::from_fn(super::set_no_referrer));
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .body(axum::body::Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("middleware should return response");
+        assert_eq!(response.headers()[header::REFERRER_POLICY], "no-referrer");
     }
 }

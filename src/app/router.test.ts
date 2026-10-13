@@ -35,6 +35,17 @@ it('解析首页与已规划路线', () => {
   })
 })
 
+// 本地账号页面可以通过浏览器直接访问并保持各自模式。
+it.each([
+  ['/login', 'login'],
+  ['/register', 'register'],
+  ['/verify-email', 'verify'],
+  ['/forgot-password', 'forgot'],
+  ['/reset-password', 'reset'],
+] as const)('解析账号路由 %s', (path, mode) => {
+  expect(readRoute(path)).toEqual({ page: 'auth', mode })
+})
+
 // 旧课程链接保持稳定；无效路线不能显示成可学习课程。
 it('保留旧课程链接并拒绝未知路线', () => {
   expect(readRoute('/lesson/ownership')).toEqual({

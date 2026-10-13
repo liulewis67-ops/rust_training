@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { lessons } from '../features/catalog'
+import type { AuthMode } from '../features/identity/AuthPage'
 
 export type Route =
   | { page: 'home' }
@@ -8,10 +9,19 @@ export type Route =
   | { page: 'track'; trackSlug: string }
   | { page: 'course-preview'; courseId: string }
   | { page: 'review' | 'progress' }
+  | { page: 'auth'; mode: AuthMode }
   | { page: 'not-found'; path: string }
 
 /** 解析现有路径；未知课程或非法编码明确显示未找到，不偷偷跳到首课。 */
 export function readRoute(pathname: string): Route {
+  const authRoutes: Record<string, AuthMode> = {
+    '/login': 'login',
+    '/register': 'register',
+    '/verify-email': 'verify',
+    '/forgot-password': 'forgot',
+    '/reset-password': 'reset',
+  }
+  if (authRoutes[pathname]) return { page: 'auth', mode: authRoutes[pathname] }
   if (pathname === '/') return { page: 'home' }
   if (pathname === '/search' || pathname === '/search/')
     return { page: 'search' }
@@ -44,6 +54,8 @@ export function readRoute(pathname: string): Route {
 
 /** 将路由意图映射为原型兼容 URL。 */
 function routePath(route: Route): string {
+  if (route.page === 'auth')
+    return `/${route.mode === 'forgot' ? 'forgot-password' : route.mode === 'verify' ? 'verify-email' : route.mode === 'reset' ? 'reset-password' : route.mode}`
   if (route.page === 'home') return '/'
   if (route.page === 'search') return '/search'
   if (route.page === 'track')

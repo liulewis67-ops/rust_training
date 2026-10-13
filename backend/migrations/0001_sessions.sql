@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS auth_sessions (
     id TEXT PRIMARY KEY,
     data TEXT NOT NULL,
+    user_id TEXT,
     expiry_unix INTEGER NOT NULL
 );
 

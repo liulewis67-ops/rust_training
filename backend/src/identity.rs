@@ -191,24 +191,9 @@ pub async fn session_info(session: Session) -> Response {
     }
 }
 
-/// 删除服务端会话，并在缺少或不匹配 Origin 时拒绝变更请求。
-pub async fn logout(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-    session: Session,
-) -> Response {
-    if !valid_origin(&headers, &state.allowed_origin) {
-        return StatusCode::FORBIDDEN.into_response();
-    }
-    match session.delete().await {
-        Ok(()) => StatusCode::NO_CONTENT.into_response(),
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-    }
-}
-
 /// 对所有变更请求执行精确 Origin 校验，覆盖新增的写接口。
 pub async fn csrf_origin_guard(
-    State(state): State<AppState>,
+    State(allowed_origin): State<String>,
     request: Request,
     next: Next,
 ) -> Response {
@@ -216,7 +201,7 @@ pub async fn csrf_origin_guard(
         *request.method(),
         axum::http::Method::GET | axum::http::Method::HEAD | axum::http::Method::OPTIONS
     );
-    if !safe_method && !valid_origin(request.headers(), &state.allowed_origin) {
+    if !safe_method && !valid_origin(request.headers(), &allowed_origin) {
         return StatusCode::FORBIDDEN.into_response();
     }
     next.run(request).await
@@ -232,7 +217,7 @@ pub async fn private_workspace(session: Session) -> Response {
 }
 
 /// 精确匹配浏览器 Origin，禁止缺失来源或跨站变更请求。
-fn valid_origin(headers: &HeaderMap, allowed_origin: &str) -> bool {
+pub(super) fn valid_origin(headers: &HeaderMap, allowed_origin: &str) -> bool {
     headers
         .get(header::ORIGIN)
         .and_then(|value| value.to_str().ok())
@@ -359,7 +344,7 @@ mod tests {
             provider,
             "test-client".to_owned(),
             "test-secret".to_owned(),
-            "http://localhost:3000/api/v1/auth/callback".to_owned(),
+            "http://localhost:3000/api/v1/auth/oidc/callback".to_owned(),
         )
         .expect("static test client should be valid");
         let http_client = openidconnect::reqwest::ClientBuilder::new()

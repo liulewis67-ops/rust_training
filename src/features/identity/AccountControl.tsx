@@ -1,62 +1,40 @@
 import type { JSX } from 'react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { AuthApiError, logout, readSession, type AuthSession } from './api'
 
 type IdentityState =
   | { status: 'loading' }
   | { status: 'anonymous' }
-  | { status: 'authenticated'; userId: string }
+  | { status: 'authenticated'; session: AuthSession }
   | { status: 'error' }
 
-/** 显示服务端会话身份，并提供 OIDC 登录与本地会话退出操作。 */
+/** 显示邮箱账号状态，并通过服务端会话退出。 */
 export function AccountControl(): JSX.Element {
   const [identity, setIdentity] = useState<IdentityState>({ status: 'loading' })
 
-  useEffect(() => {
-    const controller = new AbortController()
-    /** 同步页面首次加载时的服务端 session 状态。 */
-    async function loadSession(): Promise<void> {
-      try {
-        const response = await fetch('/api/v1/auth/session', {
-          credentials: 'same-origin',
-          signal: controller.signal,
-        })
-        if (response.status === 401) {
-          setIdentity({ status: 'anonymous' })
-          return
-        }
-        if (!response.ok) throw new Error('session request failed')
-        const payload: unknown = await response.json()
-        if (
-          typeof payload !== 'object' ||
-          payload === null ||
-          !('user_id' in payload) ||
-          typeof payload.user_id !== 'string'
-        ) {
-          throw new Error('invalid session response')
-        }
-        setIdentity({ status: 'authenticated', userId: payload.user_id })
-      } catch {
-        if (!controller.signal.aborted) setIdentity({ status: 'error' })
-      }
-    }
-    void loadSession()
-    return () => {
-      // 卸载时取消旧请求，避免过期结果更新界面。
-      controller.abort()
+  const refresh = useCallback(async () => {
+    try {
+      const session = await readSession()
+      setIdentity({ status: 'authenticated', session })
+    } catch (error) {
+      setIdentity(
+        error instanceof AuthApiError && error.status === 401
+          ? { status: 'anonymous' }
+          : { status: 'error' },
+      )
     }
   }, [])
 
-  /** 退出服务端 session，并清空当前界面的身份状态。 */
-  async function logout(): Promise<void> {
+  useEffect(() => {
+    void refresh()
+    window.addEventListener('rust-path-session-changed', refresh)
+    return () =>
+      window.removeEventListener('rust-path-session-changed', refresh)
+  }, [refresh])
+
+  async function signOut(): Promise<void> {
     try {
-      const response = await fetch('/api/v1/auth/logout', {
-        method: 'POST',
-        credentials: 'same-origin',
-      })
-      if (response.ok) {
-        setIdentity({ status: 'anonymous' })
-        window.dispatchEvent(new Event('rust-path-session-changed'))
-      } else setIdentity({ status: 'error' })
+      await logout()
     } catch {
       setIdentity({ status: 'error' })
     }
@@ -72,8 +50,8 @@ export function AccountControl(): JSX.Element {
   if (identity.status === 'authenticated') {
     return (
       <div className="account-control">
-        <span title={identity.userId}>已登录</span>
-        <button type="button" onClick={() => void logout()}>
+        <span title={identity.session.email}>{identity.session.email}</span>
+        <button type="button" onClick={() => void signOut()}>
           退出
         </button>
       </div>
@@ -83,12 +61,14 @@ export function AccountControl(): JSX.Element {
     return (
       <div className="account-control" role="status">
         <span>账号服务暂不可用</span>
-        <a href="/api/v1/auth/login">重试登录</a>
+        <button type="button" onClick={() => void refresh()}>
+          重试
+        </button>
       </div>
     )
   }
   return (
-    <a className="account-control" href="/api/v1/auth/login">
+    <a className="account-control" href="/login">
       登录
     </a>
   )

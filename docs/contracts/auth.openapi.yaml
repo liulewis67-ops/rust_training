@@ -1,0 +1,228 @@
+openapi: 3.1.0
+info:
+  title: Rust Path Local Account API
+  version: 1.0.0
+  description: Email and password accounts, verified through one-time email links.
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Register an account and send a verification email
+      security: []
+      x-origin-required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '202':
+          description: Generic response that does not reveal whether the email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicMessage'
+        '400':
+          $ref: '#/components/responses/ApiError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/v1/auth/verify-email:
+    post:
+      summary: Consume a one-time 24-hour email verification token
+      security: []
+      x-origin-required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token]
+              properties:
+                token: { type: string, minLength: 64, maxLength: 64 }
+      responses:
+        '204': { description: Email verified }
+        '400': { $ref: '#/components/responses/ApiError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /api/v1/auth/resend-verification:
+    post:
+      summary: Resend a verification link without revealing account state
+      security: []
+      x-origin-required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmailRequest' }
+      responses:
+        '202':
+          description: Generic response
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicMessage' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /api/v1/auth/login:
+    post:
+      summary: Create an authenticated server-side session
+      security: []
+      x-origin-required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Authenticated account; response sets an HttpOnly session cookie
+          headers:
+            Set-Cookie:
+              schema:
+                {
+                  type: string,
+                  description: HttpOnly; SameSite=Lax; Secure outside local development,
+                }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '401': { $ref: '#/components/responses/ApiError' }
+        '403': { $ref: '#/components/responses/ApiError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /api/v1/auth/session:
+    get:
+      summary: Read the current authenticated account
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Current local account
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '401': { description: No authenticated session }
+  /api/v1/auth/logout:
+    post:
+      summary: Revoke the current session
+      security:
+        - sessionCookie: []
+      x-origin-required: true
+      responses:
+        '204': { description: Session revoked }
+        '403': { description: Origin is missing or does not match APP_ORIGIN }
+  /api/v1/auth/forgot-password:
+    post:
+      summary: Request a 30-minute password reset link
+      security: []
+      x-origin-required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EmailRequest' }
+      responses:
+        '202':
+          description: Identical response for missing, unverified and verified accounts
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicMessage' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /api/v1/auth/reset-password:
+    post:
+      summary: Consume a one-time token, change password and revoke account sessions
+      security: []
+      x-origin-required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token, new_password]
+              properties:
+                token: { type: string, minLength: 64, maxLength: 64 }
+                new_password: { type: string, minLength: 12, maxLength: 128 }
+      responses:
+        '204':
+          {
+            description: Password changed and existing account sessions revoked,
+          }
+        '400': { $ref: '#/components/responses/ApiError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+    name: rust-path-session
+    description: Production Secure cookies use __Host-rust-path-session; local HTTP development uses rust-path-session.
+  schemas:
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 12, maxLength: 128 }
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, maxLength: 512 }
+    EmailRequest:
+      type: object
+      additionalProperties: false
+      required: [email]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+    Session:
+      type: object
+      required: [user_id, email]
+      properties:
+        user_id: { type: string, format: uuid }
+        email: { type: string, format: email }
+    PublicMessage:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    ApiError:
+      type: object
+      required: [code, message, request_id, retryable]
+      properties:
+        code:
+          {
+            type: string,
+            enum:
+              [
+                invalid_email,
+                invalid_password,
+                invalid_credentials,
+                email_verification_required,
+                invalid_token,
+                service_unavailable,
+                rate_limited,
+              ],
+          }
+        message: { type: string }
+        request_id: { type: string, format: uuid }
+        retryable: { type: boolean }
+  responses:
+    ApiError:
+      description: Stable error envelope; never contains submitted passwords, tokens or SQL diagnostics
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
+    RateLimited:
+      description: Request limit reached
+      headers:
+        Retry-After:
+          required: true
+          schema: { type: integer, minimum: 1 }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ApiError' }
