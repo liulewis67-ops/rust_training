@@ -88,5 +88,5 @@ pub(super) async fn consume_limits(
 /// 对限流维度求哈希，避免存储的键泄漏邮箱地址或 IP。
 fn hash_key(scope: &str, material: &str) -> String {
     let digest = Sha256::digest(format!("{scope}:{material}").as_bytes());
-    digest.iter().map(|byte| format!("{byte:02x}")).collect()
+    format!("{digest:x}")
 }

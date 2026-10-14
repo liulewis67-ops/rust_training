@@ -22,6 +22,13 @@ function clearDraftDatabase(): Promise<void> {
   })
 }
 
+/** Read the editor's local persistence status independently from the run-task live region. */
+function draftStatusText(): string {
+  const status = document.querySelector('.draft-editor-heading [role="status"]')
+  if (!status) throw new Error('Draft status should be rendered')
+  return status.textContent ?? ''
+}
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
@@ -47,12 +54,12 @@ it('saves and restores local code drafts through IndexedDB', async () => {
     expect((editor as HTMLTextAreaElement).value).toBe(template),
   )
   await waitFor(() => {
-    expect(screen.getByRole('status').textContent).toBe('当前使用课程示例')
+    expect(draftStatusText()).toBe('当前使用课程示例')
   })
 
   fireEvent.change(editor, { target: { value: edited } })
   await waitFor(() => {
-    expect(screen.getByRole('status').textContent).toContain('已保存到此设备')
+    expect(draftStatusText()).toContain('已保存到此设备')
   })
 
   first.unmount()
@@ -74,7 +81,7 @@ it('saves and restores local code drafts through IndexedDB', async () => {
   )
   fireEvent.change(restoredEditor, { target: { value: template } })
   await waitFor(() => {
-    expect(screen.getByRole('status').textContent).toBe('当前使用课程示例')
+    expect(draftStatusText()).toBe('当前使用课程示例')
   })
   second.unmount()
   render(<DraftEditor {...props} />)
@@ -103,13 +110,13 @@ it('starts from the new template version instead of an older draft', async () =>
     expect((editor as HTMLTextAreaElement).value).toBe(props.template),
   )
   await waitFor(() => {
-    expect(screen.getByRole('status').textContent).toBe('当前使用课程示例')
+    expect(draftStatusText()).toBe('当前使用课程示例')
   })
   fireEvent.change(editor, {
     target: { value: 'fn example() { old_draft(); }' },
   })
   await waitFor(() => {
-    expect(screen.getByRole('status').textContent).toContain('已保存到此设备')
+    expect(draftStatusText()).toContain('已保存到此设备')
   })
   first.unmount()
 
@@ -267,8 +274,93 @@ it('reports cloud failure separately from a successful local save', async () => 
   await waitFor(() =>
     expect(screen.getByText('云端同步失败；本机草稿仍保留')).toBeTruthy(),
   )
-  await waitFor(() =>
-    expect(screen.getByRole('status').textContent).toBe('已保存到此设备'),
-  )
+  await waitFor(() => expect(draftStatusText()).toBe('已保存到此设备'))
   expect(screen.queryByText('云端已同步')).toBeNull()
+})
+
+// The run endpoint receives the new cloud revision only after the current editor buffer is saved.
+it('saves the current editor revision before creating and reading a run task', async () => {
+  const cloud = {
+    id: 'workspace-run',
+    lesson_id: 'run-task-test',
+    item_id: 'main.rs',
+    template_version: 'starter-v1',
+    content: 'fn main() {}',
+    revision: 1,
+  }
+  const edited = 'fn main() { println!("latest"); }'
+  const task = {
+    id: 'run-task-1',
+    workspace_id: cloud.id,
+    workspace_revision: 2,
+    request_hash: 'request-hash',
+    operation: 'run',
+    source_hash: 'source-hash',
+    status: 'queued',
+    created_at: 1_797_000_000,
+  }
+  const fetchMock = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/auth/session')) {
+        return new Response('{"user_id":"learner-a"}', { status: 200 })
+      }
+      if (url.includes('/by-scope')) {
+        return new Response(JSON.stringify(cloud), { status: 200 })
+      }
+      if (url === `/api/v1/workspaces/${cloud.id}` && init?.method === 'PUT') {
+        return new Response(
+          JSON.stringify({ ...cloud, content: edited, revision: 2 }),
+          { status: 200 },
+        )
+      }
+      if (url === '/api/v1/runs' && init?.method === 'POST') {
+        return new Response(JSON.stringify(task), { status: 201 })
+      }
+      if (url === `/api/v1/runs/${task.id}`) {
+        return new Response(JSON.stringify(task), { status: 200 })
+      }
+      throw new Error(`Unexpected request: ${url}`)
+    },
+  )
+  vi.stubGlobal('fetch', fetchMock)
+  vi.stubGlobal('crypto', { randomUUID: () => 'attempt-run-1' })
+
+  render(
+    <DraftEditor
+      lessonId="run-task-test"
+      itemId="main.rs"
+      label="main.rs"
+      template={cloud.content}
+    />,
+  )
+  const editor = screen.getByRole('textbox', { name: 'main.rs代码草稿' })
+  await waitFor(() => expect(screen.getByText('云端已同步')).toBeTruthy())
+  fireEvent.change(editor, { target: { value: edited } })
+  fireEvent.click(screen.getByRole('button', { name: '提交运行' }))
+
+  await waitFor(() =>
+    expect(screen.getByText(/任务 run-task-1 已进入队列/)).toBeTruthy(),
+  )
+  const putIndex = fetchMock.mock.calls.findIndex(
+    ([url, init]) =>
+      String(url) === `/api/v1/workspaces/${cloud.id}` &&
+      init?.method === 'PUT',
+  )
+  const postIndex = fetchMock.mock.calls.findIndex(
+    ([url, init]) => String(url) === '/api/v1/runs' && init?.method === 'POST',
+  )
+  expect(putIndex).toBeGreaterThan(-1)
+  expect(postIndex).toBeGreaterThan(putIndex)
+  expect(JSON.parse(String(fetchMock.mock.calls[putIndex][1]?.body))).toEqual({
+    revision: 1,
+    content: edited,
+  })
+  expect(JSON.parse(String(fetchMock.mock.calls[postIndex][1]?.body))).toEqual({
+    workspace_id: cloud.id,
+    workspace_revision: 2,
+    idempotency_key: 'attempt-run-1',
+    operation: 'run',
+    stdin: '',
+  })
 })

@@ -9,6 +9,7 @@ use tower_sessions::{Expiry, SessionManagerLayer};
 mod accounts;
 mod identity;
 mod learning;
+mod runs;
 mod sessions;
 mod workspaces;
 
@@ -45,6 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let workspace_store = workspaces::WorkspaceStore::connect(&database_url).await?;
     let learning_store = learning::LearningStore::connect(&database_url).await?;
+    let run_store = runs::RunStore::connect(&database_url).await?;
     let cleanup_store = session_store.clone();
     // Expiry cleanup runs separately so a transient cleanup error cannot interrupt API requests.
     tokio::spawn(async move {
@@ -75,6 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .merge(workspaces::router(workspace_store))
         .merge(learning::router(learning_store))
+        .merge(runs::router(run_store))
         .layer(session_layer);
 
     if oidc_enabled {

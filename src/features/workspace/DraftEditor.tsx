@@ -16,6 +16,7 @@ import {
   type CloudDraft,
   type CloudSession,
 } from './cloudDrafts'
+import { RunTaskPanel } from '../execution/RunTaskPanel'
 import './DraftEditor.css'
 
 /** Edit a course code example and persist its version-scoped draft in IndexedDB. */
@@ -283,6 +284,30 @@ export function DraftEditor({
     }
   }
 
+  /** Persist the current editor buffer before creating a run from its cloud revision. */
+  async function saveCurrentDraftForRun(): Promise<CloudDraft | undefined> {
+    cancelPendingSave()
+    const workspace = cloudWorkspaceRef.current
+    if (
+      !storageReady ||
+      !workspace ||
+      cloudConflict ||
+      !['ready', 'dirty'].includes(cloudStatus)
+    ) {
+      return undefined
+    }
+    try {
+      setStatus('saving')
+      if (content !== template) await store.save(createRecord())
+      setStatus(content === template ? 'clean' : 'saved')
+      if (!(await syncCloudContent(content))) return undefined
+      return cloudWorkspaceRef.current
+    } catch {
+      setStatus('error')
+      return undefined
+    }
+  }
+
   /** Sync one locally saved draft and preserve both payloads if the revision is stale. */
   async function syncCloudContent(
     value: string,
@@ -502,6 +527,19 @@ export function DraftEditor({
           </button>
         )}
       </div>
+      <RunTaskPanel
+        key={cloudWorkspace?.id ?? key}
+        workspace={cloudWorkspace}
+        enabled={
+          storageReady &&
+          !actionPending &&
+          !cloudConflict &&
+          status !== 'loading' &&
+          cloudStatus !== 'saving' &&
+          (cloudStatus === 'ready' || cloudStatus === 'dirty')
+        }
+        saveCurrentDraft={saveCurrentDraftForRun}
+      />
       {cloudConflict && (
         <section className="draft-cloud-conflict" aria-label="草稿冲突">
           <p>
