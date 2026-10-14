@@ -5,6 +5,7 @@ export interface ValidationResult {
 export interface CoursePackValidationOptions {
   privatePack?: unknown
   samples?: unknown
+  dependencies?: unknown[]
 }
 
 /** Validate an untrusted JSON value as a versioned course pack. */

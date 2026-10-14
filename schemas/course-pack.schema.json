@@ -57,6 +57,24 @@
       "uniqueItems": true,
       "items": { "$ref": "#/$defs/stableId" }
     },
+    "externalPrerequisiteList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/externalPrerequisite" }
+    },
+    "externalPrerequisite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["course_id", "version", "lesson_id"],
+      "properties": {
+        "course_id": { "$ref": "#/$defs/stableId" },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+        },
+        "lesson_id": { "$ref": "#/$defs/stableId" }
+      }
+    },
     "environment": {
       "type": "object",
       "additionalProperties": false,
@@ -127,6 +145,9 @@
           "items": { "$ref": "#/$defs/term" }
         },
         "prerequisites": { "$ref": "#/$defs/idList" },
+        "external_prerequisites": {
+          "$ref": "#/$defs/externalPrerequisiteList"
+        },
         "source_ids": { "$ref": "#/$defs/idList" },
         "resource_ids": { "$ref": "#/$defs/idList" },
         "exercise_ids": { "$ref": "#/$defs/idList" },

@@ -158,37 +158,159 @@ function validateReferences(
   }
 }
 
-/** Detect prerequisite cycles and attach each cycle to its originating lesson path. */
-function validatePrerequisiteCycles(lessons, lessonIds, errors) {
+/** Validate versioned local/external prerequisite edges and reject graph cycles. */
+function validatePrerequisiteGraph(pack, dependencies, errors) {
+  if (dependencies !== undefined && !Array.isArray(dependencies)) {
+    errors.push('dependencies: expected an array of course packs')
+    return
+  }
+
+  const packageEntries = [
+    { pack, path: 'course' },
+    ...(dependencies ?? []).map((dependency, index) => ({
+      pack: dependency,
+      path: `dependencies[${index}]`,
+    })),
+  ]
+  const packagesByVersion = new Map()
+  const graph = new Map()
+
+  for (const [packageIndex, entry] of packageEntries.entries()) {
+    if (packageIndex > 0) {
+      validateSchema(entry.pack, courseSchema, entry.path, errors, courseSchema)
+    }
+    if (
+      typeof entry.pack?.course_id !== 'string' ||
+      typeof entry.pack?.version !== 'string'
+    ) {
+      continue
+    }
+
+    const packageKey = JSON.stringify([
+      entry.pack.course_id,
+      entry.pack.version,
+    ])
+    if (packagesByVersion.has(packageKey)) {
+      errors.push(
+        `${entry.path}: duplicate course package "${entry.pack.course_id}@${entry.pack.version}"`,
+      )
+      continue
+    }
+    const lessons = Array.isArray(entry.pack.lessons) ? entry.pack.lessons : []
+    const lessonIds = indexEntities(lessons, `${entry.path}.lessons`, errors)
+    packagesByVersion.set(packageKey, { ...entry, lessons, lessonIds })
+  }
+
+  for (const entry of packagesByVersion.values()) {
+    const packageKey = JSON.stringify([
+      entry.pack.course_id,
+      entry.pack.version,
+    ])
+    for (const lesson of entry.lessons) {
+      if (typeof lesson?.id !== 'string') continue
+      const nodeId = `${packageKey}#${lesson.id}`
+      graph.set(nodeId, [])
+    }
+  }
+
+  for (const entry of packagesByVersion.values()) {
+    const packageKey = JSON.stringify([
+      entry.pack.course_id,
+      entry.pack.version,
+    ])
+    for (const [lessonIndex, lesson] of entry.lessons.entries()) {
+      if (typeof lesson?.id !== 'string') continue
+      const nodeId = `${packageKey}#${lesson.id}`
+      const nodePath = `${entry.path}.lessons[${lessonIndex}]`
+      const edges = graph.get(nodeId)
+      const localPrerequisites = Array.isArray(lesson.prerequisites)
+        ? lesson.prerequisites
+        : []
+      for (const [
+        referenceIndex,
+        prerequisiteId,
+      ] of localPrerequisites.entries()) {
+        const prerequisite = entry.lessonIds.get(prerequisiteId)
+        if (!prerequisite) {
+          errors.push(
+            `${nodePath}.prerequisites[${referenceIndex}]: unknown ID "${prerequisiteId}"`,
+          )
+          continue
+        }
+        edges.push({
+          nodeId: `${packageKey}#${prerequisiteId}`,
+          path: `${nodePath}.prerequisites[${referenceIndex}]`,
+        })
+      }
+
+      const externalPrerequisites = Array.isArray(lesson.external_prerequisites)
+        ? lesson.external_prerequisites
+        : []
+      for (const [
+        referenceIndex,
+        prerequisite,
+      ] of externalPrerequisites.entries()) {
+        if (
+          typeof prerequisite?.course_id !== 'string' ||
+          typeof prerequisite?.version !== 'string' ||
+          typeof prerequisite?.lesson_id !== 'string'
+        ) {
+          continue
+        }
+        const dependencyKey = JSON.stringify([
+          prerequisite.course_id,
+          prerequisite.version,
+        ])
+        const dependency = packagesByVersion.get(dependencyKey)
+        const referencePath = `${nodePath}.external_prerequisites[${referenceIndex}]`
+        if (!dependency) {
+          errors.push(
+            `${referencePath}: missing dependency course "${prerequisite.course_id}@${prerequisite.version}"`,
+          )
+          continue
+        }
+        if (dependency === entry) {
+          errors.push(
+            `${referencePath}: use prerequisites for lessons in the same course package`,
+          )
+          continue
+        }
+        if (!dependency.lessonIds.has(prerequisite.lesson_id)) {
+          errors.push(
+            `${referencePath}: unknown lesson "${prerequisite.lesson_id}" in "${prerequisite.course_id}@${prerequisite.version}"`,
+          )
+          continue
+        }
+        edges.push({
+          nodeId: `${dependencyKey}#${prerequisite.lesson_id}`,
+          path: referencePath,
+        })
+      }
+    }
+  }
+
   const state = new Map()
   const stack = []
 
-  /** Visit one lesson while retaining its prerequisite path for cycle diagnostics. */
-  function visit(lessonId) {
-    if (state.get(lessonId) === 'complete') return
-    if (state.get(lessonId) === 'visiting') {
-      const cycleStart = stack.indexOf(lessonId)
-      const cycle = [...stack.slice(cycleStart), lessonId].join(' -> ')
-      const sourceLesson = lessonIds.get(lessonId)
-      errors.push(
-        `lessons[${sourceLesson.index}].prerequisites: cycle ${cycle}`,
-      )
-      return
-    }
-
-    state.set(lessonId, 'visiting')
-    stack.push(lessonId)
-    const prerequisites = lessonIds.get(lessonId).entity.prerequisites
-    for (const prerequisiteId of Array.isArray(prerequisites)
-      ? prerequisites
-      : []) {
-      if (lessonIds.has(prerequisiteId)) visit(prerequisiteId)
+  /** Visit a lesson node while retaining the edge that introduced a cycle. */
+  function visit(nodeId) {
+    if (state.get(nodeId) === 'complete') return
+    state.set(nodeId, 'visiting')
+    stack.push(nodeId)
+    for (const edge of graph.get(nodeId) ?? []) {
+      if (state.get(edge.nodeId) === 'visiting') {
+        const cycleStart = stack.indexOf(edge.nodeId)
+        const cycle = [...stack.slice(cycleStart), edge.nodeId].join(' -> ')
+        errors.push(`${edge.path}: prerequisite cycle ${cycle}`)
+      } else if (state.get(edge.nodeId) !== 'complete') {
+        visit(edge.nodeId)
+      }
     }
     stack.pop()
-    state.set(lessonId, 'complete')
+    state.set(nodeId, 'complete')
   }
 
-  for (const lessonId of lessonIds.keys()) visit(lessonId)
+  for (const nodeId of graph.keys()) visit(nodeId)
 }
 
 /** Ensure public resources stay in the public tree and are never referenced as private data. */
@@ -372,11 +494,10 @@ export function validateCoursePack(pack, options = {}) {
     }
   }
 
-  validateReferences(lessons, 'prerequisites', lessonIds, 'lessons', errors)
   validateReferences(lessons, 'source_ids', sourceIds, 'lessons', errors)
   validateReferences(lessons, 'resource_ids', resourceIds, 'lessons', errors)
   validateReferences(lessons, 'exercise_ids', exerciseIds, 'lessons', errors)
-  validatePrerequisiteCycles(lessons, lessonIds, errors)
+  validatePrerequisiteGraph(pack, options.dependencies, errors)
   if (options.samples !== undefined) {
     const sampleEntries = Array.isArray(options.samples?.examples)
       ? options.samples.examples
@@ -470,7 +591,7 @@ export function validateLegacyCourseMap(mapping, expectedIds) {
 /** Print CLI usage and return the usage-error exit status. */
 function printUsage() {
   console.error(
-    'Usage: node scripts/course-content.mjs validate <course-pack.json> [--private <assessment-pack.json>] [--samples <sample-manifest.json>]',
+    'Usage: node scripts/course-content.mjs validate <course-pack.json> [--private <assessment-pack.json>] [--samples <sample-manifest.json>] [--dependency <course-pack.json> ...]',
   )
   return 2
 }
@@ -490,17 +611,26 @@ async function runCli(argumentsList) {
   const [command, coursePath, ...optionArguments] = argumentsList
   if (command !== 'validate' || !coursePath) return printUsage()
   const paths = new Map()
-  for (let index = 0; index < optionArguments.length; index += 2) {
+  const dependencyPaths = []
+  for (let index = 0; index < optionArguments.length; ) {
     const flag = optionArguments[index]
     const value = optionArguments[index + 1]
+    if (flag === '--dependency') {
+      if (!value || value.startsWith('--')) return printUsage()
+      dependencyPaths.push(value)
+      index += 2
+      continue
+    }
     if (
       !['--private', '--samples'].includes(flag) ||
       !value ||
+      value.startsWith('--') ||
       paths.has(flag)
     ) {
       return printUsage()
     }
     paths.set(flag, value)
+    index += 2
   }
 
   try {
@@ -513,7 +643,16 @@ async function runCli(argumentsList) {
     const samples = samplesPath
       ? await readJsonFile(resolve(process.cwd(), samplesPath))
       : undefined
-    const { errors } = validateCoursePack(pack, { privatePack, samples })
+    const dependencies = await Promise.all(
+      dependencyPaths.map((dependencyPath) =>
+        readJsonFile(resolve(process.cwd(), dependencyPath)),
+      ),
+    )
+    const { errors } = validateCoursePack(pack, {
+      privatePack,
+      samples,
+      dependencies,
+    })
     if (errors.length) {
       console.error(errors.map((error) => `- ${error}`).join('\n'))
       return 1
