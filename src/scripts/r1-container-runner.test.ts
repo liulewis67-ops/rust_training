@@ -11,6 +11,7 @@ import {
   readBoundedFile,
   redactDockerEndpoint,
   resolveDockerTarget,
+  sanitizeTerminalOutput,
   validateEngineInfo,
   validateImageInfo,
 } from '../../scripts/r1-container-runner.mjs'
@@ -57,6 +58,18 @@ it('redacts Docker endpoint credentials, query parameters, and fragments', () =>
   expect(
     redactDockerEndpoint('npipe:////./pipe/dockerDesktopLinuxEngine'),
   ).toBe('npipe:////./pipe/dockerDesktopLinuxEngine')
+})
+
+// Render learner-controlled terminal sequences, carriage returns, and bidi controls inertly.
+it('sanitizes untrusted output before writing it to a terminal', () => {
+  expect(
+    sanitizeTerminalOutput(
+      '\u001b[2Jvisible\u001b]0;forged title\u0007\u0000\rnext\u202e.txt',
+    ),
+  ).toBe('visible\\x00\\rnext\\u202e.txt')
+  expect(sanitizeTerminalOutput('first\r\nsecond\tline')).toBe(
+    'first\r\nsecond\tline',
+  )
 })
 
 // Release container volume mounts before removing volumes or source directories.

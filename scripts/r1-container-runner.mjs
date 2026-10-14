@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
 import { pathToFileURL } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
+import { stripVTControlCharacters } from 'node:util'
 import { createCleanupQueue } from './r1-cleanup-queue.mjs'
 
 export const R1_LIMITS = Object.freeze({
@@ -55,6 +56,34 @@ export function resolveDockerTarget({ contextEnv, hostEnv, currentContext }) {
 /** Redact Docker endpoint credentials and query parameters before logging. */
 export function redactDockerEndpoint(endpoint) {
   return endpoint.replace(/\/\/[^/@]+@/, '//<redacted>@').replace(/[?#].*$/, '')
+}
+
+/** Keep learner output from sending terminal controls or bidirectional overrides. */
+export function sanitizeTerminalOutput(value) {
+  const withoutOperatingSystemCommands = String(value).replace(
+    /\u001b\][^\u0007]*(?:\u0007|\u001b\\)/gu,
+    '',
+  )
+  return stripVTControlCharacters(withoutOperatingSystemCommands)
+    .replace(
+      /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/gu,
+      (character) => {
+        const code = character.codePointAt(0)
+        return `\\x${code.toString(16).padStart(2, '0')}`
+      },
+    )
+    .replace(/\r(?!\n)/gu, '\\r')
+    .replace(
+      /[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/gu,
+      (character) => {
+        return `\\u${character.codePointAt(0).toString(16).padStart(4, '0')}`
+      },
+    )
+}
+
+/** Write untrusted process output as inert terminal text. */
+function writeTerminalOutput(stream, value) {
+  if (value) stream.write(sanitizeTerminalOutput(value))
 }
 
 /** Identifies the locally built image whose base is pinned by digest in Dockerfile. */
@@ -157,8 +186,8 @@ function docker(
       return ''
     }
     // Preserve compiler diagnostics and runtime output when Docker exits non-zero.
-    if (error.stdout) process.stdout.write(error.stdout)
-    if (error.stderr) process.stderr.write(error.stderr)
+    writeTerminalOutput(process.stdout, error.stdout)
+    writeTerminalOutput(process.stderr, error.stderr)
     throw error
   }
 }
@@ -266,7 +295,8 @@ async function removeDockerObject(kind, name) {
       return
     } catch (error) {
       lastError = error
-      process.stderr.write(
+      writeTerminalOutput(
+        process.stderr,
         `${kind}_cleanup_retry=${attempt} resource=${name}\n`,
       )
       if (attempt < 3) await delay(attempt * 250)
@@ -287,7 +317,8 @@ async function removeTemporaryDirectory(name) {
       return
     } catch (error) {
       lastError = error
-      process.stderr.write(
+      writeTerminalOutput(
+        process.stderr,
         `directory_cleanup_retry=${attempt} resource=${name}\n`,
       )
       if (attempt < 3) await delay(attempt * 250)
@@ -304,7 +335,8 @@ const cleanupQueue = createCleanupQueue({
   removeDockerResource: removeDockerObject,
   removeTemporaryDirectory,
   onOtherEndpoint: ({ kind, name, context }) => {
-    process.stderr.write(
+    writeTerminalOutput(
+      process.stderr,
       `cleanup_pending_other_endpoint kind=${kind} resource=${name} context=${context}\n`,
     )
   },
@@ -389,8 +421,8 @@ async function readArguments(args) {
 
 /** Copy a phase's bounded output to the matching host stream. */
 function forwardOutput(result) {
-  if (result.stdout) process.stdout.write(result.stdout)
-  if (result.stderr) process.stderr.write(result.stderr)
+  writeTerminalOutput(process.stdout, result.stdout)
+  writeTerminalOutput(process.stderr, result.stderr)
 }
 
 /** Build, run, and always clean up one source in isolated compile and run containers. */
@@ -408,10 +440,14 @@ async function run(sourcePath, stdinPath) {
   const sourceFile = join(sourceDirectory, 'main.rs')
   const engine = readEngineInfo()
   const safeEndpoint = redactDockerEndpoint(engine.endpoint)
-  process.stderr.write(
+  writeTerminalOutput(
+    process.stderr,
     `Docker engine=${engine.osType} server=${engine.version} context=${engine.context} endpoint=${safeEndpoint}\n`,
   )
-  process.stderr.write(`Docker security=${engine.securityOptions.join(',')}\n`)
+  writeTerminalOutput(
+    process.stderr,
+    `Docker security=${engine.securityOptions.join(',')}\n`,
+  )
   await cleanupQueue.retry(engine)
   const lease = await cleanupQueue.createLease(engine)
   let compileContainer = compileName
@@ -450,10 +486,11 @@ async function run(sourcePath, stdinPath) {
     await lease.heartbeat()
     const imageBuildMs = buildImage()
     const imageId = ensureImage()
-    process.stderr.write(
+    writeTerminalOutput(
+      process.stderr,
       `image_tag_before_build=${imageTagBeforeBuild} image_build_ms=${imageBuildMs}\n`,
     )
-    process.stderr.write(`R1 image ${R1_IMAGE} (${imageId})\n`)
+    writeTerminalOutput(process.stderr, `R1 image ${R1_IMAGE} (${imageId})\n`)
     volumeCleanupRecord = await cleanupQueue.enqueue({
       kind: 'volume',
       name: volumeName,
@@ -493,7 +530,8 @@ async function run(sourcePath, stdinPath) {
         }),
       )
     } finally {
-      process.stderr.write(
+      writeTerminalOutput(
+        process.stderr,
         `compile_ms=${Math.round(performance.now() - compileStart)}\n`,
       )
     }
@@ -527,7 +565,8 @@ async function run(sourcePath, stdinPath) {
         }),
       )
     } finally {
-      process.stderr.write(
+      writeTerminalOutput(
+        process.stderr,
         `run_ms=${Math.round(performance.now() - runStart)}\n`,
       )
     }
@@ -589,7 +628,10 @@ async function main(args) {
     }
     await run(args[0], args[1] ? args[2] : undefined)
   } catch (error) {
-    process.stderr.write(`R1 runner failed: ${describeError(error)}\n`)
+    writeTerminalOutput(
+      process.stderr,
+      `R1 runner failed: ${describeError(error)}\n`,
+    )
     process.exitCode = 1
   }
 }

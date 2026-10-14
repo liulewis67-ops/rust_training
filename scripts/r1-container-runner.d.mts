@@ -35,6 +35,9 @@ export function resolveDockerTarget(input: {
 /** Redact endpoint credentials and query parameters before diagnostic logging. */
 export function redactDockerEndpoint(endpoint: string): string
 
+/** Remove terminal control sequences and escape other unsafe output characters. */
+export function sanitizeTerminalOutput(value: string): string
+
 /** Reject unsupported engines and validate metadata needed for environment evidence. */
 export function validateEngineInfo(info: {
   osType: string
