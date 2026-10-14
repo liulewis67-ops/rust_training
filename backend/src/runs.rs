@@ -18,8 +18,9 @@ use tower_sessions::{Session, session::Id};
 const USER_KEY: &str = "user_id";
 const MAX_SOURCE_BYTES: usize = 64 * 1024;
 const MAX_STDIN_BYTES: usize = 64 * 1024;
-const MAX_REQUEST_BODY_BYTES: usize = 140 * 1024;
 const MAX_IDENTIFIER_BYTES: usize = 128;
+// Leave room for six-byte JSON escapes plus the bounded identifiers and request fields.
+const MAX_REQUEST_BODY_BYTES: usize = MAX_STDIN_BYTES * 6 + MAX_IDENTIFIER_BYTES * 4 + 1024;
 
 /// SQLite persistence for frozen run requests and their idempotency records.
 #[derive(Clone, Debug)]
@@ -421,7 +422,7 @@ mod tests {
     use tower::ServiceExt;
     use tower_sessions::{Session, SessionManagerLayer};
 
-    use super::{MAX_SOURCE_BYTES, RunStore, USER_KEY, router};
+    use super::{MAX_SOURCE_BYTES, MAX_STDIN_BYTES, RunStore, USER_KEY, router};
     use crate::sessions::SqliteSessionStore;
 
     /// Seed a server-managed identity for tests without depending on a live auth provider.
@@ -780,5 +781,32 @@ mod tests {
         )
         .await;
         assert_eq!(large_source.status(), StatusCode::PAYLOAD_TOO_LARGE);
+    }
+
+    /// Accept the configured logical stdin limit after JSON escape expansion.
+    #[tokio::test]
+    async fn accepts_maximum_stdin_with_json_control_character_escapes() {
+        let (app, store) = test_app().await;
+        seed_workspace(&store, "workspace-1", "learner-a", 1, "fn main() {}").await;
+        let learner = session_cookie(&app, "learner-a").await;
+        let request = json!({
+            "workspace_id": "workspace-1",
+            "workspace_revision": 1,
+            "idempotency_key": "attempt-control-input",
+            "operation": "run",
+            "stdin": "\0".repeat(MAX_STDIN_BYTES)
+        });
+
+        let response = json_request(
+            &app,
+            Method::POST,
+            "/api/v1/runs",
+            Some(&learner),
+            Some(request),
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+        assert_eq!(response_json(response).await["status"], "queued");
     }
 }
