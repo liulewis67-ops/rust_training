@@ -76,6 +76,20 @@ describe('课程包结构校验', () => {
     expect(validateCoursePack(pack, { privatePack }).errors).toEqual([])
   })
 
+  // Course metadata and referenced code examples must claim the same compiler environment.
+  it('拒绝与样例清单工具链或 Edition 不一致的课包', async () => {
+    const pack = await fixture()
+    const samples = await sampleFixture()
+    expect(validateCoursePack(pack, { samples }).errors).toEqual([])
+
+    pack.environment.rust_version = '1.90.0'
+    pack.environment.edition = '2021'
+    expect(validateCoursePack(pack, { samples }).errors).toEqual([
+      'course.environment.rust_version: must match sample manifest rust_version ("1.95.0")',
+      'course.environment.edition: must match sample manifest edition ("2024")',
+    ])
+  })
+
   // Public lesson example IDs must resolve against the independently verified sample manifest.
   it('拒绝课程指向不存在的代码样例', async () => {
     const pack = await fixture()

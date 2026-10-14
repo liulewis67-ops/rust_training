@@ -384,6 +384,17 @@ export function validateCoursePack(pack, options = {}) {
     if (!Array.isArray(options.samples?.examples)) {
       errors.push('samples.examples: expected an array of verified example IDs')
     }
+    // One lesson pack must never promise a compiler/edition different from the examples it references.
+    for (const field of ['rust_version', 'edition']) {
+      if (
+        typeof options.samples?.[field] === 'string' &&
+        pack.environment?.[field] !== options.samples[field]
+      ) {
+        errors.push(
+          `course.environment.${field}: must match sample manifest ${field} ("${options.samples[field]}")`,
+        )
+      }
+    }
     const sampleIds = indexEntities(sampleEntries, 'samples.examples', errors)
     validateReferences(lessons, 'example_ids', sampleIds, 'lessons', errors)
   }
