@@ -4,6 +4,7 @@ import App from './app/App'
 import './styles.css'
 import './theme.css'
 import './styles/accessibility.css'
+import './pages/courseCatalog.css'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('应用挂载节点 #root 不存在')

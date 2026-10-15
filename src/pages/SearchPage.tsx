@@ -29,7 +29,7 @@ export function SearchPage({
       <p className="search-eyebrow">COURSE SEARCH</p>
       <h1>搜索课程</h1>
       <p className="search-intro">
-        搜索已公开的课程标题、正文、Rust 术语和编译错误码。
+        搜索课程标题、正文、练习题面、Rust 术语和编译错误码。
       </p>
       <form className="search-form" role="search" onSubmit={handleSubmit}>
         <Search size={17} aria-hidden="true" />

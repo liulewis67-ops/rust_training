@@ -1,0 +1,118 @@
+# M08-L01：Vec、HashMap 与访问策略
+
+## 学完后
+
+- 按“按位置保存一串值”或“按唯一键查找关联值”的需求选择 Vec<T> 或 HashMap<K, V>。
+- 对空集合、越界索引、缺失键和重复键写出明确行为。
+- 区分借用读取、可变借用和转移集合元素所有权的访问方式。
+- 识别哈希表迭代顺序不适合作为稳定输出契约的原因。
+
+## 先修
+
+实施制作顺序依赖 M07-L06；概念上需要能读引用、可变引用和 Option。本稿是私有预写内容，M07-L06 的正式课程验收、I06-F04 和 R2 运行平台尚未完成。
+
+## 按位置访问：Vec
+
+Vec<T> 是可增长、有顺序的同类型元素序列。空集合没有元素，因此 len() 为 0；添加到尾部可用 push。索引适合已经证明范围有效的访问：超出范围会 panic。若位置来自文件、请求或用户输入，用 get 可把“没有这个位置”表示为 None，而不是让程序因越界而中断。
+
+~~~rust
+/// Reads an optional item without consuming the vector.
+fn read_item(items: &[String], index: usize) -> Option<&str> {
+    items.get(index).map(String::as_str)
+}
+
+/// Checks empty and non-empty vector access.
+fn main() {
+    let empty: Vec<String> = Vec::new();
+    assert_eq!(read_item(&empty, 0), None);
+
+    let items = vec![String::from("oak"), String::from("pine")];
+    assert_eq!(read_item(&items, 1), Some("pine"));
+    assert_eq!(read_item(&items, 2), None);
+    assert_eq!(items.len(), 2);
+}
+~~~
+
+&[String] 只借用序列；get 返回的 Option<&String> 也借用元素。map(String::as_str) 将借用结果转成更轻的 &str，没有复制字符串，也没有消费 items。如需修改现有位置，可用 get_mut 得到 Option<&mut T>；需要把某个值交给调用方时，则可以考虑 pop、remove 等所有权转移操作，并承担元素移动带来的语义。
+
+## 按键访问：HashMap
+
+HashMap<K, V> 将键关联到值。每个键在映射中至多对应一个当前值；再次 insert 相同键会替换该键的值，并返回旧值 Some(old)。首次插入没有旧值，返回 None。只读查找用 get：存在时得到借用值，不存在时得到 None。查找不会消费映射，也不会要求调用方先复制值。
+
+~~~rust
+use std::collections::HashMap;
+
+/// Looks up an account label by borrowed key.
+fn label_for<'a>(labels: &'a HashMap<String, String>, key: &str) -> Option<&'a str> {
+    labels.get(key).map(String::as_str)
+}
+
+/// Checks missing, present, and repeated-key behavior.
+fn main() {
+    let mut labels = HashMap::new();
+    assert_eq!(labels.get("A-17"), None);
+
+    assert_eq!(
+        labels.insert(String::from("A-17"), String::from("queued")),
+        None
+    );
+    assert_eq!(label_for(&labels, "A-17"), Some("queued"));
+    assert_eq!(
+        labels.insert(String::from("A-17"), String::from("running")),
+        Some(String::from("queued"))
+    );
+    assert_eq!(label_for(&labels, "A-17"), Some("running"));
+    assert_eq!(labels.len(), 1);
+}
+~~~
+
+查找参数 &str 可以借用匹配 String 键；HashMap::get 返回对映射内值的共享引用。若要更新已存在的值，可用 get_mut。当逻辑是“已有就递增，否则从 1 开始”，entry(key).and_modify(...).or_insert(...) 将查找和条件更新放在同一次 entry 流程里：
+
+~~~rust
+use std::collections::HashMap;
+
+/// Counts each borrowed event label without copying the label strings.
+fn count_events<'a>(events: &[&'a str]) -> HashMap<&'a str, usize> {
+    let mut counts = HashMap::new();
+    for event in events {
+        *counts.entry(*event).or_insert(0) += 1;
+    }
+    counts
+}
+
+/// Verifies empty input, duplicate keys, and a Unicode key.
+fn main() {
+    assert!(count_events(&[]).is_empty());
+    let counts = count_events(&["warn", "成功", "warn"]);
+    assert_eq!(counts.get("warn"), Some(&2));
+    assert_eq!(counts.get("成功"), Some(&1));
+}
+~~~
+
+这个函数的 map 只在函数返回后继续持有从输入借来的 &str，所以它不克隆标签字符串。若要让统计结果脱离输入独立保存，可以选择拥有键（例如 String），并在插入时有意克隆或构造拥有值；那会增加分配/复制，只有所有权需求确实如此时才做。
+
+## 让集合形状匹配访问方式
+
+- 需要保留次序、重复元素或按位置访问：优先考虑 Vec<T>。
+- 需要以唯一键定位或更新值：考虑 HashMap<K, V>。
+- 缺失是正常分支：用 get / get_mut 处理 Option；不要对外部输入直接索引。
+- 需要按键增量更新：使用 entry 表达空缺与已存在两种路径。
+- 对外生成稳定顺序：不能依赖 HashMap 的遍历顺序；明确收集并排序键或记录，再输出。
+
+不要只为“避免借用”而到处 .clone()。先决定数据需要由谁拥有：读取时借用通常已足够；确实要把结果交给更长生命周期的调用方时，才构造拥有副本。相反，into_iter 或消费集合的 API 会把元素所有权交给调用方，适用于原集合不再需要的场景。
+
+## 分层提示
+
+1. **定位提示**：问题是“第几个元素”，还是“某个业务键对应的值”？
+2. **空值提示**：空序列/缺失键应如何表达？判断索引或键是否由不可信输入提供。
+3. **所有权提示**：调用处只需读取，还是确实要修改/取走元素？避免因为返回类型方便就先克隆。
+4. **参考方案**：对照 Vec::get -> Option<&T>、HashMap::get -> Option<&V> 与 HashMap::insert -> Option<V>，解释三者分别表示什么。
+
+## 来源
+
+- [The Rust Programming Language：Vectors](https://doc.rust-lang.org/book/ch08-01-vectors.html)
+- [The Rust Programming Language：Hash Maps](https://doc.rust-lang.org/book/ch08-03-hash-maps.html)
+- [标准库：Vec](https://doc.rust-lang.org/std/vec/struct.Vec.html)
+- [标准库：HashMap](https://doc.rust-lang.org/std/collections/struct.HashMap.html)
+
+领域例子、接口和练习为原创；官方来源用于核对集合语义、缺失访问、替换插入及 entry 用法。

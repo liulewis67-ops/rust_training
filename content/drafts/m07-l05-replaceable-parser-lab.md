@@ -1,0 +1,54 @@
+# M07-L05 实验：可替换解析器接口
+
+## 实验目标
+
+使用一个小型 trait 把调用方与分隔符解析规则解耦。学生将验证 `=` 与 `:` 两种格式经同一接口处理，保留首个分隔符之后的文本，报告输入错误，并从新解压目录完成可复现的库实验。
+
+## 先修与环境
+
+- 课程先修：完成 M07-L04，能用 newtype/错误类型表达有效值，并读懂 trait bound。
+- 作者制作顺序前置：I06-F04 与 M07-L04 正式验收尚未完成，本实验目前只是私有预写题面。
+- 目标环境：Edition 2024、Rust 1.95.0 的固定 R2 Cargo 环境；当前 Windows 作者侧验证不代表 R2 隔离验收。
+- 起始项目：[m07-l05-parser-lab-starter.zip](./public/m07-l05-parser-lab-starter.zip)，版本 0.1.0，无第三方依赖。
+
+## 任务
+
+项目已提供 `EntryParser` trait、共同错误类型、字段校验 helper、`EqualsParser` 与 `ColonParser` 两种解析器，以及泛型 `render_label<P: EntryParser>`。检查实现并修复题目中故意保留的错误：`ColonParser` 使用了错误的分隔符。若发现重复规则，可整理为一个共享 helper，但不增加没有调用方需求的额外 trait 或 wrapper 类型。
+
+解析契约：
+
+- 按该 parser 声明的分隔符第一次出现处分割；分隔符之后的其余字符属于 value，不再切开。
+- key 与 value 用首尾空白判断有效性；有效字段保存 trim 后的文本。
+- 无分隔符、空 key 和空 value 必须分别返回对应 `ParseError`，不要丢弃具体失败种类。
+- `render_label` 对两种 parser 产生一致的规范形式 `key=value`，并原样保留 value 中额外出现的分隔符。
+- 测试覆盖 ASCII、中文与 Unicode、首分隔符、空输入及错误传播。
+
+## 起点与观察
+
+打开起始 ZIP 后先运行 `cargo test --offline`。项目可以编译，但 `ColonParser` 错把 `:` 格式交给 `=` 分隔符，因此公开测试会失败。修复实现，让两种解析器满足同一契约。错误输入不应 panic，也不应全部伪装成缺分隔符。
+
+## 完成与重置
+
+在干净解压目录运行：
+
+~~~text
+cargo fmt -- --check
+cargo check --offline
+cargo test --offline
+~~~
+
+起始 ZIP 包含 `starter-manifest.json`，其中列出版本和其余每个项目文件的 SHA-256。重新开始时，解压原始 ZIP 到另一个空目录，逐文件校验 manifest 后重跑题目；不要用已修改项目覆盖起点。归档文件自身 SHA-256 与清单见[教师评测记录](../../docs/implementation/evidence/M07-L05-draft.md)。
+
+## 分层提示
+
+1. **定位提示**：对照 `ColonParser` 和 `EqualsParser` 的 `parse_delimited` 参数。
+2. **行为提示**：separator 必须从当前 parser 获得，缺失错误也应记录同一个 separator。
+3. **边界提示**：使用 `split_once`，然后分别检查 trim 后的 key/value；不要把整个 value 再切分。
+4. **参考方案**：共享 helper 接收 `delimiter: char`，两个 trait 实现各自传入 `=` 或 `:`。
+
+## 来源
+
+- [The Rust Reference：Traits](https://doc.rust-lang.org/reference/items/traits.html)
+- [The Rust Standard Library：`str::split_once`](https://doc.rust-lang.org/std/primitive.str.html#method.split_once)
+
+题面、数据、测试契约与起始实现为原创；来源用于核对 trait 行为契约和首个分隔符切分语义。

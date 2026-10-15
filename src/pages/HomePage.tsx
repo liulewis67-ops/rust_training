@@ -9,7 +9,7 @@ import {
 import { lessons } from '../features/catalog'
 import './learningRecommendations.css'
 
-/** 展示平台方向和规划中的主线，并将用户带到路线详情。 */
+/** Introduce the learning path and provide a direct route into its course catalog. */
 export function HomePage({
   onNavigate,
   progress,
@@ -50,23 +50,21 @@ export function HomePage({
           <p className="home-kicker">面向有编程经验的开发者</p>
           <h1>从 Rust 基础，走到可交付的后端服务。</h1>
           <p className="home-description">
-            沿着类型、异步、Axum
-            与数据工程逐步深入，用真实项目练习完整开发循环。
+            按 8 个阶段、24 个模块系统学习 Rust
+            工程。浏览课程正文、练习题面与项目路径。
           </p>
           <button className="primary-button home-cta" onClick={openTrack}>
-            查看学习路线 <ArrowRight size={15} />
+            浏览课程目录 <ArrowRight size={15} />
           </button>
         </div>
         <div className="home-route-card">
           <span className="home-card-icon">
             <BookOpen size={17} />
           </span>
-          <p>主线规划</p>
+          <p>课程主线</p>
           <h2>{learningTrack.title}</h2>
-          <span>
-            {learningTrack.duration} · {learningTrack.modules}
-          </span>
-          <span className="planned-badge">内容规划中</span>
+          <span>8 个学习阶段 · 24 个模块 · 144 节课程</span>
+          <span className="planned-badge">课程可浏览</span>
         </div>
       </section>
 
@@ -80,7 +78,7 @@ export function HomePage({
             <h2 id="home-next-steps-title">从一条清晰的下一步开始</h2>
           </div>
           <small>
-            自报阅读 {countAvailableCompletions(progress)}/8 · 本地答题{' '}
+            旧版专题阅读 {countAvailableCompletions(progress)}/8 · 本地答题{' '}
             {progress.attempts.length}
           </small>
         </div>
@@ -185,7 +183,7 @@ export function HomePage({
       </section>
 
       <p className="home-disclosure" role="status">
-        当前页面展示的是课程规划。主线课程尚未开放，规划阶段不会计作已完成学习。
+        课程目录与教学内容可阅读；在线代码执行和平台评测暂未开放。
       </p>
     </article>
   )

@@ -110,6 +110,7 @@ export function AppShell({
   const hasLegacyWorkspace =
     route.page !== 'home' &&
     route.page !== 'track' &&
+    route.page !== 'course-lesson' &&
     route.page !== 'search' &&
     route.page !== 'auth'
   /** 关闭移动目录后导航到目标页面。 */
@@ -163,14 +164,22 @@ export function AppShell({
             首页
           </button>
           <button
-            className={route.page === 'track' ? 'selected' : ''}
-            aria-current={route.page === 'track' ? 'page' : undefined}
+            className={
+              route.page === 'track' || route.page === 'course-lesson'
+                ? 'selected'
+                : ''
+            }
+            aria-current={
+              route.page === 'track' || route.page === 'course-lesson'
+                ? 'page'
+                : undefined
+            }
             onClick={() => {
-              // 打开路线详情；当前未制作的课程仍保持规划状态。
+              // Open the full course catalog from the main navigation.
               return nav({ page: 'track', trackSlug: 'rust-backend' })
             }}
           >
-            学习路线
+            课程目录
           </button>
           <button
             className={route.page === 'search' ? 'selected' : ''}

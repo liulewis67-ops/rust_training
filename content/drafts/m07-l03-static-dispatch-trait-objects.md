@@ -1,0 +1,147 @@
+# M07-L03：静态分发、dyn 与 dyn compatibility
+
+## 学完后
+
+- 分辨泛型 trait bound 的静态分发与 `dyn Trait` trait object 的动态分发。
+- 按调用者是否需要存放异构具体类型，为可扩展接口选择泛型参数或 trait object。
+- 判断常见导致 dyn compatibility 失败的 trait 项，并区分“trait object 不可构造”和“某方法不能经对象调用”。
+- 验证原生 `async fn` trait 方法不能直接通过 `dyn Trait` 调用；不以宏生成的 boxed-future 接口冒充原生 trait object 能力。
+
+## 先修
+
+完成 M07-L02，能读 trait 实现和必需方法；本稿在 M07-L02 正式验收前提前起草。更上游的 I06-F04 和 R2 固定 Cargo 环境也未验收。本节用一个没有关联类型、泛型方法或 async 方法的简单 trait 比较两种分发方式；完整 dyn compatibility 规则以官方 Reference 为准，这里只聚焦常见边界。
+
+## 同一行为可以由不同具体类型实现
+
+```rust
+/// Exposes one operation that can be called through a trait object.
+trait Label {
+    /// Returns a display label owned by the caller.
+    fn label(&self) -> String;
+}
+
+/// Represents a queued item.
+struct QueueItem {
+    code: String,
+}
+
+/// Implements the label behavior for a queued item.
+impl Label for QueueItem {
+    fn label(&self) -> String {
+        format!("queue:{}", self.code)
+    }
+}
+
+/// Represents a completed import batch.
+struct ImportBatch {
+    accepted: u32,
+}
+
+/// Implements the same behavior for an import batch.
+impl Label for ImportBatch {
+    fn label(&self) -> String {
+        format!("imported:{}", self.accepted)
+    }
+}
+```
+
+两个不同的具体类型都满足 `Label`，但各自保留不同的数据和实现。trait 规定可做什么，不要求这些类型共享字段布局或相同的内部算法。
+
+## 泛型参数通常使用静态分发
+
+```rust
+/// Calls Label using a concrete type selected for this instantiation.
+fn render_static<T: Label>(value: &T) -> String {
+    value.label()
+}
+
+/// Renders two separate concrete types through generic instantiations.
+fn main() {
+    let item = QueueItem {
+        code: String::from("Q17"),
+    };
+    let batch = ImportBatch { accepted: 4 };
+    assert_eq!(render_static(&item), "queue:Q17");
+    assert_eq!(render_static(&batch), "imported:4");
+}
+```
+
+每次调用为 `T` 选定一个具体类型，泛型函数体可以在编译期针对该类型检查；这称为静态分发。一个 `Vec<T>` 中所有元素必须拥有同一具体 `T`。需要两种类型时，此泛型函数会有不同的具体实例，调用仍可共享源码。
+
+## trait object 在运行时选择实现
+
+```rust
+/// Calls Label through a trait object.
+fn render_dynamic(value: &dyn Label) -> String {
+    value.label()
+}
+
+/// Stores and calls values with different concrete types.
+fn main() {
+    let values: Vec<Box<dyn Label>> = vec![
+        Box::new(QueueItem {
+            code: String::from("Q17"),
+        }),
+        Box::new(ImportBatch { accepted: 4 }),
+    ];
+    let labels: Vec<String> = values
+        .iter()
+        .map(|value| render_dynamic(&**value))
+        .collect();
+    assert_eq!(labels, ["queue:Q17", "imported:4"]);
+}
+```
+
+`dyn Label` 是 trait object 类型，具体实现由实际值决定。`Box<dyn Label>` 让同一个集合持有不同具体类型；调用 `label()` 时，程序运行期间根据 trait object 携带的实现信息找到对应方法。这是动态分发。trait object 是动态大小类型，须经 `&dyn Label`、`Box<dyn Label>` 这样的指针使用。
+
+两种方式都能实现相同的 `Label` 行为，选择取决于数据结构与 API 需要：需要在单个集合或长期存储的字段中放不同具体类型时，trait object 很直接；类型固定且希望泛型调用方保留静态类型关系时，泛型更直接。动态调用有间接调用成本，泛型可能为具体类型生成不同代码；实际代码大小、内联和运行性能取决于程序和优化，不应仅凭语法作性能保证。
+
+## dyn compatibility 限制的是对象类型能力
+
+`dyn Trait` 必须能为可经 trait object 调用的方法构建固定接口。常见的不兼容因素包括泛型方法、返回或按值接收未知的 `Self`，以及返回 opaque `impl Trait` 的方法。异步函数的隐藏返回类型是 Future，因此原生 `async fn` trait 方法也不能直接通过 dyn 调用：
+
+```rust
+/// The native async method makes this trait dyn-incompatible.
+trait AsyncLabel {
+    /// Returns a future whose concrete type is hidden by async fn.
+    async fn label(&self) -> String;
+}
+
+/// This trait-object use is intentionally rejected.
+fn require_dynamic_async(_: &dyn AsyncLabel) {}
+```
+
+trait object 在含 `&dyn AsyncLabel` 的类型处会因 dyn compatibility 检查而失败。原生 async trait 方法本身可用于泛型边界和具体实现；失败的是把含此方法的 trait 直接用作 `dyn` trait object。若 API 需要动态分发异步操作，需要单独设计显式返回 boxed future 的接口或采用经过审查的宏转换，并记录分配、`Send` 与生命周期约束；这属于后续异步课程，不能假设编译器自动把原生 async 方法变成可动态调用的方法。
+
+有时 trait 同时提供 dyn 可调用核心方法和只适用于具体类型的泛型辅助方法：
+
+```rust
+/// Keeps one method dynamically callable and one statically constrained.
+trait Renderer {
+    /// This method can be dispatched through dyn Renderer.
+    fn render(&self) -> String;
+
+    /// This generic helper is explicitly unavailable through the trait object.
+    fn render_typed<T: std::fmt::Display>(&self, value: T) -> String
+    where
+        Self: Sized;
+}
+```
+
+`where Self: Sized` 可将某个方法标记为不可经 trait object 分发，而保留 trait 其他方法的对象能力；对 `&dyn Renderer` 调用 `render_typed` 仍不合法。若调用方必须通过 dyn 传入不同显示类型，可将参数改为 `&dyn Display`，让方法签名本身变成固定的动态接口。
+
+## 分层提示
+
+1. **定位提示**：调用点的具体类型在编译时已知吗？一个集合是否需要存放不同具体类型？
+2. **分发提示**：`T: Label` 在调用时针对具体 T；`&dyn Label` 经 trait object 选择具体实现。
+3. **兼容提示**：检查 trait object 可调用的方法是否有类型参数、暴露未知的 Self，或返回 async/impl Trait 隐藏类型。
+4. **参考方案**：将 `Vec<Box<dyn Label>>` 与两个独立的 `render_static<T>` 调用并排，对照异构存储需求和实现选择时机。
+
+## 来源
+
+- [The Rust Programming Language：Using Trait Objects](https://doc.rust-lang.org/book/ch18-02-trait-objects.html)
+- [The Rust Reference：Trait objects](https://doc.rust-lang.org/reference/types/trait-object.html)
+- [The Rust Reference：Dyn compatibility](https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility)
+- [The Rust Reference：Trait and lifetime bounds](https://doc.rust-lang.org/reference/trait-bounds.html)
+
+队列领域例子、API 选择题和提示为原创；来源用于核对泛型实例化、trait object、运行时动态分发和 dyn compatibility 规则。性能部分只说明机制，不对特定程序作测量结论。

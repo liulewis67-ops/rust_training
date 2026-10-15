@@ -10,6 +10,7 @@ import { HomePage } from '../pages/HomePage'
 import { TrackPage } from '../pages/TrackPage'
 import { SearchPage } from '../pages/SearchPage'
 import { AuthPage } from '../features/identity/AuthPage'
+import { CourseLessonPage } from '../pages/CourseLessonPage'
 import type { Exercise, Lesson } from '../types/lesson'
 import { AppShell } from './AppShell'
 import { useRoute } from './router'
@@ -77,9 +78,9 @@ export default function App(): JSX.Element {
   function openReview(): void {
     navigate({ page: 'review' })
   }
-  /** 未知链接的恢复入口返回第一节可用原型课程。 */
-  function openFirstLesson(): void {
-    selectLesson(lessons[0])
+  /** Use the full catalog as the recovery point for an unknown route. */
+  function openCourseCatalog(): void {
+    navigate({ page: 'track', trackSlug: 'rust-backend' })
   }
 
   let page: JSX.Element
@@ -116,6 +117,15 @@ export default function App(): JSX.Element {
         onReview={openReview}
       />
     )
+  } else if (route.page === 'course-lesson') {
+    page = (
+      <CourseLessonPage
+        key={`${route.moduleId}-${route.lessonId}`}
+        moduleId={route.moduleId}
+        lessonId={route.lessonId}
+        onNavigate={navigate}
+      />
+    )
   } else if (route.page === 'review') {
     page = (
       <ReviewPage
@@ -145,7 +155,7 @@ export default function App(): JSX.Element {
         <section className="utility-page">
           <h1>未找到课程或页面</h1>
           <p>该链接不存在，课程可能尚未发布。</p>
-          <button className="primary-button" onClick={openFirstLesson}>
+          <button className="primary-button" onClick={openCourseCatalog}>
             返回课程目录
           </button>
         </section>
@@ -155,7 +165,7 @@ export default function App(): JSX.Element {
       <section className="utility-page">
         <h1>未找到课程或页面</h1>
         <p>该链接不存在，课程可能尚未发布。</p>
-        <button className="primary-button" onClick={openFirstLesson}>
+        <button className="primary-button" onClick={openCourseCatalog}>
           返回课程目录
         </button>
       </section>

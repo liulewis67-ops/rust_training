@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { lessons } from '../features/catalog'
+import { findCourseLesson } from '../data/courseCatalog'
 import type { AuthMode } from '../features/identity/AuthPage'
 
 export type Route =
   | { page: 'home' }
   | { page: 'search' }
   | { page: 'lesson'; lessonId: string }
+  | { page: 'course-lesson'; moduleId: string; lessonId: string }
   | { page: 'track'; trackSlug: string }
   | { page: 'course-preview'; courseId: string }
   | { page: 'review' | 'progress' }
@@ -34,6 +36,17 @@ export function readRoute(pathname: string): Route {
     pathname === '/tracks/rust-backend/'
   )
     return { page: 'track', trackSlug: 'rust-backend' }
+  const courseLessonMatch = /^\/courses\/(m\d{2})\/(l\d{2})\/?$/i.exec(pathname)
+  if (
+    courseLessonMatch &&
+    findCourseLesson(courseLessonMatch[1], courseLessonMatch[2])
+  ) {
+    return {
+      page: 'course-lesson',
+      moduleId: courseLessonMatch[1].toUpperCase(),
+      lessonId: courseLessonMatch[2].toUpperCase(),
+    }
+  }
   const previewMatch = /^\/preview\/([a-z0-9-]+)\/?$/.exec(pathname)
   if (previewMatch) return { page: 'course-preview', courseId: previewMatch[1] }
   const match = /^\/lesson\/([^/]+)\/?$/.exec(pathname)
@@ -62,6 +75,8 @@ function routePath(route: Route): string {
     return `/tracks/${encodeURIComponent(route.trackSlug)}`
   if (route.page === 'lesson')
     return `/lesson/${encodeURIComponent(route.lessonId ?? '')}`
+  if (route.page === 'course-lesson')
+    return `/courses/${route.moduleId.toLowerCase()}/${route.lessonId.toLowerCase()}`
   if (route.page === 'course-preview')
     return `/preview/${encodeURIComponent(route.courseId)}`
   if (route.page === 'not-found') return route.path

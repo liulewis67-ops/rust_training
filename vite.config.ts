@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { createHash } from 'node:crypto'
 import { readFile, readdir, writeFile } from 'node:fs/promises'
-import { dirname, relative, resolve, sep } from 'node:path'
+import { dirname, extname, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { buildStaticCoursePages } from './scripts/course-page-renderer.mjs'
 
@@ -17,7 +17,12 @@ async function listBuildFiles(root: string, current = root): Promise<string[]> {
       // Recurse into generated lesson routes so static pages also reopen offline.
       const path = resolve(current, entry.name)
       if (entry.isDirectory()) return listBuildFiles(root, path)
-      if (!entry.isFile() || entry.name === 'sw.js') return []
+      if (
+        !entry.isFile() ||
+        entry.name === 'sw.js' ||
+        extname(entry.name).toLowerCase() === '.zip'
+      )
+        return []
       return [`/${relative(root, path).split(sep).join('/')}`]
     }),
   )

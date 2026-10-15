@@ -5,6 +5,7 @@ import runnableExample from '../../../content/samples/first-word-runnable.rs?raw
 import fragmentExample from '../../../content/samples/first-word-fragment.rs?raw'
 import compileFailExample from '../../../content/samples/borrow-conflict-compile-fail.rs?raw'
 import { lessons } from '../catalog'
+import { courseModules } from '../../data/courseCatalog'
 import type { Lesson } from '../../types/lesson'
 
 interface SearchDocument {
@@ -167,6 +168,16 @@ function createCourseDocuments(course: PublicCourse): SearchDocument[] {
 /** Build the searchable set from app lessons and the explicit public course manifest. */
 function createSearchDocuments(): SearchDocument[] {
   const legacyDocuments = lessons.map(createLessonDocument)
+  const authoredCourseDocuments = courseModules.flatMap((module) =>
+    module.lessons.map((lesson) => ({
+      id: `${module.id}-${lesson.id}`,
+      title: lesson.title,
+      section: `${module.id} · ${module.title}`,
+      href: `/courses/${module.id.toLowerCase()}/${lesson.id.toLowerCase()}`,
+      body: [lesson.content, ...lesson.exercises].filter(Boolean),
+      aliases: [],
+    })),
+  )
   const listedFiles = publicManifest.course_files
   const missingBundles = listedFiles.filter((fileName) => {
     // Refuse to ship a published package until its public search fields are explicitly wired.
@@ -180,7 +191,7 @@ function createSearchDocuments(): SearchDocument[] {
     if (!isPublishableCourse(course, listedFiles, fileName)) return []
     return createCourseDocuments(course)
   })
-  return [...legacyDocuments, ...publishedDocuments]
+  return [...legacyDocuments, ...authoredCourseDocuments, ...publishedDocuments]
 }
 
 const searchDocuments = createSearchDocuments()

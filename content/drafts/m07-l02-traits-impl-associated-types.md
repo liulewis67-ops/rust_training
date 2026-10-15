@@ -1,0 +1,129 @@
+# M07-L02：trait、impl 与关联类型
+
+## 学完后
+
+- 将一组有共同用途的方法签名定义为 trait，并为具体类型提供 trait implementation。
+- 区分固有 `impl Type` 与 `impl Trait for Type`：前者添加类型自身的能力，后者满足可由泛型约束调用的共享契约。
+- 为不同实现类型选择关联输出类型，并在泛型函数中用 `T::Output` 表达它与实现类型的关系。
+- 通过缺少必需方法或签名不匹配的负例，定位 trait implementation 未满足契约的原因。
+
+## 先修
+
+完成 M07-L01 的泛型和 trait bound 作者侧学习；本稿的制作顺序依赖它。更上游的实施前置 I06-F04、M07-L01 的正式验收以及 R2 平台接入仍未完成。概念上需要能读结构体和方法。本节不展开默认方法、对象安全、trait object、泛型 trait 的多重实现和孤儿规则；这些内容将分配到后续课程或专门说明。
+
+## trait 声明一份共享契约
+
+假设队列系统希望不同记录都能给出适合日志展示的摘要。我们希望调用方依赖同一个行为名称，不必为每种记录写一套展示函数：
+
+```rust
+/// Describes a value that can produce a displayable summary.
+trait Summary {
+    type Output: std::fmt::Display;
+
+    /// Produces the summary chosen by each implementation.
+    fn summarize(&self) -> Self::Output;
+}
+```
+
+`Summary` 声明了一个必需方法和一个关联类型。trait 的隐式 `Self` 表示当前实现它的具体类型；`Self::Output` 则表示该实现选择的摘要类型。`Output: Display` 把显示能力要求放在关联类型上，使所有合规实现的结果都可格式化。
+
+trait 只声明契约，不在这里指定 `QueueItem` 如何构造字符串。实现中必须为没有默认函数体的 `summarize` 提供函数体，并为 `Output` 指定具体类型。trait 的方法可以有默认实现，但本节先让必需契约显式可见。
+
+## 固有 impl 与 trait impl 各自表达什么
+
+```rust
+/// Stores a queue item's owned fields.
+struct QueueItem {
+    code: String,
+    retries: u8,
+}
+
+/// Adds constructors that belong specifically to QueueItem.
+impl QueueItem {
+    /// Creates a queue item from its code and retry count.
+    fn new(code: String, retries: u8) -> Self {
+        Self { code, retries }
+    }
+}
+
+/// Implements the shared summary contract for QueueItem.
+impl Summary for QueueItem {
+    type Output = String;
+
+    /// Formats both fields for a human-readable log line.
+    fn summarize(&self) -> Self::Output {
+        format!("{} (retries: {})", self.code, self.retries)
+    }
+}
+```
+
+`impl QueueItem` 是固有实现；`QueueItem::new(...)` 可通过类型名调用。`impl Summary for QueueItem` 是 trait 实现；满足 `Summary` 后，调用方可以在 trait 已可见的上下文中使用 `item.summarize()`，泛型代码也可把 `QueueItem` 作为满足 `Summary` 的类型。
+
+`Output = String` 是这项实现作出的选择。另一个类型可为同一个 trait 选择不同的输出类型，只要满足 `Display`：
+
+```rust
+/// Stores the number of imported rows.
+struct ImportBatch {
+    rows: u32,
+}
+
+/// Summarizes a batch with a compact numeric result.
+impl Summary for ImportBatch {
+    type Output = u32;
+
+    /// Returns the number of rows as its summary.
+    fn summarize(&self) -> Self::Output {
+        self.rows
+    }
+}
+
+/// Uses only the shared trait contract and its output bound.
+fn render_summary<T: Summary>(value: &T) -> String {
+    value.summarize().to_string()
+}
+
+/// Exercises one shared function with two implementation types.
+fn main() {
+    let item = QueueItem::new(String::from("Q17"), 2);
+    let batch = ImportBatch { rows: 8 };
+    assert_eq!(render_summary(&item), "Q17 (retries: 2)");
+    assert_eq!(render_summary(&batch), "8");
+}
+```
+
+`render_summary` 的 `T: Summary` 保证可调用 `summarize`，而 trait 声明中的 `Output: Display` 保证返回值可调用 `to_string()`。两个实现的输出类型不同，调用处仍只依赖共享契约。trait 把行为关联到实现类型；关联类型把一个实现选择的相关类型关联到该行为。
+
+## 关联类型和 trait 类型参数的选择
+
+关联类型适用于这样的关系：对一个具体实现类型，trait 的这个结果类型通常只有一个自然选择。例如一个摘要操作可以为 `QueueItem` 返回 `String`，为 `ImportBatch` 返回 `u32`。签名中的 `Self::Output` 避免在每个方法和调用处重复传入类型参数。
+
+若同一实现类型确实需要用同一个行为分别对应多个可选类型，trait 也可声明类型参数，例如 `trait Convert<Target> { fn convert(&self) -> Target; }`。这两个形态表达的 API 关系不同；不要仅为让签名看起来通用，把单一、固定的实现结果无缘无故改为 trait 类型参数。本课程暂不处理为同一类型实现多种目标类型的具体转换设计。
+
+## 不完整实现会在实现处失败
+
+```rust
+/// This implementation is intentionally missing its required method.
+impl Summary for QueueItem {
+    type Output = String;
+}
+```
+
+这个实现声明选择了 `String`，却没有提供必需的 `summarize` 方法。编译器会拒绝该实现，并指出缺少 trait 项。另一类错误是方法返回类型与关联类型不匹配：若 `Output = String`，实现却写 `fn summarize(&self) -> u32`，同样不符合 trait 声明的签名。添加新方法不能代替实现必需的方法；trait implementation 只能定义该 trait 契约允许的关联项。
+
+阅读实现错误时，从 `impl Trait for Type` 中依次对照：关联类型是否全部选择；每个必需方法是否存在；参数、接收者和返回类型是否与 trait 中的签名相同；关联类型上的 bound 是否满足。默认方法可以省略，本节例子没有默认方法。
+
+## 分层提示
+
+1. **定位提示**：区分 trait 声明、`impl Type` 和 `impl Trait for Type` 三个区域。
+2. **契约提示**：标出未提供默认函数体的 trait 方法，以及每个实现必须选择的关联类型。
+3. **类型提示**：把 `Self` 替换为实现类型，把 `Self::Output` 替换为该实现写下的具体类型。
+4. **参考方案**：对照 `QueueItem -> String` 与 `ImportBatch -> u32`，检查 `render_summary` 是否仅依赖 `Summary` 的契约。
+
+## 来源
+
+- [The Rust Programming Language：Traits](https://doc.rust-lang.org/book/ch10-02-traits.html)
+- [The Rust Reference：Traits](https://doc.rust-lang.org/reference/items/traits.html)
+- [The Rust Reference：Associated items](https://doc.rust-lang.org/reference/items/associated-items.html)
+- [The Rust Reference：Trait implementations](https://doc.rust-lang.org/reference/items/implementations.html#trait-implementations)
+
+领域样例、接口命名、实现类型和练习为原创；来源用于核对 trait 契约、实现要求及关联类型的声明与定义规则。

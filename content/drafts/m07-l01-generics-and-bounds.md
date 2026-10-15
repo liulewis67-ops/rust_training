@@ -1,0 +1,88 @@
+# M07-L01：泛型与约束
+
+## 学完后
+
+- 将同一算法中仅因输入类型不同而重复的实现提炼为泛型函数。
+- 用最小 trait bound 表达函数体实际需要的能力，并解释缺少约束时编译器为何拒绝调用。
+- 用相同泛型函数处理至少两种具体类型，不把泛型误当成运行时动态类型。
+- 在短类型清单与 `where` 子句之间选择可读的约束写法。
+
+## 先修
+
+实施顺序上游为 I06-F04；课程概念先修是 M03 的结构体、枚举和函数，M04 的值移动与借用，以及 M06-L06 的接口选择检查。本稿提前起草，不表示这些实施前置已验收。后续课程会讲 trait 的定义、实现和关联类型；本节只使用标准库 `PartialOrd`、`Clone` 与 `Display`，不自定义 trait。
+
+## 泛型消除重复实现
+
+```rust
+/// Returns the greater value while accepting any ordered type.
+fn greater<T: PartialOrd>(left: T, right: T) -> T {
+    if left >= right { left } else { right }
+}
+
+/// Uses one generic function with two concrete types.
+fn main() {
+    assert_eq!(greater(7_i32, 4_i32), 7);
+    assert_eq!(
+        greater(String::from("cedar"), String::from("birch")),
+        "cedar"
+    );
+}
+```
+
+`T` 是类型参数：定义函数时还没有指定它对应哪一种具体类型。调用 `greater` 时，编译器分别用 `i32` 与 `String` 检查函数体。`>=` 由 `PartialOrd` 提供，因此这是当前函数体所需的约束。String 与 i32 都实现 `PartialOrd`，所以这两个实例都成立。泛型消除重复源码，但不会让一次调用在运行期间混合任意类型。
+
+`PartialOrd` 允许某些值对无法比较，例如浮点数的 NaN。此函数约定：当 `left >= right` 为 false 时返回 `right`，所以不可比较时也会选 `right`。若业务必须区分“较小”和“不可比较”，应让接口显式返回 `Option` 或 `Ordering`，不能假装这个简单比较已定义全序。
+
+## 约束说明代码可以依赖什么
+
+去掉 `T: PartialOrd` 后，函数体无法证明所有 `T` 都支持 `>=`：
+
+```rust
+/// Intentionally invalid: arbitrary T does not promise comparison.
+fn invalid_greater<T>(left: T, right: T) -> T {
+    if left >= right { left } else { right }
+}
+```
+
+编译器在定义这个泛型函数时就会拒绝比较操作，因为没有针对任意 `T` 的实现保证。约束既是给函数体的能力证明，也是调用方必须满足的契约。调用一个带 `T: PartialOrd` 的函数时，实参类型必须实现 `PartialOrd`。
+
+约束应来自实际操作，而不是预先堆上可能用不到的能力。若实现只比较，不需要 `Clone` 或 `Copy`；本例按值接收并把较大值返回，所以输入值所有权转移进函数，未选中的值会在函数结束时被丢弃。若 API 要保留调用方所有权，可另行设计借用输入，但这不是添加更多 trait bound 就能改变的。
+
+## 多个能力与 where 写法
+
+一个函数可以声明多个需求：
+
+```rust
+/// Clones and formats a value only when both capabilities are available.
+fn cloned_label<T>(value: &T) -> String
+where
+    T: Clone + std::fmt::Display,
+{
+    format!("value={}", T::clone(value))
+}
+
+/// Checks the formatting result for two concrete types.
+fn main() {
+    assert_eq!(cloned_label(&12), "value=12");
+    assert_eq!(cloned_label(&String::from("ready")), "value=ready");
+}
+```
+
+`T: Clone + Display` 要求类型同时实现两个 trait；`where` 把较复杂的界限放在签名下方，便于阅读参数与返回类型。`Clone` 在这里确实被调用，所以是必要约束。泛型代码的编译器检查基于已声明的界限，不能根据“目前只用整数调用”来假定未来所有 `T` 都可克隆或比较。
+
+泛型函数通常在编译期按具体类型实例化。当前可观察的设计收益是复用实现和保留静态类型检查；本节不以某个优化结果作运行性能承诺。优先写最窄且真实的契约，再由后续的 trait 课程讨论行为抽象。
+
+## 分层提示
+
+1. **定位提示**：找出函数体实际使用的运算或方法；它们分别要求什么能力？
+2. **约束提示**：将具体类型换成任意 `T` 后，哪些表达式不再有保证？
+3. **修复提示**：在泛型参数声明处添加最小 trait bound；检查调用处的具体类型是否实现它。
+4. **参考方案**：比较 `T: PartialOrd` 与函数中的 `>=`，以及 `T: Clone + Display` 与克隆、格式化的对应关系。
+
+## 来源
+
+- [The Rust Programming Language：Generic Data Types](https://doc.rust-lang.org/book/ch10-01-syntax.html)
+- [The Rust Programming Language：Traits as Parameters](https://doc.rust-lang.org/book/ch10-02-traits.html)
+- [The Rust Reference：Trait and lifetime bounds](https://doc.rust-lang.org/reference/trait-bounds.html)
+
+文本、例子和练习为原创；来源用于核对泛型参数、trait bound 满足规则及泛型函数复用的语言行为。

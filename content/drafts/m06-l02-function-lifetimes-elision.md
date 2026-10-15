@@ -1,0 +1,117 @@
+# M06-L02：函数生命周期标注与省略
+
+## 学完后
+
+- 将常见的省略生命周期签名展开，指出输出引用与哪一个输入引用关联。
+- 使用命名生命周期表达返回切片来自哪个输入；生命周期参数描述关系，不是运行时长度或所有权。
+- 识别多个输入引用而输出来源不明确的签名，并只标注真正决定返回来源的输入。
+- 解释给悬垂引用添加更长的标注不会延长局部 owner 的寿命。
+
+## 先修
+
+完成 M06-L01，能判断被引用值是否在引用的使用期间保持有效。本节只讲函数和方法签名的引用生命周期省略规则；结构体持有引用、`'static` 的完整用法和高级泛型边界不在本节范围。
+
+## 生命周期标注表达关系
+
+```rust
+/// Returns the borrowed text unchanged.
+fn echo(text: &str) -> &str {
+    text
+}
+
+/// Prints a slice borrowed from the caller's String.
+fn main() {
+    let message = String::from("queue ready");
+    let result = echo(&message);
+    println!("{result}");
+}
+```
+
+`echo` 的签名可以省略生命周期，因为只有一个输入引用。编译器按省略规则把它理解为：
+
+```rust
+fn echo_explicit<'text>(text: &'text str) -> &'text str {
+    text
+}
+```
+
+`'text` 是程序员选取的名字，不会生成对象或改变运行时行为。它表达输出切片至少只能从 `text` 这段输入借来；调用方必须让实际文本保持有效，直到继续使用返回切片。Rust Book 中的 first-word 函数也是这种“一个输入引用，输出借自它”的常见模式。[Rust 的函数省略规则](https://doc.rust-lang.org/reference/lifetime-elision.html#lifetime-elision-in-functions)
+
+## 何时可以省略
+
+函数签名遵循三条常用规则：
+
+1. 每个省略的输入引用各自获得一个生命周期参数；`fn inspect(a: &str, b: &str)` 等价于有两个彼此独立的输入生命周期。
+2. 如果参数中只有一个生命周期，省略的输出引用使用它。因此 `fn echo(text: &str) -> &str` 可推导为上一段显式签名。
+3. 方法有 `&self` 或 `&mut self` 接收者时，省略的输出引用关联到 `self` 的生命周期。
+
+```rust
+/// A borrowed message view owned by its caller.
+struct MessageView<'text> {
+    text: &'text str,
+}
+
+impl MessageView<'_> {
+    /// Returns a slice borrowed through this receiver.
+    fn text(&self) -> &str {
+        self.text
+    }
+}
+```
+
+方法签名等价于 `fn text<'receiver>(&'receiver self) -> &'receiver str`。输出来自 `self`，不是某个局部临时值。结构体字段上的 `'text` 是类型必须保留的关系；`'_` 只是在这个 impl 位置让编译器推导具体生命周期。
+
+省略不是“编译器总能看出想返回哪个输入”。多个独立输入引用加一个未标注的输出会有歧义：
+
+```rust
+/// Ambiguous: the output might borrow from either input.
+fn longer(left: &str, right: &str) -> &str {
+    if left.len() >= right.len() {
+        left
+    } else {
+        right
+    }
+}
+```
+
+这段签名因输出没有唯一来源而被拒绝。为两个输入都写同一个生命周期也不能表达“选中的任意一段只需活到各自有效期”：两个不同 owner 可能有不同有效范围。这里先显式约束二者都在同一个 `'text` 范围内：
+
+```rust
+/// Chooses a slice when both inputs share the required valid region.
+fn longer<'text>(left: &'text str, right: &'text str) -> &'text str {
+    if left.len() >= right.len() {
+        left
+    } else {
+        right
+    }
+}
+```
+
+调用者必须提供在两者共同有效期间可读的输入。这个签名比函数体的某一次选择更保守，但关系清楚且安全。若业务只需要结果借用 `left`，签名可以写成 `fn first<'text>(left: &'text str, _right: &str) -> &'text str`；标注说明哪项输入决定输出，不需要把所有引用绑在一起。
+
+## 标注不能延长 owner
+
+```rust
+/// Still invalid: a named lifetime cannot keep this local String alive.
+fn invalid<'text>() -> &'text str {
+    let local = String::from("short-lived");
+    &local
+}
+```
+
+`'text` 没有关联到任何有效输入，也不能让 `local` 逃出函数后继续存在。修改成 `'static` 同样无法把局部变量变成静态存储。先决定数据应由谁拥有：需要把新建文本交给调用方时返回 `String`；需要零复制结果时，让函数借用调用方传入的数据，并把输出与该输入关联。
+
+## 分层提示
+
+1. **定位提示**：数函数参数中的引用生命周期，并圈出省略的输出引用。
+2. **规则提示**：一个输入引用可给省略输出提供唯一来源；多个输入引用通常不够确定；方法输出默认关联 `self`。
+3. **关系提示**：只把输出关联到真正提供返回切片的数据。不要为了消除错误，把所有参数不加判断地绑成一个生命周期。
+4. **参考方案**：将 `fn echo(text: &str) -> &str` 展开为 `fn echo<'text>(text: &'text str) -> &'text str`，再对照 `longer` 的显式双输入签名。
+
+## 来源
+
+- [The Rust Programming Language：Validating References with Lifetimes](https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html)
+- [The Rust Reference：Lifetime elision in functions](https://doc.rust-lang.org/reference/lifetime-elision.html#lifetime-elision-in-functions)
+- [The Rust Reference：Lifetime elision](https://doc.rust-lang.org/reference/lifetime-elision.html)
+
+解释、关系图和 API 练习为原创；来源用于核对函数省略规则、命名生命周期约束及输出引用来源。
