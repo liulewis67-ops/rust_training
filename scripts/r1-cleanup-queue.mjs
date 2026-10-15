@@ -30,7 +30,7 @@ function validResourceRecord(record) {
   }
   const validName =
     record.kind === 'container'
-      ? /^rust-r1-[a-f0-9]{32}-(?:compile|run)$/.test(record.name)
+      ? /^rust-r1-[a-f0-9]{32}-(?:stage|compile|run)$/.test(record.name)
       : /^rust-r1-[a-f0-9]{32}$/.test(record.name)
   return (
     validName &&

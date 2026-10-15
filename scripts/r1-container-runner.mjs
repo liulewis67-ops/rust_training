@@ -185,6 +185,9 @@ function docker(
     if (allowMissing && /no such (container|volume)/i.test(errorOutput)) {
       return ''
     }
+    if (error?.code === 'ENOBUFS') {
+      throw new Error(`Docker output exceeded the ${OUTPUT_LIMIT}-byte limit`)
+    }
     // Preserve compiler diagnostics and runtime output when Docker exits non-zero.
     writeTerminalOutput(process.stdout, error.stdout)
     writeTerminalOutput(process.stderr, error.stderr)
@@ -349,6 +352,9 @@ function describeError(error) {
     for (const nested of error.errors) details.push(describeError(nested))
     return `${error.message}: ${details.join('; ')}`
   }
+  if (error?.code === 'ENOBUFS') {
+    return `Container output exceeded the ${OUTPUT_LIMIT}-byte limit`
+  }
   return error instanceof Error ? error.message : String(error)
 }
 
@@ -433,6 +439,7 @@ async function run(sourcePath, stdinPath) {
   const gid = process.platform === 'win32' ? 1000 : (process.getgid?.() ?? 1000)
   const suffix = randomUUID().replaceAll('-', '')
   const volumeName = `rust-r1-${suffix}`
+  const stageName = `${volumeName}-stage`
   const compileName = `${volumeName}-compile`
   const runName = `${volumeName}-run`
   const sourceDirectoryName = `rust-r1-${suffix}`
@@ -452,8 +459,10 @@ async function run(sourcePath, stdinPath) {
   const lease = await cleanupQueue.createLease(engine)
   let compileContainer = compileName
   let runContainer = runName
+  let stageContainer = stageName
   let executionError
   let volumeCleanupRecord
+  let stageCleanupRecord
   let compileCleanupRecord
   let runCleanupRecord
   let sourceCleanupRecord
@@ -502,6 +511,26 @@ async function run(sourcePath, stdinPath) {
       timeout: 10000,
     })
 
+    stageCleanupRecord = await cleanupQueue.enqueue({
+      kind: 'container',
+      name: stageName,
+      context: engine.context,
+      endpoint: engine.endpoint,
+      leaseId: lease.id,
+    })
+    stageContainer = createContainer({
+      phase: 'stage',
+      image: R1_IMAGE,
+      containerName: stageName,
+      volumeName,
+      uid,
+      gid,
+    })
+    docker(['start', stageContainer], { timeout: 10000 })
+    docker(['cp', sourceFile, `${stageContainer}:/workspace/main.rs`], {
+      timeout: 10000,
+    })
+
     const compileStart = performance.now()
     compileCleanupRecord = await cleanupQueue.enqueue({
       kind: 'container',
@@ -517,9 +546,6 @@ async function run(sourcePath, stdinPath) {
       volumeName,
       uid,
       gid,
-    })
-    docker(['cp', sourceFile, `${compileContainer}:/workspace/main.rs`], {
-      timeout: 10000,
     })
     try {
       await lease.heartbeat()
@@ -577,6 +603,7 @@ async function run(sourcePath, stdinPath) {
     for (const [container, pendingPath] of [
       [compileName, compileCleanupRecord],
       [runName, runCleanupRecord],
+      [stageName, stageCleanupRecord],
     ]) {
       if (!pendingPath) continue
       try {
@@ -672,17 +699,19 @@ export function buildDockerCreateArgs({
   }
 
   const compile = phase === 'compile'
-  if (!compile && phase !== 'run') {
+  const stage = phase === 'stage'
+  if (!compile && !stage && phase !== 'run') {
     throw new Error(`Unknown R1 phase: ${phase}`)
   }
 
-  const limits = compile ? R1_LIMITS.compile : R1_LIMITS.run
+  const limits = compile || stage ? R1_LIMITS.compile : R1_LIMITS.run
   const memory = limits.memory
   const cpu = String(limits.cpus)
   const pids = String(limits.pids)
-  const workspaceMount = compile
-    ? `type=volume,src=${volumeName},dst=/workspace`
-    : `type=volume,src=${volumeName},dst=/workspace,readonly`
+  const workspaceMount =
+    compile || stage
+      ? `type=volume,src=${volumeName},dst=/workspace`
+      : `type=volume,src=${volumeName},dst=/workspace,readonly`
 
   return [
     'create',
@@ -718,7 +747,9 @@ export function buildDockerCreateArgs({
           '-o',
           '/workspace/program',
         ]
-      : ['/workspace/program']),
+      : stage
+        ? ['sleep', '600']
+        : ['/workspace/program']),
   ]
 }
 

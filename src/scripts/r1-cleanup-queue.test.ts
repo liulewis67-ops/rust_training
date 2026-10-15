@@ -52,6 +52,7 @@ it('persists cleanup intent and removes the record after successful recovery', a
     const lease = await queue.createLease(engine)
     const volume = `rust-r1-${id}`
     const container = `${volume}-run`
+    const stagingContainer = `${volume}-stage`
     const pendingPaths = await Promise.all([
       queue.enqueue({
         kind: 'directory',
@@ -71,6 +72,12 @@ it('persists cleanup intent and removes the record after successful recovery', a
         ...engine,
         leaseId: lease.id,
       }),
+      queue.enqueue({
+        kind: 'container',
+        name: stagingContainer,
+        ...engine,
+        leaseId: lease.id,
+      }),
     ])
     const serialized = await readFile(pendingPaths[0], 'utf8')
 
@@ -80,8 +87,13 @@ it('persists cleanup intent and removes the record after successful recovery', a
     clock += 101
     await queue.retry({ context: 'renamed-context', endpoint })
 
-    expect(removed).toEqual([
-      `container:${container}`,
+    expect(removed.slice(0, 2)).toEqual(
+      expect.arrayContaining([
+        `container:${container}`,
+        `container:${stagingContainer}`,
+      ]),
+    )
+    expect(removed.slice(2)).toEqual([
       `volume:${volume}`,
       `directory:${volume}`,
     ])

@@ -209,6 +209,34 @@ it('creates an isolated compile container with its fixed resource limits', () =>
   expect(args).not.toContain('--network=host')
 })
 
+// A running staging container keeps the tmpfs volume mounted while docker cp writes into it.
+it('creates a bounded staging container with a writable compile volume', () => {
+  const args = buildDockerCreateArgs({
+    phase: 'stage',
+    image: R1_IMAGE,
+    containerName: 'r1-stage-test',
+    volumeName: 'r1-volume-test',
+    uid: 1000,
+    gid: 1000,
+  })
+
+  expect(args).toContain('--network=none')
+  expect(args).toContain('--read-only')
+  expect(args).toContain('--cap-drop=ALL')
+  expect(args).toContain('--security-opt=no-new-privileges=true')
+  expect(args).toContain('--security-opt=apparmor=docker-default')
+  expect(args).toContain('--memory=2g')
+  expect(args).toContain('--cpus=2')
+  expect(args).toContain('--pids-limit=128')
+  expect(args).toContain('sleep')
+  expect(args).toContain('600')
+  expect(args.filter((arg) => arg.startsWith('--mount='))).toEqual([
+    '--mount=type=volume,src=r1-volume-test,dst=/workspace',
+  ])
+  expect(args).not.toContain('--privileged')
+  expect(args).not.toContain('--network=host')
+})
+
 // Bound actual source reads and allow empty stdin without relaxing source rules.
 it('limits source and stdin file bytes', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'r1-input-test-'))
