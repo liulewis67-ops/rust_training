@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "version": "0.1.0",
+  "course_unit": "M03-L05",
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "306fd52e74fca6746e12acc750f232de15e71da917756a1270d74c91f5eb7368"
+    },
+    {
+      "path": "Cargo.lock",
+      "sha256": "b873e6499276d880d7741d8530ffbdba047bd1878f9e27cf3f743be48091be1e"
+    },
+    {
+      "path": "Cargo.toml",
+      "sha256": "9b38042642e73bba341aa7d03eb6a247e8d9b644bebc6ebcf47eb51e7e9c2a74"
+    },
+    {
+      "path": "README.md",
+      "sha256": "5ff1924e25ddd30fd6ca561ea85ba4e366f8a0a8e9d84ddab03f87edb1b09e7e"
+    },
+    {
+      "path": "src/lib.rs",
+      "sha256": "efe25faf0329bb778ca9bf70779b8465730b96becde0ded9a53567e3da49f19a"
+    },
+    {
+      "path": "tests/public_contract.rs",
+      "sha256": "e2ff59fce4ec6a638caca6f4fe633968b3f180d4909264e7cb88087e620b4ab6"
+    }
+  ]
+}
