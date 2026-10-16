@@ -32,6 +32,7 @@
 - 以 `/rust_training/` 构建后通过本地静态目录映射检查：主页、JS、CSS、`sw.js` 均返回 200，JS/CSS MIME 类型正确；Vite `preview` 自身不映射仓库子路径，不能代替 Pages 实测。
 - 仓库 Pages 发布源已配置为 GitHub Actions；`85e1f17` 的部署工作流成功。真实地址 `https://liulewis67-ops.github.io/rust_training/` 返回 200，已在浏览器打开目录与公开课包，并验证课节直达刷新和返回导航。M01 下载资源在本次内容提交后仍需线上核查。
 - `61de562` 的质量与部署工作流均成功；真实站点可打开 M01-L01–L06，并已确认 M01-L01 的公开参考答案按需展开。小 ZIP 已改为独立静态文件并指定下载文件名；`33634d6` 和 `43503dc` 的质量与部署工作流成功。四个真实 Pages ZIP 地址均返回 200 和 ZIP 类型，`43503dc` 对应的线上 JS bundle 含有新进度文案和公开课程入口。
+- `eaf670d` 的质量与 Pages 部署工作流成功。线上首页引用的新 bundle 含有 M02 目录项；M02-L01 正文与练习 chunk、M02-L05 正文 chunk 均返回 200 和 JavaScript MIME 类型，L05 starter ZIP 返回 200 和 ZIP MIME 类型。
 
 ## FE04 首批课程发布 · DOING
 
