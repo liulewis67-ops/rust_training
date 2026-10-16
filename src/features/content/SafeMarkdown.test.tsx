@@ -36,3 +36,10 @@ it('keeps published hints and reference answers available behind disclosures', (
   expect(disclosures[1].textContent).toContain('结果是 125')
   expect(screen.getByText('核对边界。')).toBeTruthy()
 })
+
+it('gives released ZIP downloads a stable file name', () => {
+  render(<SafeMarkdown content="[下载样例](./m01-l03-samples.zip)" />)
+  const link = screen.getByRole('link', { name: '下载样例' })
+  expect(link.getAttribute('download')).toBe('m01-l03-samples.zip')
+  expect(link.getAttribute('href')).toContain('m01-l03-samples')
+})

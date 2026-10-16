@@ -4,16 +4,17 @@ import { resolveCourseAsset } from '../../data/courseCatalog'
 /** Allow HTTPS references and ZIP archives selected from the public lesson asset folder. */
 function safeHref(
   destination: string,
-): { href: string; download: boolean } | undefined {
+): { href: string; download?: string } | undefined {
   try {
     const url = new URL(destination)
-    if (url.protocol === 'https:') return { href: url.href, download: false }
+    if (url.protocol === 'https:') return { href: url.href }
   } catch {
     // Resolve relative lesson links only through the explicit public ZIP allowlist.
   }
   if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(destination)) return undefined
   const asset = resolveCourseAsset(destination)
-  return asset ? { href: asset, download: true } : undefined
+  const fileName = destination.split(/[?#]/, 1)[0]?.split(/[\\/]/).pop()
+  return asset && fileName ? { href: asset, download: fileName } : undefined
 }
 
 /** Render inline Markdown while leaving all text in React's escaped text context. */
@@ -40,7 +41,7 @@ function renderInline(markdown: string): ReactNode[] {
           href={safeDestination.href}
           target="_blank"
           rel="noopener noreferrer"
-          download={safeDestination.download || undefined}
+          download={safeDestination.download}
         >
           {label}
         </a>
