@@ -104,28 +104,6 @@ function learnerFiles(moduleId: string, lessonId: string): { name: string; markd
   })
 }
 
-/** Remove answer keys and assessor-only sections from learner-facing documents. */
-function hideAssessmentSections(markdown: string): string {
-  let hiddenHeadingLevel: number | undefined
-  const visibleLines: string[] = []
-  for (const line of markdown.split(/\r?\n/)) {
-    if (/^>\s*(?:状态|作者说明)[：:]/.test(line.trim())) continue
-    const heading = /^(#{1,6})\s+(.+)$/.exec(line)
-    if (heading) {
-      const level = heading[1].length
-      if (hiddenHeadingLevel !== undefined && level <= hiddenHeadingLevel) {
-        hiddenHeadingLevel = undefined
-      }
-      if (/^(参考答案|答案(?:要点|示例|解析)?|参考实现|自评规程|评审规程|评分规程|评分细则|教师参考|隐藏测试|rubric|整体校验说明)/i.test(heading[2])) {
-        hiddenHeadingLevel = level
-        continue
-      }
-    }
-    if (hiddenHeadingLevel === undefined) visibleLines.push(line)
-  }
-  return visibleLines.join('\n').trim()
-}
-
 /** Turn the authored lesson files into a stable six-lesson catalog for every module. */
 export const courseModules: CourseModule[] = moduleDefinitions.map((module) => ({
   ...module,
@@ -138,10 +116,10 @@ export const courseModules: CourseModule[] = moduleDefinitions.map((module) => (
     return {
       id,
       title: heading?.[1]?.trim() ?? `第 ${index + 1} 节`,
-      content: hideAssessmentSections(body),
+      content: body,
       exercises: files
         .filter(({ name }) => name.includes('exercises'))
-        .map(({ markdown }) => hideAssessmentSections(markdown)),
+        .map(({ markdown }) => markdown),
     }
   }),
 }))

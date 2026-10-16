@@ -29,10 +29,12 @@ export function CourseLessonPage({
   const module = findCourseModule(moduleId)
   const lesson = findCourseLesson(moduleId, lessonId)
   const orderedLessons = courseModules.flatMap((courseModule) =>
-    courseModule.lessons.map((courseLesson) => ({
-      module: courseModule,
-      lesson: courseLesson,
-    })),
+    courseModule.lessons
+      .filter((courseLesson) => courseLesson.content.trim())
+      .map((courseLesson) => ({
+        module: courseModule,
+        lesson: courseLesson,
+      })),
   )
   const currentIndex = orderedLessons.findIndex(
     (entry) => entry.module.id === module?.id && entry.lesson.id === lesson?.id,

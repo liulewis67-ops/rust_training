@@ -1,12 +1,10 @@
 import type { JSX } from 'react'
 import { ArrowRight, Boxes, BookOpen, Layers3, ShieldCheck } from 'lucide-react'
 import { learningTrack } from '../data/learningTrack'
+import { courseModules } from '../data/courseCatalog'
+import { listPublicCourseLessons } from '../data/publicCourse'
 import type { Route } from '../app/router'
-import {
-  buildLearningRecommendations,
-  type Progress,
-} from '../features/learning'
-import { lessons } from '../features/catalog'
+import type { Progress } from '../features/learning'
 import './learningRecommendations.css'
 
 /** Introduce the learning path and provide a direct route into its course catalog. */
@@ -17,29 +15,33 @@ export function HomePage({
   onNavigate: (route: Route) => void
   progress: Progress
 }): JSX.Element {
-  const recommendations = buildLearningRecommendations(lessons, progress)
+  const publishedLessons = courseModules.flatMap((module) =>
+    module.lessons
+      .filter((lesson) => lesson.content.trim())
+      .map((lesson) => ({ moduleId: module.id, ...lesson })),
+  )
+  const completedPublished = publishedLessons.filter((lesson) =>
+    progress.completed.includes(`${lesson.moduleId}-${lesson.id}`),
+  ).length
+  const nextLesson =
+    publishedLessons.find(
+      (lesson) =>
+        !progress.completed.includes(`${lesson.moduleId}-${lesson.id}`),
+    ) ?? publishedLessons[0]
+  const publicLesson = listPublicCourseLessons()[0]
   /** 打开唯一已发布的路线方案页。 */
   function openTrack(): void {
     onNavigate({ page: 'track', trackSlug: learningTrack.slug })
   }
 
-  /** Open the entry selected by the recommendation rule or the route plan. */
-  function openRecommendation(index: number): void {
-    const recommendation = recommendations[index]
-    if (recommendation.destination === 'track') {
-      openTrack()
-      return
-    }
-    if (
-      recommendation.destination !== 'lesson' ||
-      !recommendation.destinationLessonId
-    )
-      return
-    const lesson = lessons.find((item) => {
-      // Resolve the recommendation ID against the trusted local lesson catalog.
-      return item.id === recommendation.destinationLessonId
+  /** Open the next published lesson in the main track. */
+  function openNextLesson(): void {
+    if (!nextLesson) return openTrack()
+    onNavigate({
+      page: 'course-lesson',
+      moduleId: nextLesson.moduleId,
+      lessonId: nextLesson.id,
     })
-    if (lesson) onNavigate({ page: 'lesson', lessonId: lesson.id })
   }
 
   return (
@@ -77,55 +79,53 @@ export function HomePage({
             <p className="home-kicker">LOCAL STUDY</p>
             <h2 id="home-next-steps-title">从一条清晰的下一步开始</h2>
           </div>
-          <small>本地练习记录 {progress.attempts.length} 条</small>
+          <small>
+            主线已自报完成 {completedPublished} / {publishedLessons.length} 节
+          </small>
         </div>
         <p className="home-next-steps-note">
-          这些路线仍为规划内容，规划阶段不会计作已完成学习；本地记录也不代表平台认证的能力等级。
+          规划阶段不会计作已完成学习；已发布课程可直接阅读，本地记录也不代表平台认证的能力等级。
         </p>
         <div className="home-next-step-grid">
-          {recommendations.map((recommendation, index) => {
-            // Present the rule result and its matching action without inferring a skill level.
-            const statusLabel = {
-              in_progress: '继续学习',
-              not_started: '尚未开始',
-              no_content: '暂无课件',
-            }[recommendation.status]
-            const actionLabel =
-              recommendation.status === 'in_progress'
-                ? recommendation.destination === 'track'
-                  ? '查看路线规划'
-                  : recommendation.reason.startsWith('还没有')
-                    ? '开始第一节'
-                    : '继续阅读'
-                : recommendation.status === 'not_started'
-                  ? recommendation.reason.startsWith('先修缺口')
-                    ? '先看先修课程'
-                    : '开始课程'
-                  : '查看路线规划'
-            return (
-              <article
-                className={`home-next-step home-next-step-${recommendation.status}`}
-                key={recommendation.status}
+          <article className="home-next-step home-next-step-in_progress">
+            <span className="home-next-step-status">主线下一课</span>
+            <h3>
+              {nextLesson
+                ? `${nextLesson.moduleId}-${nextLesson.id} · ${nextLesson.title}`
+                : '已发布课程准备中'}
+            </h3>
+            <p>按已发布课程的顺序阅读，在自己的电脑上完成练习。</p>
+            <button className="secondary-button" onClick={openNextLesson}>
+              {nextLesson ? '打开课节' : '查看课程目录'}{' '}
+              <ArrowRight size={13} />
+            </button>
+          </article>
+          {publicLesson && (
+            <article className="home-next-step home-next-step-not_started">
+              <span className="home-next-step-status">专题练习</span>
+              <h3>{publicLesson.title}</h3>
+              <p>阅读借用切片示例，并在本地 Cargo 项目中编写测试。</p>
+              <button
+                className="secondary-button"
+                onClick={() =>
+                  onNavigate({
+                    page: 'public-course-lesson',
+                    lessonId: publicLesson.id,
+                  })
+                }
               >
-                <span className="home-next-step-status">{statusLabel}</span>
-                <h3>{recommendation.title}</h3>
-                <p>{recommendation.reason}</p>
-                {recommendation.destination === 'none' ? (
-                  <span className="home-next-step-disabled">
-                    暂无可打开的未完成课程
-                  </span>
-                ) : (
-                  // Keep the action directly connected to the rule's selected destination.
-                  <button
-                    className="secondary-button"
-                    onClick={() => openRecommendation(index)}
-                  >
-                    {actionLabel} <ArrowRight size={13} />
-                  </button>
-                )}
-              </article>
-            )
-          })}
+                打开课节 <ArrowRight size={13} />
+              </button>
+            </article>
+          )}
+          <article className="home-next-step home-next-step-no_content">
+            <span className="home-next-step-status">路线规划</span>
+            <h3>从 Rust 基础到工程交付</h3>
+            <p>查看 24 个模块的学习目标，以及尚在准备的课节。</p>
+            <button className="secondary-button" onClick={openTrack}>
+              查看路线 <ArrowRight size={13} />
+            </button>
+          </article>
         </div>
       </section>
 

@@ -89,6 +89,23 @@ function renderBlocks(markdown: string): ReactNode[] {
       const level = heading[1].length
       const children = renderInline(heading[2])
       const key = `heading:${blocks.length}`
+      if (/^(?:分层提示|参考答案|参考实现)(?:[：:\s]|$)/.test(heading[2])) {
+        const section: string[] = []
+        index += 1
+        while (index < lines.length) {
+          const nextHeading = /^(#{1,6})\s+/.exec(lines[index].trim())
+          if (nextHeading && nextHeading[1].length <= level) break
+          section.push(lines[index])
+          index += 1
+        }
+        blocks.push(
+          <details className="course-markdown-disclosure" key={key}>
+            <summary>{children}</summary>
+            {renderBlocks(section.join('\n'))}
+          </details>,
+        )
+        continue
+      }
       if (level === 1) blocks.push(<h2 key={key}>{children}</h2>)
       else if (level === 2) blocks.push(<h2 key={key}>{children}</h2>)
       else if (level === 3) blocks.push(<h3 key={key}>{children}</h3>)

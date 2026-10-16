@@ -25,6 +25,7 @@ beforeEach(() => {
     'fetch',
     vi.fn(async () => new Response(null, { status: 401 })),
   )
+  vi.stubGlobal('scrollTo', vi.fn())
 })
 
 // 数据损坏后仍可阅读和导航，并保留旧数据用于恢复。
@@ -142,6 +143,15 @@ it('直接打开旧课程链接时显示对应课程', () => {
   expect(screen.getByRole('heading', { name: '借用 Borrowing' })).toBeTruthy()
 })
 
+it('已发布模块末节不会导航到未发布课程', () => {
+  window.history.replaceState({}, '', '/#/courses/m01/l06')
+  render(<App />)
+  expect(
+    screen.getByRole('heading', { name: /综合自测——从空目录交付可测试程序/ }),
+  ).toBeTruthy()
+  expect(screen.queryByText('下一节')).toBeNull()
+})
+
 // 用户切换主题后，DOM 和本地偏好必须同步，刷新时可恢复。
 it('保存深浅主题偏好', async () => {
   const user = userEvent.setup()
@@ -163,6 +173,22 @@ it('展示规划中的学习路线而不显示旧课程完成数', () => {
   expect(screen.getByText(/规划阶段不会计作已完成学习/)).toBeTruthy()
   expect(screen.queryByText(/\/ 36 节课/)).toBeNull()
   expect(screen.queryByRole('navigation', { name: 'Rust 学习路线' })).toBeNull()
+})
+
+it('首页下一课进入已发布的 M01 主线', async () => {
+  const user = userEvent.setup()
+  render(<App />)
+  const mainTrackCard = screen.getByText('主线下一课').closest('article')
+  expect(mainTrackCard).toBeTruthy()
+  await user.click(
+    within(mainTrackCard as HTMLElement).getByRole('button', {
+      name: /打开课节/,
+    }),
+  )
+  expect(window.location.hash).toBe('#/courses/m01/l01')
+  expect(
+    screen.getByRole('heading', { name: 'Rust 解决的问题与路线选择' }),
+  ).toBeTruthy()
 })
 
 // 课程目录展示完整路线规划，并明确标出暂无课件的条目。

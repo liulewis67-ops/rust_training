@@ -200,6 +200,19 @@
 .course-markdown > * + * {
   margin-top: 1.15em;
 }
+.course-markdown-disclosure {
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.course-markdown-disclosure summary {
+  cursor: pointer;
+  color: var(--orange);
+  font-weight: 600;
+}
+.course-markdown-disclosure > * + * {
+  margin-top: 1em;
+}
 .course-markdown h2,
 .course-markdown h3,
 .course-markdown h4 {

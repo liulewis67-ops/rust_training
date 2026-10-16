@@ -28,6 +28,44 @@ async function requireFile(path, description) {
   }
 }
 
+async function fileExists(path) {
+  try {
+    await access(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function validateReleasedMarkdown(lessonId, path, description) {
+  let markdown
+  try {
+    markdown = await readFile(path, 'utf8')
+  } catch {
+    errors.push(`${description}: file does not exist`)
+    return
+  }
+  if (!new RegExp(`^#\\s+${lessonId}(?:[：:\\s]|$)`, 'm').test(markdown))
+    errors.push(`${description}: missing matching lesson title`)
+  if (/^#\s+.*(?:草稿|draft)/im.test(markdown))
+    errors.push(`${description}: draft title cannot be published`)
+  if (
+    /R1|私有评测|隐藏测试|课程预写材料|^>\s*(?:状态|作者说明)[：:]/m.test(
+      markdown,
+    )
+  )
+    errors.push(`${description}: contains author or platform-only text`)
+  for (const [, link] of markdown.matchAll(/\]\(([^)]+\.zip)(?:#[^)]*)?\)/gi)) {
+    const assetName = link.split(/[\\/]/).pop()
+    if (assetName)
+      await requireFile(
+        resolve(releaseRoot, assetName),
+        `${description} asset ${assetName}`,
+      )
+  }
+  return markdown
+}
+
 function requireUniqueStrings(values, name) {
   if (
     !Array.isArray(values) ||
@@ -132,25 +170,23 @@ for (const lessonId of markdownLessons) {
     errors.push(`markdown_lessons: unsafe lesson path "${lessonId}"`)
     continue
   }
-  await requireFile(markdownPath, `markdown_lessons[${lessonId}]`)
-  let markdown = ''
-  try {
-    markdown = await readFile(markdownPath, 'utf8')
-  } catch {
-    continue
-  }
-  if (!/^#\s+.+/m.test(markdown))
-    errors.push(`${lessonId}: missing a lesson title`)
-  if (/^#\s+.*(?:草稿|draft)/im.test(markdown))
-    errors.push(`${lessonId}: draft title cannot be published`)
-  for (const [, link] of markdown.matchAll(/\]\(([^)]+\.zip)(?:#[^)]*)?\)/gi)) {
-    const assetName = link.split(/[\\/]/).pop()
-    if (assetName)
-      await requireFile(
-        resolve(releaseRoot, assetName),
-        `${lessonId} asset ${assetName}`,
-      )
-  }
+  const markdown = await validateReleasedMarkdown(
+    lessonId,
+    markdownPath,
+    `markdown_lessons[${lessonId}]`,
+  )
+  if (markdown && !/^##\s+来源\s*$/m.test(markdown))
+    errors.push(`${lessonId}: missing source section`)
+  const exercisePath = resolve(
+    releaseRoot,
+    `${lessonId.toLowerCase()}-exercises.md`,
+  )
+  if (await fileExists(exercisePath))
+    await validateReleasedMarkdown(
+      lessonId,
+      exercisePath,
+      `markdown_lessons[${lessonId}] exercises`,
+    )
 }
 
 if (errors.length) {

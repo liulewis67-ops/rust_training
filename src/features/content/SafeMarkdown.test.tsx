@@ -20,3 +20,19 @@ it('filters active HTML and unsafe URL schemes while rendering safe Markdown', (
     screen.getByRole('link', { name: 'Rust Book' }).getAttribute('href'),
   ).toBe('https://doc.rust-lang.org/book/')
 })
+
+it('keeps published hints and reference answers available behind disclosures', () => {
+  const { container } = render(
+    <SafeMarkdown
+      content={
+        '### 分层提示\n先看输入。\n\n### 参考答案\n结果是 125。\n\n### 自评规程\n核对边界。'
+      }
+    />,
+  )
+  const disclosures = container.querySelectorAll('details')
+  expect(disclosures).toHaveLength(2)
+  expect(disclosures[0].open).toBe(false)
+  expect(disclosures[1].open).toBe(false)
+  expect(disclosures[1].textContent).toContain('结果是 125')
+  expect(screen.getByText('核对边界。')).toBeTruthy()
+})
