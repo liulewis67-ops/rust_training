@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type JSX } from 'react'
+import { useEffect, useState, type FormEvent, type JSX } from 'react'
 import { ArrowRight, Search, X } from 'lucide-react'
 import type { Route } from '../app/router'
 import { searchLessons } from '../features/search/searchIndex'
@@ -12,7 +12,18 @@ export function SearchPage({
   onNavigate: (route: Route) => void
 }): JSX.Element {
   const [query, setQuery] = useState('')
-  const results = searchLessons(query)
+  const [results, setResults] = useState<
+    Awaited<ReturnType<typeof searchLessons>>
+  >([])
+  useEffect(() => {
+    let active = true
+    void searchLessons(query).then((nextResults) => {
+      if (active) setResults(nextResults)
+    })
+    return () => {
+      active = false
+    }
+  }, [query])
 
   /** Prevent Enter from reloading the app; results update as the learner types. */
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {

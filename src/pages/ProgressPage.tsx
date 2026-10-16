@@ -18,7 +18,7 @@ export function ProgressPage({
 }): JSX.Element {
   const publishedModules = courseModules
     .map((module) => {
-      const released = module.lessons.filter((lesson) => lesson.content.trim())
+      const released = module.lessons.filter((lesson) => lesson.published)
       return {
         label: `${module.id} · ${module.title}`,
         complete: released.filter((lesson) =>

@@ -109,7 +109,7 @@ export function TrackPage({
                       <ol className="course-lesson-list">
                         {module.lessons.map((lesson) => (
                           <li key={lesson.id}>
-                            {lesson.content.trim() ? (
+                            {lesson.published ? (
                               <button
                                 type="button"
                                 onClick={() =>

@@ -143,13 +143,19 @@ it('直接打开旧课程链接时显示对应课程', () => {
   expect(screen.getByRole('heading', { name: '借用 Borrowing' })).toBeTruthy()
 })
 
-it('已发布模块末节不会导航到未发布课程', () => {
+it('已发布主线末节会导航到下一个已发布模块', async () => {
   window.history.replaceState({}, '', '/#/courses/m01/l06')
   render(<App />)
   expect(
-    screen.getByRole('heading', { name: /综合自测——从空目录交付可测试程序/ }),
+    await screen.findByRole('heading', {
+      name: /综合自测——从空目录交付可测试程序/,
+    }),
   ).toBeTruthy()
-  expect(screen.queryByText('下一节')).toBeNull()
+  expect(
+    await screen.findByRole('button', {
+      name: /下一节.*变量、可变性、基本类型与推断/,
+    }),
+  ).toBeTruthy()
 })
 
 // 用户切换主题后，DOM 和本地偏好必须同步，刷新时可恢复。
@@ -187,7 +193,7 @@ it('首页下一课进入已发布的 M01 主线', async () => {
   )
   expect(window.location.hash).toBe('#/courses/m01/l01')
   expect(
-    screen.getByRole('heading', { name: 'Rust 解决的问题与路线选择' }),
+    await screen.findByRole('heading', { name: 'Rust 解决的问题与路线选择' }),
   ).toBeTruthy()
 })
 
@@ -195,7 +201,9 @@ it('学习进度只用已发布主线课节作分母', async () => {
   const user = userEvent.setup()
   window.history.replaceState({}, '', '/#/courses/m01/l01')
   render(<App />)
-  await user.click(screen.getByRole('button', { name: '标记本节已完成' }))
+  await user.click(
+    await screen.findByRole('button', { name: '标记本节已完成' }),
+  )
   await user.click(screen.getByRole('button', { name: '进度' }))
   expect(screen.getByText('主线已发布课节')).toBeTruthy()
   expect(screen.getByText('M01 · 开发循环与语言入门')).toBeTruthy()
@@ -257,7 +265,9 @@ it('搜索中文词与错误码并可恢复空结果', async () => {
   })
   await user.type(input, 'E0382')
 
-  const ownershipResult = screen.getByRole('link', { name: /所有权 Ownership/ })
+  const ownershipResult = await screen.findByRole('link', {
+    name: /所有权 Ownership/,
+  })
   expect(ownershipResult.getAttribute('href')).toBe('#/lesson/ownership')
   expect(screen.getByText('E0382：值被移动后再次使用')).toBeTruthy()
 
@@ -282,7 +292,9 @@ it('从公开课包搜索结果进入课程阅读页', async () => {
     }),
     '切片',
   )
-  await user.click(screen.getByRole('link', { name: /返回文本中的第一个单词/ }))
+  await user.click(
+    await screen.findByRole('link', { name: /返回文本中的第一个单词/ }),
+  )
 
   expect(window.location.hash).toBe(
     '#/public-lessons/borrowed-text-first-token',

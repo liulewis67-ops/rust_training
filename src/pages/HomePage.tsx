@@ -17,8 +17,8 @@ export function HomePage({
 }): JSX.Element {
   const publishedLessons = courseModules.flatMap((module) =>
     module.lessons
-      .filter((lesson) => lesson.content.trim())
-      .map((lesson) => ({ moduleId: module.id, ...lesson })),
+      .filter((lesson) => lesson.published)
+      .map((lesson) => ({ ...lesson })),
   )
   const completedPublished = publishedLessons.filter((lesson) =>
     progress.completed.includes(`${lesson.moduleId}-${lesson.id}`),

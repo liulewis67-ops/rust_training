@@ -1,9 +1,10 @@
-import { useEffect, type JSX } from 'react'
+import { useEffect, useState, type JSX } from 'react'
 import { ArrowLeft, ArrowRight, BookOpen, Check } from 'lucide-react'
 import {
   courseModules,
   findCourseLesson,
   findCourseModule,
+  loadCourseLesson,
 } from '../data/courseCatalog'
 import type { Route } from '../app/router'
 import { SafeMarkdown } from '../features/content/SafeMarkdown'
@@ -27,17 +28,29 @@ export function CourseLessonPage({
     window.scrollTo({ top: 0, behavior: 'auto' })
   }, [moduleId, lessonId])
   const module = findCourseModule(moduleId)
-  const lesson = findCourseLesson(moduleId, lessonId)
+  const lessonMetadata = findCourseLesson(moduleId, lessonId)
+  const [lesson, setLesson] = useState<typeof lessonMetadata>()
+  useEffect(() => {
+    let active = true
+    setLesson(undefined)
+    void loadCourseLesson(moduleId, lessonId).then((loaded) => {
+      if (active) setLesson(loaded)
+    })
+    return () => {
+      active = false
+    }
+  }, [moduleId, lessonId])
   const orderedLessons = courseModules.flatMap((courseModule) =>
     courseModule.lessons
-      .filter((courseLesson) => courseLesson.content.trim())
+      .filter((courseLesson) => courseLesson.published)
       .map((courseLesson) => ({
         module: courseModule,
         lesson: courseLesson,
       })),
   )
   const currentIndex = orderedLessons.findIndex(
-    (entry) => entry.module.id === module?.id && entry.lesson.id === lesson?.id,
+    (entry) =>
+      entry.module.id === module?.id && entry.lesson.id === lessonMetadata?.id,
   )
   const previous =
     currentIndex > 0 ? orderedLessons[currentIndex - 1] : undefined
@@ -52,7 +65,7 @@ export function CourseLessonPage({
     })
   }
 
-  if (!module || !lesson) {
+  if (!module || !lessonMetadata?.published) {
     return (
       <article className="course-reader">
         <h1>课程暂不可用</h1>
@@ -64,6 +77,14 @@ export function CourseLessonPage({
         >
           <ArrowLeft size={13} /> 返回课程目录
         </button>
+      </article>
+    )
+  }
+
+  if (!lesson) {
+    return (
+      <article className="course-reader">
+        <p role="status">正在加载课程…</p>
       </article>
     )
   }

@@ -84,6 +84,34 @@ const markdownLessons = requireUniqueStrings(
   manifest.markdown_lessons,
   'markdown_lessons',
 )
+const lessonTitles = manifest.markdown_lesson_titles
+if (
+  !lessonTitles ||
+  typeof lessonTitles !== 'object' ||
+  Array.isArray(lessonTitles)
+) {
+  errors.push(
+    'markdown_lesson_titles: expected an object keyed by published lesson ID',
+  )
+}
+if (
+  lessonTitles &&
+  typeof lessonTitles === 'object' &&
+  !Array.isArray(lessonTitles)
+) {
+  const titleIds = Object.keys(lessonTitles).sort()
+  const lessonIds = [...markdownLessons].sort()
+  if (JSON.stringify(titleIds) !== JSON.stringify(lessonIds))
+    errors.push(
+      'markdown_lesson_titles: keys must exactly match markdown_lessons',
+    )
+  for (const [lessonId, title] of Object.entries(lessonTitles)) {
+    if (typeof title !== 'string' || !title.trim())
+      errors.push(
+        `markdown_lesson_titles[${lessonId}]: expected a non-empty title`,
+      )
+  }
+}
 
 for (const fileName of courseFiles) {
   if (
@@ -177,6 +205,10 @@ for (const lessonId of markdownLessons) {
   )
   if (markdown && !/^##\s+来源\s*$/m.test(markdown))
     errors.push(`${lessonId}: missing source section`)
+  const heading =
+    markdown && /^#\s+[^：:]+[：:]\s*(.+)$/m.exec(markdown)?.[1]?.trim()
+  if (heading && lessonTitles?.[lessonId] !== heading)
+    errors.push(`${lessonId}: manifest title does not match published heading`)
   const exercisePath = resolve(
     releaseRoot,
     `${lessonId.toLowerCase()}-exercises.md`,

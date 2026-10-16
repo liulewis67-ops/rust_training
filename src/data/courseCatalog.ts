@@ -9,8 +9,10 @@ interface ModuleDefinition {
 }
 
 export interface CourseLesson {
+  moduleId: string
   id: string
   title: string
+  published: boolean
   content: string
   exercises: string[]
 }
@@ -46,13 +48,10 @@ const moduleDefinitions: ModuleDefinition[] = [
   { id: 'M24', title: '毕业交付与维护', phaseId: 'S8', outcome: '从需求与评审走到完整交付、运行手册和维护决策。' },
 ]
 
-const authoredMarkdown = {
-  ...import.meta.glob('../../content/releases/m*.md', {
-    eager: true,
+const authoredMarkdown = import.meta.glob<string>('../../content/releases/m*.md', {
     query: '?raw',
     import: 'default',
-  }),
-} as Record<string, string>
+  })
 const publicLessonArchives = import.meta.glob('../../content/releases/*.zip', {
   eager: true,
   query: '?url',
@@ -61,6 +60,7 @@ const publicLessonArchives = import.meta.glob('../../content/releases/*.zip', {
 const releasedMarkdownLessons = new Set<string>(
   publicManifest.markdown_lessons,
 )
+const releasedLessonTitles = publicManifest.markdown_lesson_titles as Record<string, string>
 
 /** Resolve only ZIP files explicitly stored in the public lesson asset folder. */
 export function resolveCourseAsset(destination: string): string | undefined {
@@ -73,7 +73,7 @@ export function resolveCourseAsset(destination: string): string | undefined {
 }
 
 /** Keep author grading notes and private solution folders outside the learner catalog. */
-function learnerFiles(moduleId: string, lessonId: string): { name: string; markdown: string }[] {
+function learnerFileLoaders(moduleId: string, lessonId: string): { name: string; load: () => Promise<string> }[] {
   const prefix = `${moduleId.toLowerCase()}-${lessonId.toLowerCase()}`
   const files = Object.entries(authoredMarkdown)
     .filter(([path]) => {
@@ -92,9 +92,9 @@ function learnerFiles(moduleId: string, lessonId: string): { name: string; markd
       // Prefer the canonical root draft if its public copy has the same filename.
       return Number(left.includes('/public/')) - Number(right.includes('/public/')) || left.localeCompare(right)
     })
-    .map(([path, markdown]) => ({
+    .map(([path, load]) => ({
       name: path.split('/').pop()?.toLowerCase() ?? '',
-      markdown,
+      load,
     }))
   const seenNames = new Set<string>()
   return files.filter(({ name }) => {
@@ -109,17 +109,15 @@ export const courseModules: CourseModule[] = moduleDefinitions.map((module) => (
   ...module,
   lessons: Array.from({ length: 6 }, (_, index) => {
     const id = `L${String(index + 1).padStart(2, '0')}`
-    const released = releasedMarkdownLessons.has(`${module.id}-${id}`)
-    const files = released ? learnerFiles(module.id, id) : []
-    const body = files.find(({ name }) => !name.includes('exercises'))?.markdown ?? ''
-    const heading = /^#\s+(?:M\d{2}-L\d{2}(?:[:：]\s*|\s+))?(.+)$/m.exec(body)
+    const lessonKey = `${module.id}-${id}`
+    const released = releasedMarkdownLessons.has(lessonKey)
     return {
+      moduleId: module.id,
       id,
-      title: heading?.[1]?.trim() ?? `第 ${index + 1} 节`,
-      content: body,
-      exercises: files
-        .filter(({ name }) => name.includes('exercises'))
-        .map(({ markdown }) => markdown),
+      title: releasedLessonTitles[lessonKey] ?? `第 ${index + 1} 节`,
+      published: released,
+      content: '',
+      exercises: [],
     }
   }),
 }))
@@ -129,6 +127,25 @@ export function findCourseLesson(moduleId: string, lessonId: string): CourseLess
   return courseModules
     .find((module) => module.id.toLowerCase() === moduleId.toLowerCase())
     ?.lessons.find((lesson) => lesson.id.toLowerCase() === lessonId.toLowerCase())
+}
+
+/** Load a single published lesson body only when its reader is opened. */
+export async function loadCourseLesson(moduleId: string, lessonId: string): Promise<CourseLesson | undefined> {
+  const lesson = findCourseLesson(moduleId, lessonId)
+  if (!lesson?.published) return undefined
+  const files = learnerFileLoaders(moduleId, lessonId)
+  const loaded = await Promise.all(files.map(async ({ name, load }) => ({ name, markdown: await load() })))
+  return {
+    ...lesson,
+    content: loaded.find(({ name }) => !name.includes('exercises'))?.markdown ?? '',
+    exercises: loaded.filter(({ name }) => name.includes('exercises')).map(({ markdown }) => markdown),
+  }
+}
+
+/** Load released lesson text for search only after the learner opens search. */
+export async function loadAllPublishedCourseLessons(): Promise<CourseLesson[]> {
+  const lessons = courseModules.flatMap((module) => module.lessons.filter((lesson) => lesson.published).map((lesson) => ({ module, lesson })))
+  return Promise.all(lessons.map(async ({ module, lesson }) => (await loadCourseLesson(module.id, lesson.id))!))
 }
 
 /** Resolve a module row used by course reading breadcrumbs and navigation. */

@@ -29,7 +29,7 @@ export function readRoute(pathname: string): Route {
   const courseLessonMatch = /^\/courses\/(m\d{2})\/(l\d{2})\/?$/i.exec(pathname)
   if (
     courseLessonMatch &&
-    findCourseLesson(courseLessonMatch[1], courseLessonMatch[2])?.content.trim()
+    findCourseLesson(courseLessonMatch[1], courseLessonMatch[2])?.published
   ) {
     return {
       page: 'course-lesson',
