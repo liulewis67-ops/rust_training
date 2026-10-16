@@ -19,6 +19,14 @@ it('returns an empty list when no public section matches', async () => {
   expect(await searchLessons('no-such-rust-topic')).toEqual([])
 })
 
+it('indexes newly released M03 lesson text after lazy loading', async () => {
+  const result = (await searchLessons('AlertStatus')).find(
+    (lesson) => lesson.id === 'M03-L06',
+  )
+
+  expect(result?.href).toBe('#/courses/m03/l06')
+})
+
 // Ranking prefers exact lesson titles and result fields never expose answer payloads.
 it('ranks the matching title and returns only navigation-safe result data', async () => {
   const results = await searchLessons('AppState')
