@@ -204,6 +204,15 @@ it('学习进度只用已发布主线课节作分母', async () => {
   expect(screen.queryByRole('navigation', { name: 'Rust 学习路线' })).toBeNull()
 })
 
+it('空复习页引导到公开课程目录', async () => {
+  const user = userEvent.setup()
+  window.history.replaceState({}, '', '/#/review')
+  render(<App />)
+  expect(screen.queryByRole('navigation', { name: 'Rust 学习路线' })).toBeNull()
+  await user.click(screen.getByRole('button', { name: '查看已发布课程' }))
+  expect(window.location.hash).toBe('#/tracks/rust-backend')
+})
+
 // 课程目录展示完整路线规划，并明确标出暂无课件的条目。
 it('打开课程目录并显示课程准备状态', async () => {
   const user = userEvent.setup()

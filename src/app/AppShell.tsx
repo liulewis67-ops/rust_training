@@ -110,7 +110,7 @@ export function AppShell({
   }, [drawer])
   const { completedCount, answered, accuracy, weakTags } =
     summarizeProgress(progress)
-  const hasLegacyWorkspace = route.page === 'lesson' || route.page === 'review'
+  const hasLegacyWorkspace = route.page === 'lesson'
   /** 关闭移动目录后导航到目标页面。 */
   const nav = (target: Route): void => {
     setDrawer(false)
@@ -352,7 +352,7 @@ export function AppShell({
             )}
             <div className="sidebar-bottom">
               <button
-                className={`side-link ${route.page === 'review' ? 'selected' : ''}`}
+                className="side-link"
                 onClick={() => {
                   // 打开薄弱点复习页。
                   return nav({ page: 'review' })
@@ -365,7 +365,7 @@ export function AppShell({
                 )}
               </button>
               <button
-                className={`side-link ${route.page === 'progress' ? 'selected' : ''}`}
+                className="side-link"
                 onClick={() => {
                   // 打开学习统计页。
                   return nav({ page: 'progress' })

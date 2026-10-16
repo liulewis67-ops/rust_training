@@ -13,6 +13,7 @@ export function ReviewPage({
   lessons: allLessons,
   onAttempt,
   onNavigate,
+  onOpenCatalog,
 }: {
   progress: Progress
   lessons: Lesson[]
@@ -24,6 +25,7 @@ export function ReviewPage({
     score?: number,
   ) => void
   onNavigate: (lesson: Lesson) => void
+  onOpenCatalog: () => void
 }): JSX.Element {
   const weak = Object.entries(progress.weakness)
     .filter(([, score]) => {
@@ -71,7 +73,7 @@ export function ReviewPage({
         <div>
           <span className="utility-eyebrow">REVIEW MODE</span>
           <h1>薄弱点复习</h1>
-          <p>从已完成课程中抽取与你的薄弱知识点相关的练习。</p>
+          <p>从已完成的互动课程中抽取与你的薄弱知识点相关的练习。</p>
         </div>
         <div className="review-count">
           <RotateCcw size={17} />
@@ -153,22 +155,15 @@ export function ReviewPage({
           </span>
           <h2>
             {progress.completed.length
-              ? '暂时没有待复习的薄弱题'
-              : '完成课程后开始复习'}
+              ? '暂时没有待复习的互动题'
+              : '当前没有待复习的互动题'}
           </h2>
           <p>
-            {progress.completed.length
-              ? '继续学习新内容，答错的知识点会自动出现在这里。'
-              : '练习提交后，系统会记录薄弱知识点，并从已完成课程抽取复习题。'}
+            M01
+            的开放练习和公开答案在对应课节中自查；已有互动练习的错题仍会在这里出现。
           </p>
-          <button
-            className="primary-button"
-            onClick={() => {
-              // 从第一节可用课程开始学习。
-              return onNavigate(allLessons[0])
-            }}
-          >
-            开始第 01 课 <ArrowRight size={14} />
+          <button className="primary-button" onClick={onOpenCatalog}>
+            查看已发布课程 <ArrowRight size={14} />
           </button>
         </div>
       )}

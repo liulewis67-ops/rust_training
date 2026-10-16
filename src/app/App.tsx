@@ -132,6 +132,9 @@ export default function App(): JSX.Element {
         lessons={lessons}
         onAttempt={saveReviewAttempt}
         onNavigate={selectLesson}
+        onOpenCatalog={() =>
+          navigate({ page: 'track', trackSlug: 'rust-backend' })
+        }
       />
     )
   } else if (route.page === 'progress') {

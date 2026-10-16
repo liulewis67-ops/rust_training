@@ -70,6 +70,7 @@ function ReviewHarness(): JSX.Element {
       lessons={[lesson]}
       onAttempt={submit}
       onNavigate={navigate}
+      onOpenCatalog={navigate}
     />
   )
 }
@@ -90,5 +91,5 @@ it('题库收缩后仍显示剩余复习题', async () => {
   await user.click(screen.getByRole('button', { name: 'A 正确' }))
   await user.click(screen.getByRole('button', { name: /提交答案/ }))
   expect(screen.getByRole('heading', { name: '第一道复习题' })).toBeTruthy()
-  expect(screen.queryByText('暂时没有待复习的薄弱题')).toBeNull()
+  expect(screen.queryByText('暂时没有待复习的互动题')).toBeNull()
 })
