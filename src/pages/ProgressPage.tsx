@@ -1,6 +1,8 @@
 import type { JSX } from 'react'
 import { Check, ChevronRight, Flame, Trash2, X } from 'lucide-react'
-import { lessons, categories } from '../features/catalog'
+import { lessons } from '../features/catalog'
+import { courseModules } from '../data/courseCatalog'
+import { listPublicCourseLessons } from '../data/publicCourse'
 import { summarizeProgress } from '../features/learning'
 import type { Progress } from '../features/learning'
 
@@ -14,15 +16,37 @@ export function ProgressPage({
   accuracy: number | null
   onClear: () => void
 }): JSX.Element {
-  const categoryStats = categories.map((category) => {
-    const categoryLessons = lessons.filter(
-      (lesson) => lesson.category === category,
-    )
-    const complete = categoryLessons.filter((lesson) =>
-      progress.completed.includes(lesson.id),
-    ).length
-    return { category, complete, total: categoryLessons.length }
-  })
+  const publishedModules = courseModules
+    .map((module) => {
+      const released = module.lessons.filter((lesson) => lesson.content.trim())
+      return {
+        label: `${module.id} · ${module.title}`,
+        complete: released.filter((lesson) =>
+          progress.completed.includes(`${module.id}-${lesson.id}`),
+        ).length,
+        total: released.length,
+      }
+    })
+    .filter((module) => module.total > 0)
+  const publicLessons = listPublicCourseLessons()
+  const publishedStats = [
+    ...publishedModules,
+    {
+      label: '公开专题',
+      complete: publicLessons.filter((lesson) =>
+        progress.completed.includes(`public:${lesson.id}`),
+      ).length,
+      total: publicLessons.length,
+    },
+  ].filter((item) => item.total > 0)
+  const mainCompleted = publishedModules.reduce(
+    (total, module) => total + module.complete,
+    0,
+  )
+  const mainTotal = publishedModules.reduce(
+    (total, module) => total + module.total,
+    0,
+  )
   const recent = [...progress.attempts].reverse().slice(0, 8)
   const summary = summarizeProgress(progress)
 
@@ -52,10 +76,10 @@ export function ProgressPage({
       </div>
       <div className="progress-summary">
         <div>
-          <small>自报完成课程</small>
+          <small>主线已发布课节</small>
           <strong>
-            {progress.completed.length}
-            <em> / {lessons.length}</em>
+            {mainCompleted}
+            <em> / {mainTotal}</em>
           </strong>
         </div>
         <div>
@@ -68,11 +92,13 @@ export function ProgressPage({
         </div>
       </div>
       <section className="mastery-section">
-        <h2>分类进度</h2>
-        <p>完成状态来自你的本地记录，不代表能力认证。</p>
-        {categoryStats.map((item) => (
-          <div className="mastery-row" key={item.category}>
-            <span>{item.category}</span>
+        <h2>已发布内容</h2>
+        <p>
+          这里只统计可阅读的课节与专题；完成状态来自本地自报，不代表能力认证。
+        </p>
+        {publishedStats.map((item) => (
+          <div className="mastery-row" key={item.label}>
+            <span>{item.label}</span>
             <div className="progress-track">
               <span
                 style={{

@@ -14,4 +14,4 @@
 | L06 | 公开参考 ZIP 的 `fmt -- --check`、`check --all-targets`、`test`、`run` 均通过，4 项行为测试通过，程序输出 `12.34`。 |
 | 借用文本课包 | 页面上的可运行样例加公开参考测试后，3 项测试通过。 |
 
-核验使用从 ZIP 解压出的独立目录或新建 Cargo 项目，没有把临时修复写回起始 ZIP。`pnpm content:validate-public` 检查六节标题、来源段落、练习文件与 ZIP 链接；`pnpm check:frontend` 检查目录发布边界、提示和答案折叠、下载文件名、导航及前端构建。子路径构建已生成四个独立 ZIP 文件。Linux/macOS 上的 Rust 命令及真实 Pages 下载响应仍需线上或其他系统复核；M02–M03 尚未达到发布条件。
+核验使用从 ZIP 解压出的独立目录或新建 Cargo 项目，没有把临时修复写回起始 ZIP。`pnpm content:validate-public` 检查六节标题、来源段落、练习文件与 ZIP 链接；`pnpm check:frontend` 检查目录发布边界、提示和答案折叠、下载文件名、导航及前端构建。子路径构建已生成四个独立 ZIP 文件；真实 Pages 地址上的四个文件均返回 200 和 ZIP 类型。Linux/macOS 上的 Rust 命令仍需在对应系统复核；M02–M03 尚未达到发布条件。

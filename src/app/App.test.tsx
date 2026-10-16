@@ -191,6 +191,19 @@ it('首页下一课进入已发布的 M01 主线', async () => {
   ).toBeTruthy()
 })
 
+it('学习进度只用已发布主线课节作分母', async () => {
+  const user = userEvent.setup()
+  window.history.replaceState({}, '', '/#/courses/m01/l01')
+  render(<App />)
+  await user.click(screen.getByRole('button', { name: '标记本节已完成' }))
+  await user.click(screen.getByRole('button', { name: '进度' }))
+  expect(screen.getByText('主线已发布课节')).toBeTruthy()
+  expect(screen.getByText('M01 · 开发循环与语言入门')).toBeTruthy()
+  expect(screen.getByText('公开专题')).toBeTruthy()
+  expect(screen.queryByText('/ 36')).toBeNull()
+  expect(screen.queryByRole('navigation', { name: 'Rust 学习路线' })).toBeNull()
+})
+
 // 课程目录展示完整路线规划，并明确标出暂无课件的条目。
 it('打开课程目录并显示课程准备状态', async () => {
   const user = userEvent.setup()
