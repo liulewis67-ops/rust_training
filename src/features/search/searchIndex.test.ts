@@ -24,7 +24,7 @@ it('ranks the matching title and returns only navigation-safe result data', () =
   const results = searchLessons('AppState')
 
   expect(results[0]?.id).toBe('app-state')
-  expect(results[0]?.href).toBe('/lesson/app-state')
+  expect(results[0]?.href).toBe('#/lesson/app-state')
   expect(JSON.stringify(results)).not.toContain('referenceAnswer')
   expect(JSON.stringify(results)).not.toContain('correctAnswer')
 })
@@ -36,8 +36,6 @@ it('indexes explicitly published static pages without private assessment identif
     (result) => result.id === 'borrowed-text-first-token',
   )
 
-  expect(staticLesson?.href).toBe(
-    '/lessons/borrowed-text-first-token/index.html',
-  )
+  expect(staticLesson?.href).toBe('#/public-lessons/borrowed-text-first-token')
   expect(searchLessons('borrowed-text-hidden-check')).toEqual([])
 })

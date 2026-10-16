@@ -51,7 +51,7 @@ export function HomePage({
           <h1>从 Rust 基础，走到可交付的后端服务。</h1>
           <p className="home-description">
             按 8 个阶段、24 个模块系统学习 Rust
-            工程。浏览课程正文、练习题面与项目路径。
+            工程。在线阅读课程，在本地完成练习与项目。
           </p>
           <button className="primary-button home-cta" onClick={openTrack}>
             浏览课程目录 <ArrowRight size={15} />
@@ -74,16 +74,13 @@ export function HomePage({
       >
         <div className="home-section-heading">
           <div>
-            <p className="home-kicker">YOUR NEXT STEP</p>
+            <p className="home-kicker">LOCAL STUDY</p>
             <h2 id="home-next-steps-title">从一条清晰的下一步开始</h2>
           </div>
-          <small>
-            旧版专题阅读 {countAvailableCompletions(progress)}/8 · 本地答题{' '}
-            {progress.attempts.length}
-          </small>
+          <small>本地练习记录 {progress.attempts.length} 条</small>
         </div>
         <p className="home-next-steps-note">
-          建议只整理阅读和练习记录，不代表平台认证的能力等级。
+          这些路线仍为规划内容，规划阶段不会计作已完成学习；本地记录也不代表平台认证的能力等级。
         </p>
         <div className="home-next-step-grid">
           {recommendations.map((recommendation, index) => {
@@ -183,22 +180,8 @@ export function HomePage({
       </section>
 
       <p className="home-disclosure" role="status">
-        课程目录与教学内容可阅读；在线代码执行和平台评测暂未开放。
+        代码练习在本地电脑完成；本站不提供在线运行或平台评测。
       </p>
     </article>
   )
-}
-
-/** Count only self-reported completion entries among the eight currently opened lessons. */
-function countAvailableCompletions(progress: Progress): number {
-  let count = 0
-  for (const completedId of progress.completed) {
-    for (const lesson of lessons) {
-      if (lesson.order <= 8 && lesson.id === completedId) {
-        count += 1
-        break
-      }
-    }
-  }
-  return count
 }

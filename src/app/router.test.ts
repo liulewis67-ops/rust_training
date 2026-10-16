@@ -9,14 +9,6 @@ it.each(['/lesson/ownership', '/lesson/borrowing/', '/review', '/progress/'])(
   },
 )
 
-// The author preview is reachable without changing the learner's saved course route.
-it('parses the borrowed-text author preview route', () => {
-  expect(readRoute('/preview/borrowed-text')).toEqual({
-    page: 'course-preview',
-    courseId: 'borrowed-text',
-  })
-})
-
 // 无效链接不应被伪装成首课；损坏编码不能造成白屏。
 it.each(['/lesson/missing', '/lesson/%E0%A4%A', '/missing', '/review/extra'])(
   '拒绝未知路径 %s',
@@ -35,16 +27,11 @@ it('解析首页与已规划路线', () => {
   })
 })
 
-// 本地账号页面可以通过浏览器直接访问并保持各自模式。
-it.each([
-  ['/login', 'login'],
-  ['/register', 'register'],
-  ['/verify-email', 'verify'],
-  ['/forgot-password', 'forgot'],
-  ['/reset-password', 'reset'],
-] as const)('解析账号路由 %s', (path, mode) => {
-  expect(readRoute(path)).toEqual({ page: 'auth', mode })
-})
+// Account and author-only URLs are unavailable in the public learner site.
+it.each(['/login', '/register', '/preview/borrowed-text'])(
+  'rejects removed feature route %s',
+  (path) => expect(readRoute(path).page).toBe('not-found'),
+)
 
 // 旧课程链接保持稳定；无效路线不能显示成可学习课程。
 it('保留旧课程链接并拒绝未知路线', () => {
@@ -55,5 +42,17 @@ it('保留旧课程链接并拒绝未知路线', () => {
   expect(readRoute('/tracks/unknown')).toEqual({
     page: 'not-found',
     path: '/tracks/unknown',
+  })
+})
+
+// The manifest-published lesson stays directly addressable through a Pages-safe hash path.
+it('解析已发布课包并拒绝未发布课包', () => {
+  expect(readRoute('/public-lessons/borrowed-text-first-token')).toEqual({
+    page: 'public-course-lesson',
+    lessonId: 'borrowed-text-first-token',
+  })
+  expect(readRoute('/public-lessons/not-published')).toEqual({
+    page: 'not-found',
+    path: '/public-lessons/not-published',
   })
 })

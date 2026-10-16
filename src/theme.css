@@ -180,6 +180,12 @@
 :root[data-theme="light"] .auth-error { background: #fff3f1; border-color: #edc9c3; color: #983d35; }
 :root[data-theme="light"] .auth-message { background: #eff8f1; border-color: #c5e2cd; color: #326845; }
 :root[data-theme="light"] .draft-editor-actions button { border-color: #d8dbe0; background: #f7f8fa; color: #464a52; }
+.code-example-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; min-height: 28px; }
+.code-example-actions span { color: var(--muted); font-size: 11px; }
+.code-example-actions button { padding: 3px 6px; }
+.local-practice-note { border-color: #35363b; background: #1a1b1e; }
+:root[data-theme="light"] .local-practice-note { border-color: #e1e3e7; background: #fff; color: #555860; }
+:root[data-theme="light"] .course-lesson-unavailable { color: #737780; }
 @media (max-width: 720px) {
   .course-preview { padding: 0 0 32px; }
   .preview-heading, .preview-section { padding: 18px; }

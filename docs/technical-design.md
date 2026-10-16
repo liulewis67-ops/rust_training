@@ -1,5 +1,7 @@
 # Rust 开发工程师培养平台：技术架构与实施方案
 
+> 2026-10-16 方向更新：当前架构以[纯前端开源学习站方案 v2](./frontend-only-plan.md)为准。本站改为 React 静态站＋GitHub Pages＋可选 localStorage，下文的 API、数据库、身份服务和运行器属于历史方案。
+
 版本：v1.0｜日期：2026-10-11｜状态：建议设计，未进行实现、压测或安全验证
 
 关联：[产品方案](./PRD-rust-engineer-academy.md) · [课程设计](./curriculum-design.md) · [实施路线图与完成台账](./implementation-plan.md) · [前端开发规范](./frontend-development-standards.md) · [后端开发规范](./backend-development-standards.md)

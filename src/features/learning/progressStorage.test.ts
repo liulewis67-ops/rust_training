@@ -1,8 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { createProgress } from './model'
+import { browserStorageKey } from '../../lib/browserStorage'
 import {
   loadProgress,
-  LEARNING_STORAGE_KEY,
   parseProgress,
   progressStorageKey,
   saveProgress,
@@ -14,15 +14,9 @@ afterEach(() => {
   localStorage.clear()
 })
 
-// Signed-in learners never share one browser's private progress namespace.
-it('uses a distinct local storage key for each server account', () => {
-  expect(progressStorageKey()).toBe(`${LEARNING_STORAGE_KEY}:anonymous`)
-  expect(progressStorageKey('learner/a')).toBe(
-    `${LEARNING_STORAGE_KEY}:account:learner%2Fa`,
-  )
-  expect(progressStorageKey('learner-a')).not.toBe(
-    progressStorageKey('learner-b'),
-  )
+// Each static Pages deployment has a separate browser progress namespace.
+it('scopes local progress to the deployed app path', () => {
+  expect(progressStorageKey()).toBe(browserStorageKey('learning:v3'))
 })
 
 // 原型旧版本的记录和自评分来源必须完整保留。

@@ -2,6 +2,13 @@ export type StorageResult<T> =
   | { ok: true; value: T }
   | { ok: false; message: string }
 
+/** Build a path-scoped key so sibling GitHub Pages repositories stay isolated. */
+export function browserStorageKey(name: string): string {
+  const deploymentPath = import.meta.env.BASE_URL.replace(/^\/+|\/+$/g, '')
+  const scope = deploymentPath ? `:${encodeURIComponent(deploymentPath)}` : ''
+  return `rust-path${scope}:${name}`
+}
+
 /** 读取轻量浏览器数据；隐私模式或浏览器策略拒绝时返回可展示的失败。 */
 export function readStoredValue(key: string): StorageResult<string | null> {
   try {

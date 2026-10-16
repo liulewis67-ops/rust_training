@@ -23,11 +23,14 @@ import { summarizeProgress, type Progress } from '../features/learning'
 import type { Lesson } from '../types/lesson'
 import type { Route } from './router'
 import type { Theme } from '../features/preferences'
-import { AccountControl } from '../features/identity/AccountControl'
-import { readStoredValue, writeStoredValue } from '../lib/browserStorage'
+import {
+  browserStorageKey,
+  readStoredValue,
+  writeStoredValue,
+} from '../lib/browserStorage'
 import './readingFocus.css'
 
-const READING_FOCUS_KEY = 'rust-backend-training:reading-focus'
+const READING_FOCUS_KEY = browserStorageKey('reading-focus')
 
 /** Restore the optional focus layout without making storage availability a requirement. */
 function readReadingFocus(): boolean {
@@ -111,8 +114,9 @@ export function AppShell({
     route.page !== 'home' &&
     route.page !== 'track' &&
     route.page !== 'course-lesson' &&
+    route.page !== 'public-course-lesson' &&
     route.page !== 'search' &&
-    route.page !== 'auth'
+    route.page !== 'not-found'
   /** 关闭移动目录后导航到目标页面。 */
   const nav = (target: Route): void => {
     setDrawer(false)
@@ -165,12 +169,16 @@ export function AppShell({
           </button>
           <button
             className={
-              route.page === 'track' || route.page === 'course-lesson'
+              route.page === 'track' ||
+              route.page === 'course-lesson' ||
+              route.page === 'public-course-lesson'
                 ? 'selected'
                 : ''
             }
             aria-current={
-              route.page === 'track' || route.page === 'course-lesson'
+              route.page === 'track' ||
+              route.page === 'course-lesson' ||
+              route.page === 'public-course-lesson'
                 ? 'page'
                 : undefined
             }
@@ -191,22 +199,22 @@ export function AppShell({
           >
             <Search size={13} /> 搜索
           </button>
+          <button
+            className={route.page === 'review' ? 'selected' : ''}
+            aria-current={route.page === 'review' ? 'page' : undefined}
+            onClick={() => nav({ page: 'review' })}
+          >
+            <RotateCcw size={13} /> 复习
+          </button>
+          <button
+            className={route.page === 'progress' ? 'selected' : ''}
+            aria-current={route.page === 'progress' ? 'page' : undefined}
+            onClick={() => nav({ page: 'progress' })}
+          >
+            <Target size={13} /> 进度
+          </button>
         </nav>
         <div className="topbar-right">
-          {hasLegacyWorkspace && (
-            <button
-              className="theme-toggle"
-              onClick={() => {
-                // 打开未发布作者预览，不改变学习进度。
-                nav({ page: 'course-preview', courseId: 'borrowed-text' })
-              }}
-              aria-label="打开课包预览"
-              title="打开课包预览"
-            >
-              <Eye size={15} />
-              <span>预览</span>
-            </button>
-          )}
           <button
             className="theme-toggle"
             onClick={onToggleTheme}
@@ -232,13 +240,18 @@ export function AppShell({
             </button>
           )}
           {hasLegacyWorkspace && (
-            <>
-              <span className="status-live" role="status">
-                <i /> {saveStatus}
-              </span>
-            </>
+            <span className="status-live" role="status" title={saveStatus}>
+              <i /> 本机记录
+            </span>
           )}
-          <AccountControl />
+          <a
+            className="theme-toggle"
+            href="https://github.com/liulewis67-ops/rust_training"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub
+          </a>
         </div>
       </header>
       <div
@@ -270,7 +283,7 @@ export function AppShell({
             <div className="path-heading">
               <div className="path-icon">⌘</div>
               <div>
-                <strong>Rust Backend</strong>
+                <strong>Rust 工程路线</strong>
                 <small>学习路线 · {lessons.length} 节</small>
               </div>
             </div>
@@ -384,7 +397,7 @@ export function AppShell({
         <main
           className={`main-content ${hasLegacyWorkspace ? '' : 'main-content-wide'}`}
         >
-          {/失败|损坏|不可用/.test(saveStatus) && (
+          {/失败|损坏|不可用|无法识别/.test(saveStatus) && (
             <p className="save-warning" role="alert">
               {saveStatus}
             </p>

@@ -1,29 +1,19 @@
 import { useEffect, useState } from 'react'
 import { lessons } from '../features/catalog'
 import { findCourseLesson } from '../data/courseCatalog'
-import type { AuthMode } from '../features/identity/AuthPage'
-
+import { findPublicCourseLesson } from '../data/publicCourse'
 export type Route =
   | { page: 'home' }
   | { page: 'search' }
   | { page: 'lesson'; lessonId: string }
   | { page: 'course-lesson'; moduleId: string; lessonId: string }
+  | { page: 'public-course-lesson'; lessonId: string }
   | { page: 'track'; trackSlug: string }
-  | { page: 'course-preview'; courseId: string }
   | { page: 'review' | 'progress' }
-  | { page: 'auth'; mode: AuthMode }
   | { page: 'not-found'; path: string }
 
 /** 解析现有路径；未知课程或非法编码明确显示未找到，不偷偷跳到首课。 */
 export function readRoute(pathname: string): Route {
-  const authRoutes: Record<string, AuthMode> = {
-    '/login': 'login',
-    '/register': 'register',
-    '/verify-email': 'verify',
-    '/forgot-password': 'forgot',
-    '/reset-password': 'reset',
-  }
-  if (authRoutes[pathname]) return { page: 'auth', mode: authRoutes[pathname] }
   if (pathname === '/') return { page: 'home' }
   if (pathname === '/search' || pathname === '/search/')
     return { page: 'search' }
@@ -39,7 +29,7 @@ export function readRoute(pathname: string): Route {
   const courseLessonMatch = /^\/courses\/(m\d{2})\/(l\d{2})\/?$/i.exec(pathname)
   if (
     courseLessonMatch &&
-    findCourseLesson(courseLessonMatch[1], courseLessonMatch[2])
+    findCourseLesson(courseLessonMatch[1], courseLessonMatch[2])?.content.trim()
   ) {
     return {
       page: 'course-lesson',
@@ -47,8 +37,14 @@ export function readRoute(pathname: string): Route {
       lessonId: courseLessonMatch[2].toUpperCase(),
     }
   }
-  const previewMatch = /^\/preview\/([a-z0-9-]+)\/?$/.exec(pathname)
-  if (previewMatch) return { page: 'course-preview', courseId: previewMatch[1] }
+  const publicLessonMatch = /^\/public-lessons\/([^/]+)\/?$/i.exec(pathname)
+  try {
+    const id = publicLessonMatch ? decodeURIComponent(publicLessonMatch[1]) : ''
+    if (id && findPublicCourseLesson(id))
+      return { page: 'public-course-lesson', lessonId: id }
+  } catch {
+    // Invalid percent encoding is an unknown path, not a router failure.
+  }
   const match = /^\/lesson\/([^/]+)\/?$/.exec(pathname)
   try {
     const id = match ? decodeURIComponent(match[1]) : ''
@@ -65,10 +61,8 @@ export function readRoute(pathname: string): Route {
   return { page: 'not-found', path: pathname }
 }
 
-/** 将路由意图映射为原型兼容 URL。 */
+/** Map a route to the stable hash path used by static hosting. */
 function routePath(route: Route): string {
-  if (route.page === 'auth')
-    return `/${route.mode === 'forgot' ? 'forgot-password' : route.mode === 'verify' ? 'verify-email' : route.mode === 'reset' ? 'reset-password' : route.mode}`
   if (route.page === 'home') return '/'
   if (route.page === 'search') return '/search'
   if (route.page === 'track')
@@ -77,39 +71,35 @@ function routePath(route: Route): string {
     return `/lesson/${encodeURIComponent(route.lessonId ?? '')}`
   if (route.page === 'course-lesson')
     return `/courses/${route.moduleId.toLowerCase()}/${route.lessonId.toLowerCase()}`
-  if (route.page === 'course-preview')
-    return `/preview/${encodeURIComponent(route.courseId)}`
+  if (route.page === 'public-course-lesson')
+    return `/public-lessons/${encodeURIComponent(route.lessonId)}`
   if (route.page === 'not-found') return route.path
   return `/${route.page}`
 }
 
-/** 管理 History 订阅；卸载时清理监听，浏览器前进后退与页面一致。 */
+/** 管理 Hash 路由订阅；浏览器前进后退与页面保持一致。 */
 export function useRoute(): {
   route: Route
   navigate: (target: Route) => void
 } {
-  const [route, setRoute] = useState<Route>(() => {
-    // 直接打开首页显示路线入口，旧课程仅通过原链接访问。
-    return readRoute(window.location.pathname)
-  })
+  const [route, setRoute] = useState<Route>(() =>
+    readRoute(window.location.hash.slice(1) || '/'),
+  )
   useEffect(() => {
-    // popstate 同时接收浏览器历史变更和内部导航事件。
-    /** 根据当前 URL 恢复页面，沿用有效的最近阅读课程。 */
-    function handlePopState(): void {
-      setRoute(readRoute(window.location.pathname))
+    // Hash changes support direct links and browser back/forward on GitHub Pages.
+    function handleHashChange(): void {
+      setRoute(readRoute(window.location.hash.slice(1) || '/'))
     }
-    window.addEventListener('popstate', handlePopState)
+    window.addEventListener('hashchange', handleHashChange)
     return () => {
-      // 避免热更新、严格模式和重复挂载累积事件处理器。
-      window.removeEventListener('popstate', handlePopState)
+      // Avoid duplicate global listeners after unmount or hot reload.
+      window.removeEventListener('hashchange', handleHashChange)
     }
   }, [])
   /** 仅在地址变化时增加历史条目，再通知所有路由订阅者。 */
   function navigate(target: Route): void {
-    const path = routePath(target)
-    if (window.location.pathname !== path)
-      window.history.pushState({}, '', path)
-    window.dispatchEvent(new PopStateEvent('popstate'))
+    const path = `#${routePath(target)}`
+    if (window.location.hash !== path) window.location.hash = path
   }
   return { route, navigate }
 }

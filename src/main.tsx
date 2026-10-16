@@ -14,12 +14,3 @@ ReactDOM.createRoot(root).render(
     <App />
   </React.StrictMode>,
 )
-
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // Register the precached static shell without blocking first render.
-    void navigator.serviceWorker.register('/sw.js').catch(() => {
-      // IndexedDB drafts remain available while online if offline caching is unavailable.
-    })
-  })
-}

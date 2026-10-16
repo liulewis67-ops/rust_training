@@ -2,6 +2,7 @@ import type { JSX } from 'react'
 import { ArrowLeft, ArrowRight, BookOpen } from 'lucide-react'
 import { courseModules, coursePhases } from '../data/courseCatalog'
 import { learningTrack } from '../data/learningTrack'
+import { getPublicCourse, listPublicCourseLessons } from '../data/publicCourse'
 import type { Route } from '../app/router'
 
 /** Browse every phase, module, and lesson in the authored Rust learning track. */
@@ -10,6 +11,9 @@ export function TrackPage({
 }: {
   onNavigate: (route: Route) => void
 }): JSX.Element {
+  const publishedCourse = getPublicCourse()
+  const publishedLessons = listPublicCourseLessons()
+
   /** Return to the platform home page. */
   function goHome(): void {
     onNavigate({ page: 'home' })
@@ -24,8 +28,8 @@ export function TrackPage({
         <p className="home-eyebrow">COURSE CATALOG · RUST BACKEND</p>
         <h1>{learningTrack.title}</h1>
         <p>
-          按阶段浏览 24 个模块与 144
-          节课程。每节包括教学正文；适用时附有练习、实验或独立检查题面。
+          按阶段浏览 24 个模块和规划中的 144
+          节课程。已经准备好的课件可以直接阅读；其余课程会标明准备状态。
         </p>
         <div className="track-meta">
           <span>
@@ -35,6 +39,40 @@ export function TrackPage({
           <span>144 节课程</span>
         </div>
       </header>
+
+      <section
+        className="published-course-section"
+        aria-labelledby="published-course-title"
+      >
+        <div>
+          <p className="home-eyebrow">PUBLISHED COURSE</p>
+          <h2 id="published-course-title">已发布课件</h2>
+          <p>只有明确列入公开清单的课节会出现在这里。</p>
+        </div>
+        {publishedLessons.length > 0 ? (
+          <ol>
+            {publishedLessons.map((lesson) => (
+              <li key={lesson.id}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onNavigate({
+                      page: 'public-course-lesson',
+                      lessonId: lesson.id,
+                    })
+                  }
+                >
+                  <span>{publishedCourse.title}</span>
+                  <strong>{lesson.title}</strong>
+                  <ArrowRight size={13} aria-hidden="true" />
+                </button>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p>首批 Markdown 课程仍在准备中。</p>
+        )}
+      </section>
 
       <ol className="track-phase-list course-phase-list">
         {coursePhases.map((phase, index) => {
@@ -71,22 +109,32 @@ export function TrackPage({
                       <ol className="course-lesson-list">
                         {module.lessons.map((lesson) => (
                           <li key={lesson.id}>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                onNavigate({
-                                  page: 'course-lesson',
-                                  moduleId: module.id,
-                                  lessonId: lesson.id,
-                                })
-                              }
-                            >
-                              <span>
-                                {module.id}-{lesson.id}
+                            {lesson.content.trim() ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onNavigate({
+                                    page: 'course-lesson',
+                                    moduleId: module.id,
+                                    lessonId: lesson.id,
+                                  })
+                                }
+                              >
+                                <span>
+                                  {module.id}-{lesson.id}
+                                </span>
+                                <strong>{lesson.title}</strong>
+                                <ArrowRight size={13} aria-hidden="true" />
+                              </button>
+                            ) : (
+                              <span className="course-lesson-unavailable">
+                                <span>
+                                  {module.id}-{lesson.id}
+                                </span>
+                                <strong>{lesson.title}</strong>
+                                <small>课程准备中</small>
                               </span>
-                              <strong>{lesson.title}</strong>
-                              <ArrowRight size={13} aria-hidden="true" />
-                            </button>
+                            )}
                           </li>
                         ))}
                       </ol>

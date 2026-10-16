@@ -1,5 +1,5 @@
 import type { JSX } from 'react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,7 +13,6 @@ import { lessons, tagLabel, difficultyLabel } from '../features/catalog'
 import { ChoiceExercise, OpenExercise } from '../features/practice'
 import { CodeExamples } from '../features/reading'
 import { CodeBlock } from '../components/CodeBlock'
-import { DraftEditor } from '../features/workspace/DraftEditor'
 import type { Progress } from '../features/learning'
 import type { Lesson, Exercise } from '../types/lesson'
 import './lessonReflection.css'
@@ -25,8 +24,6 @@ export function LessonPage({
   exercises,
   onAttempt,
   onComplete,
-  reflection,
-  onReflectionSave,
   onNavigate,
   onReview,
 }: {
@@ -40,17 +37,10 @@ export function LessonPage({
     score?: number,
   ) => void
   onComplete: () => void
-  reflection: string
-  onReflectionSave: (content: string) => void
   onNavigate: (lesson: Lesson) => void
   onReview: () => void
 }): JSX.Element {
   const [activeExercise, setActiveExercise] = useState(0)
-  const [reflectionDraft, setReflectionDraft] = useState(reflection)
-  useEffect(() => {
-    // Restore a server-merged reflection when account state finishes loading.
-    setReflectionDraft(reflection)
-  }, [reflection])
   const done = progress.completed.includes(lesson.id)
   const exercise = exercises[activeExercise]
   const allAnswered =
@@ -146,7 +136,7 @@ export function LessonPage({
         </>
       )}
       {lesson.examples.length > 0 && (
-        <CodeExamples examples={lesson.examples} lessonId={lesson.id} />
+        <CodeExamples examples={lesson.examples} />
       )}
       {exercises.length > 0 && (
         <section className="exercise-card" id="exercise">
@@ -169,12 +159,9 @@ export function LessonPage({
           </div>
           {exercise.code && <CodeBlock code={exercise.code} compact />}
           {exercise.code && (
-            <DraftEditor
-              lessonId={lesson.id}
-              itemId={`exercise-${exercise.id}`}
-              template={exercise.code}
-              label={`练习 ${activeExercise + 1}`}
-            />
+            <p className="exercise-prompt">
+              复制上方代码到本地 Rust 项目，在自己的电脑上修改并运行。
+            </p>
           )}
           {exercise.prompt !== '提交后预测：程序会怎样？' &&
             lesson.order === 1 &&
@@ -374,27 +361,6 @@ export function LessonPage({
             return <li key={item}>{item}</li>
           })}
         </ul>
-      </section>
-      <section className="reflection-panel" aria-labelledby="reflection-title">
-        <label id="reflection-title" htmlFor={`reflection-${lesson.id}`}>
-          本课反思
-        </label>
-        <p>写下你想记住的概念；这段文字属于个人学习记录，不参与评分。</p>
-        <textarea
-          id={`reflection-${lesson.id}`}
-          value={reflectionDraft}
-          maxLength={16000}
-          rows={4}
-          onChange={(event) => setReflectionDraft(event.currentTarget.value)}
-        />
-        <button
-          type="button"
-          className="secondary-button"
-          disabled={reflectionDraft === reflection}
-          onClick={() => onReflectionSave(reflectionDraft)}
-        >
-          保存反思
-        </button>
       </section>
       <div className="bottom-navigation">
         <button

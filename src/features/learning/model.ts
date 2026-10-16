@@ -16,7 +16,7 @@ export function createProgress(): Progress {
   }
 }
 
-/** 按传入的账户时区生成学习日，不依赖设备时区或 locale 日期格式。 */
+/** 按浏览器设备时区生成学习日；本地记录不依赖账户设置。 */
 export function studyDate(date: Date, timeZone?: string): string {
   if (timeZone) {
     try {
@@ -31,7 +31,7 @@ export function studyDate(date: Date, timeZone?: string): string {
       )
       return `${values.year}-${values.month}-${values.day}`
     } catch {
-      // 未验证的时区名不阻断本地记录，使用设备日历并由服务端校验账号时区。
+      // 无效的时区名不阻断本地记录，回退到设备日历。
     }
   }
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -99,7 +99,7 @@ export function recordAttempt(
         )
       }),
       attempt,
-    ],
+    ].slice(-200),
   }
 }
 

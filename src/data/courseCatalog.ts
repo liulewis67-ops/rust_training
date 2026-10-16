@@ -1,4 +1,5 @@
 import { learningTrack } from './learningTrack'
+import publicManifest from '../../content/public-course-manifest.json'
 
 interface ModuleDefinition {
   id: string
@@ -46,22 +47,20 @@ const moduleDefinitions: ModuleDefinition[] = [
 ]
 
 const authoredMarkdown = {
-  ...import.meta.glob('../../content/drafts/m*.md', {
+  ...import.meta.glob('../../content/releases/m*.md', {
     eager: true,
     query: '?raw',
     import: 'default',
   }),
-  ...import.meta.glob('../../content/drafts/public/m*.md', {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-  }),
 } as Record<string, string>
-const publicLessonArchives = import.meta.glob('../../content/drafts/public/m*.zip', {
+const publicLessonArchives = import.meta.glob('../../content/releases/*.zip', {
   eager: true,
   query: '?url',
   import: 'default',
 }) as Record<string, string>
+const releasedMarkdownLessons = new Set<string>(
+  publicManifest.markdown_lessons,
+)
 
 /** Resolve only ZIP files explicitly stored in the public lesson asset folder. */
 export function resolveCourseAsset(destination: string): string | undefined {
@@ -132,7 +131,8 @@ export const courseModules: CourseModule[] = moduleDefinitions.map((module) => (
   ...module,
   lessons: Array.from({ length: 6 }, (_, index) => {
     const id = `L${String(index + 1).padStart(2, '0')}`
-    const files = learnerFiles(module.id, id)
+    const released = releasedMarkdownLessons.has(`${module.id}-${id}`)
+    const files = released ? learnerFiles(module.id, id) : []
     const body = files.find(({ name }) => !name.includes('exercises'))?.markdown ?? ''
     const heading = /^#\s+(?:M\d{2}-L\d{2}(?:[:：]\s*|\s+))?(.+)$/m.exec(body)
     return {

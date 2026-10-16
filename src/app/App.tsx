@@ -5,12 +5,11 @@ import { useTheme } from '../features/preferences'
 import { LessonPage } from '../pages/LessonPage'
 import { ReviewPage } from '../pages/ReviewPage'
 import { ProgressPage } from '../pages/ProgressPage'
-import { CoursePreviewPage } from '../pages/CoursePreviewPage'
 import { HomePage } from '../pages/HomePage'
 import { TrackPage } from '../pages/TrackPage'
 import { SearchPage } from '../pages/SearchPage'
-import { AuthPage } from '../features/identity/AuthPage'
 import { CourseLessonPage } from '../pages/CourseLessonPage'
+import { PublicCourseLessonPage } from '../pages/PublicCourseLessonPage'
 import type { Exercise, Lesson } from '../types/lesson'
 import { AppShell } from './AppShell'
 import { useRoute } from './router'
@@ -22,17 +21,19 @@ export default function App(): JSX.Element {
     saveStatus,
     rememberLesson,
     completeLesson,
-    saveReflection,
-    setTimeZone,
-    retrySync,
-    legacyPreview,
-    importLegacy,
-    syncStatus,
+    clearProgress,
     submitAttempt,
   } = useProgress()
   const { route, navigate } = useRoute()
   const { theme, toggleTheme } = useTheme()
-  const lessonId = route.page === 'lesson' ? route.lessonId : undefined
+  const lessonId =
+    route.page === 'lesson'
+      ? route.lessonId
+      : route.page === 'course-lesson'
+        ? `${route.moduleId}-${route.lessonId}`
+        : route.page === 'public-course-lesson'
+          ? `public:${route.lessonId}`
+          : undefined
   const current =
     lessons.find((lesson) => {
       // 路由已经验证课程 ID，布局在工具页使用首课作为非选中占位。
@@ -70,10 +71,6 @@ export default function App(): JSX.Element {
   function finishLesson(): void {
     completeLesson(current.id)
   }
-  /** 保存当前课程的学习反思。 */
-  function saveLessonReflection(content: string): void {
-    saveReflection(current.id, content)
-  }
   /** 打开薄弱点复习。 */
   function openReview(): void {
     navigate({ page: 'review' })
@@ -84,15 +81,7 @@ export default function App(): JSX.Element {
   }
 
   let page: JSX.Element
-  if (route.page === 'auth') {
-    page = (
-      <AuthPage
-        mode={route.mode}
-        onAuthenticated={() => navigate({ page: 'home' })}
-        onResetComplete={() => navigate({ page: 'auth', mode: 'login' })}
-      />
-    )
-  } else if (route.page === 'home') {
+  if (route.page === 'home') {
     page = <HomePage onNavigate={navigate} progress={progress} />
   } else if (route.page === 'track') {
     page = <TrackPage onNavigate={navigate} />
@@ -111,8 +100,6 @@ export default function App(): JSX.Element {
         )}
         onAttempt={saveAttempt}
         onComplete={finishLesson}
-        reflection={progress.reflections[current.id]?.content ?? ''}
-        onReflectionSave={saveLessonReflection}
         onNavigate={selectLesson}
         onReview={openReview}
       />
@@ -123,6 +110,18 @@ export default function App(): JSX.Element {
         key={`${route.moduleId}-${route.lessonId}`}
         moduleId={route.moduleId}
         lessonId={route.lessonId}
+        completed={progress.completed.includes(lessonId ?? '')}
+        onComplete={() => completeLesson(lessonId ?? '')}
+        onNavigate={navigate}
+      />
+    )
+  } else if (route.page === 'public-course-lesson') {
+    page = (
+      <PublicCourseLessonPage
+        key={route.lessonId}
+        lessonId={route.lessonId}
+        completed={progress.completed.includes(lessonId ?? '')}
+        onComplete={() => completeLesson(lessonId ?? '')}
         onNavigate={navigate}
       />
     )
@@ -140,26 +139,9 @@ export default function App(): JSX.Element {
       <ProgressPage
         progress={progress}
         accuracy={summarizeProgress(progress).accuracy}
-        onTimeZoneSave={setTimeZone}
-        canRetrySync={syncStatus === 'error'}
-        onRetrySync={retrySync}
-        legacyPreview={legacyPreview}
-        onLegacyImport={importLegacy}
+        onClear={clearProgress}
       />
     )
-  } else if (route.page === 'course-preview') {
-    page =
-      route.courseId === 'borrowed-text' ? (
-        <CoursePreviewPage />
-      ) : (
-        <section className="utility-page">
-          <h1>未找到课程或页面</h1>
-          <p>该链接不存在，课程可能尚未发布。</p>
-          <button className="primary-button" onClick={openCourseCatalog}>
-            返回课程目录
-          </button>
-        </section>
-      )
   } else {
     page = (
       <section className="utility-page">

@@ -1,5 +1,5 @@
 import { useEffect, type JSX } from 'react'
-import { ArrowLeft, ArrowRight, BookOpen } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, Check } from 'lucide-react'
 import {
   courseModules,
   findCourseLesson,
@@ -12,10 +12,14 @@ import { SafeMarkdown } from '../features/content/SafeMarkdown'
 export function CourseLessonPage({
   moduleId,
   lessonId,
+  completed,
+  onComplete,
   onNavigate,
 }: {
   moduleId: string
   lessonId: string
+  completed: boolean
+  onComplete: () => void
   onNavigate: (route: Route) => void
 }): JSX.Element {
   useEffect(() => {
@@ -79,13 +83,23 @@ export function CourseLessonPage({
         <h1>{lesson.title}</h1>
         <p>{module.outcome}</p>
         <span>
-          <BookOpen size={14} /> 课程阅读预览 · 在线执行与自动评测暂缓
+          <BookOpen size={14} /> 课程阅读 · 编程练习在本地电脑完成
         </span>
+        <button
+          type="button"
+          className="secondary-button course-completion-button"
+          onClick={onComplete}
+        >
+          {completed ? '已自报完成' : '标记本节已完成'} <Check size={14} />
+        </button>
       </header>
 
       <section className="course-reader-section" aria-label="课程正文">
         <SafeMarkdown content={body} />
       </section>
+      <aside className="local-practice-note">
+        代码练习在你的本地电脑上完成。复制示例或下载课件中的模板，再按题面给出的命令运行和检查结果。
+      </aside>
 
       {lesson.exercises.length > 0 && (
         <section

@@ -98,7 +98,7 @@ function createLessonDocument(lesson: Lesson): SearchDocument {
     id: lesson.id,
     title: lesson.title,
     section: lesson.category,
-    href: `/lesson/${encodeURIComponent(lesson.id)}`,
+    href: `#/lesson/${encodeURIComponent(lesson.id)}`,
     body,
     aliases,
   }
@@ -158,7 +158,7 @@ function createCourseDocuments(course: PublicCourse): SearchDocument[] {
       id: lesson.id,
       title: lesson.title,
       section: course.course_id,
-      href: `/lessons/${encodeURIComponent(lesson.id)}/index.html`,
+      href: `#/public-lessons/${encodeURIComponent(lesson.id)}`,
       body,
       aliases: [],
     }
@@ -169,14 +169,16 @@ function createCourseDocuments(course: PublicCourse): SearchDocument[] {
 function createSearchDocuments(): SearchDocument[] {
   const legacyDocuments = lessons.map(createLessonDocument)
   const authoredCourseDocuments = courseModules.flatMap((module) =>
-    module.lessons.map((lesson) => ({
-      id: `${module.id}-${lesson.id}`,
-      title: lesson.title,
-      section: `${module.id} · ${module.title}`,
-      href: `/courses/${module.id.toLowerCase()}/${lesson.id.toLowerCase()}`,
-      body: [lesson.content, ...lesson.exercises].filter(Boolean),
-      aliases: [],
-    })),
+    module.lessons
+      .filter((lesson) => lesson.content.trim())
+      .map((lesson) => ({
+        id: `${module.id}-${lesson.id}`,
+        title: lesson.title,
+        section: `${module.id} · ${module.title}`,
+        href: `#/courses/${module.id.toLowerCase()}/${lesson.id.toLowerCase()}`,
+        body: [lesson.content, ...lesson.exercises].filter(Boolean),
+        aliases: [],
+      })),
   )
   const listedFiles = publicManifest.course_files
   const missingBundles = listedFiles.filter((fileName) => {

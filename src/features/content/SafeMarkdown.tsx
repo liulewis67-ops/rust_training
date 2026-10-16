@@ -162,5 +162,11 @@ function renderBlocks(markdown: string): ReactNode[] {
 
 /** Display course prose, lists, headings, quotes, and code without executing authored HTML. */
 export function SafeMarkdown({ content }: { content: string }): JSX.Element {
-  return <div className="course-markdown">{renderBlocks(content)}</div>
+  const learnerMarkdown = content
+    .replace(
+      /<(script|style|iframe|object|embed|template)\b[^>]*>[\s\S]*?(?:<\/\1\s*>|$)/gi,
+      '',
+    )
+    .replace(/<(?:img|input|meta|link)\b[^>]*\/?>/gi, '')
+  return <div className="course-markdown">{renderBlocks(learnerMarkdown)}</div>
 }

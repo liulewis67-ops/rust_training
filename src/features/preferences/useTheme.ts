@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
-import { readStoredValue, writeStoredValue } from '../../lib/browserStorage'
+import {
+  browserStorageKey,
+  readStoredValue,
+  writeStoredValue,
+} from '../../lib/browserStorage'
 
 export type Theme = 'dark' | 'light'
-const THEME_KEY = 'rust-backend-training:theme'
+const THEME_KEY = browserStorageKey('theme')
 
 /** 保留原型深浅偏好；存储被禁用时仍可在当前会话使用主题。 */
 function readTheme(): Theme {
