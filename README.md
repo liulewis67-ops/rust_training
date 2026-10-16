@@ -28,4 +28,4 @@ pnpm preview
 
 项目规划覆盖 Rust 基础、CLI、并发与异步、Axum、数据、安全和交付。目录里的规划和草稿不代表全部课程都已发布。遇到术语、示例、命令或环境问题，请通过 GitHub Issues 报告课程编号、相关文件及复现步骤；欢迎先阅读现有内容，再通过 Pull Request 改进课程。
 
-软件代码使用 [MIT License](./LICENSE)，原创课程与文档内容使用 [CC BY 4.0](./CONTENT-LICENSE.md)。第三方材料保留其原有许可；请按[贡献指南](./CONTRIBUTING.md)记录来源并提交内容。
+软件代码使用 [MIT License](./LICENSE)，原创课程与文档内容使用 [CC BY 4.0](./CONTENT-LICENSE.md)。第三方材料保留其原有许可；网站运行时依赖及 Tailwind 预置样式的许可文本见[第三方许可清单](./public/third-party-notices.txt)。请按[贡献指南](./CONTRIBUTING.md)记录来源并提交内容。
