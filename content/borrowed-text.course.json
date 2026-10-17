@@ -59,7 +59,6 @@
       "environment_id": "rust-core",
       "source_ids": ["rust-book-slices"],
       "public_test_ids": ["first-token-empty-input"],
-      "private_assessment_id": "borrowed-text-hidden-check",
       "hints": ["先找到空白字符边界，再返回原字符串的切片。"]
     }
   ],

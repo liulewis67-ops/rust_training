@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b --pretty",
     "test": "vitest run",
-    "content:validate": "node scripts/course-content.mjs validate content/borrowed-text.course.json --private content/borrowed-text.assessment.json --samples content/course-samples.json",
+    "content:validate": "node scripts/course-content.mjs validate content/borrowed-text.course.json --samples content/course-samples.json",
     "content:validate-public": "node scripts/validate-public-course-manifest.mjs",
     "content:check-samples": "node scripts/validate-course-samples.mjs validate content/course-samples.json",
     "lint": "eslint src",

@@ -91,10 +91,13 @@ function lessonAt(
 
 // Group schema, reference-graph and visibility checks for the course-pack contract.
 describe('课程包结构校验', () => {
-  // Use one valid public pack and a separately stored private assessment pack as the baseline.
-  it('接受完整课包并保留公开/私有资源边界', async () => {
+  // Public course data needs no assessment reference; author validation can still link an optional pack.
+  it('接受没有私有评测字段的公开课包并验证独立作者评测引用', async () => {
     const pack = await fixture()
     const privatePack = await privateFixture()
+    expect(pack.exercises[0]?.private_assessment_id).toBeUndefined()
+    expect(validateCoursePack(pack).errors).toEqual([])
+    pack.exercises[0]!.private_assessment_id = 'borrowed-text-hidden-check'
     expect(validateCoursePack(pack, { privatePack }).errors).toEqual([])
   })
 

@@ -172,6 +172,12 @@ for (const fileName of courseFiles) {
   const exerciseIds = new Set(
     (course.exercises ?? []).map((exercise) => exercise.id),
   )
+  for (const [exerciseId, exercise] of (course.exercises ?? []).entries()) {
+    if (Object.hasOwn(exercise ?? {}, 'private_assessment_id'))
+      errors.push(
+        `course_files[${fileName}].exercises[${exerciseId}]: private assessment references are not published to the static site`,
+      )
+  }
   for (const lesson of course.lessons ?? []) {
     for (const sourceId of lesson.source_ids ?? []) {
       if (!sourceIds.has(sourceId))

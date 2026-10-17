@@ -187,8 +187,7 @@
         "prompt",
         "environment_id",
         "source_ids",
-        "public_test_ids",
-        "private_assessment_id"
+        "public_test_ids"
       ],
       "properties": {
         "id": { "$ref": "#/$defs/stableId" },
