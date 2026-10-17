@@ -40,6 +40,12 @@ it('publishes only reviewed lessons and retains their open reference answers', a
   expect((await loadCourseLesson('M06', 'L01'))?.exercises[0]).toContain('## 参考答案')
   expect((await loadCourseLesson('M06', 'L05'))?.content).toContain('## 参考实现')
   expect((await loadCourseLesson('M06', 'L06'))?.content).toContain('## 参考实现')
+  for (const number of ['01', '02', '03', '04', '05', '06']) {
+    expect(findCourseLesson('M07', `L${number}`)?.published).toBe(true)
+  }
+  expect((await loadCourseLesson('M07', 'L01'))?.exercises[0]).toContain('## 参考答案')
+  expect((await loadCourseLesson('M07', 'L05'))?.content).toContain('## 参考实现')
+  expect((await loadCourseLesson('M07', 'L06'))?.content).toContain('## 参考实现')
   expect(JSON.stringify(getPublicCourse())).not.toContain('private_assessment_id')
   for (const archive of [
     'm01-l03-samples.zip',
@@ -51,6 +57,7 @@ it('publishes only reviewed lessons and retains their open reference answers', a
     'm04-l05-starter.zip',
     'm05-l05-starter.zip',
     'm06-l05-starter.zip',
+    'm07-l05-starter.zip',
   ]) {
     expect(resolveCourseAsset(`./${archive}`)).toBeTruthy()
   }

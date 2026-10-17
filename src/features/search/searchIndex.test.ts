@@ -51,6 +51,14 @@ it('indexes newly released M06 lifetime lessons after lazy loading', async () =>
   expect(result?.href).toBe('#/courses/m06/l06')
 })
 
+it('indexes newly released M07 trait lessons after lazy loading', async () => {
+  const result = (await searchLessons('EntryParser')).find(
+    (lesson) => lesson.id === 'M07-L05',
+  )
+
+  expect(result?.href).toBe('#/courses/m07/l05')
+})
+
 // Ranking prefers exact lesson titles and result fields never expose answer payloads.
 it('ranks the matching title and returns only navigation-safe result data', async () => {
   const results = await searchLessons('AppState')

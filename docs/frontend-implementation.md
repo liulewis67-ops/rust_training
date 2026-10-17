@@ -42,7 +42,7 @@
 ## FE04 首批课程发布 · DONE
 
 - `content/public-course-manifest.json` 现在同时控制公开 JSON 课包和 Markdown 课节；站点只从 `content/releases/` 加载获准的 Markdown 与 ZIP，`content/drafts/` 不再参与课程目录或搜索。轻量目录元数据与课文正文分离，后者仅在阅读或首次搜索时按需加载。
-- `pnpm content:validate-public` 检查清单格式、公开来源状态、标题与课节 ID 一致性、资源路径、课节引用、来源段落和 ZIP 文件存在性；当前已有 1 个公开课包与 36 个 M01–M06 Markdown 课节通过。
+- `pnpm content:validate-public` 检查清单格式、公开来源状态、标题与课节 ID 一致性、资源路径、课节引用、来源段落和 ZIP 文件存在性；当前已有 1 个公开课包与 42 个 M01–M07 Markdown 课节通过。
 - 已把清单中原本公开的 `borrowed-text` 课包接入 Hash 阅读器，补齐公开练习说明与参考测试；搜索结果可打开该课节，参考测试在 Rust 1.95.0 上有 3 项通过。
 - M01-L01–L06 已整理为公开课节，配套练习、提示、参考答案及四个 ZIP 资源；L02–L06 的本地命令和样例有逐项核验，见[M01 发布核验](./frontend-release-m01.md)。发布清单与首页主线入口已接入 M01，线上阅读、答案展开和独立 ZIP 下载响应已确认。
 - M02、M03 六节均已从草稿改写为公开课件，保留本地命令、练习、公开参考答案和来源；两份 L05 starter ZIP 均与公开源目录一致并通过逐文件哈希校验。M02 Rust 代码块 32 个正常示例可编译、5 个注明的错误示例按预期失败，L05 修复后 4 项测试通过；M03 Rust 代码块 30 个可编译、4 个注明的错误示例按预期失败，L05 修复后 5 项测试通过。两份起始项目均按设计报 E0308。
@@ -60,6 +60,9 @@
 - M06 的 37 个 Rust 代码块经 Rust 1.95.0 审核：26 个独立代码块通过，11 个示例按设计展示缺失生命周期、悬垂引用或依赖本课前置类型的上下文错误。公开清单现通过 1 个 JSON 课包和 36 篇 Markdown 课节；课程目录与搜索回归已覆盖 M06。
 - M06 提交前的前端回归通过格式、Lint、TypeScript、13 个测试文件／82 个用例和生产构建。根路径与 `/rust_training/` 子路径构建都含 M06 十个课文／练习 chunk 与 L05 ZIP。
 - M06 提交 `70dc4ef` 的 [Quality](https://github.com/liulewis67-ops/rust_training/actions/runs/39003401756) 与 [Deploy Pages](https://github.com/liulewis67-ops/rust_training/actions/runs/39003401840) 工作流均成功。线上 Pages 首页、M06 主 bundle、L06 课文 chunk 和 L05 starter ZIP 都返回 200；课文 chunk 含公开 Cow 参考实现，bundle 不含 `private_assessment_id`。
+- M07 六节课及 L01–L04 练习已整理为公开内容，逐题答案、L05 实验参考修复和 L06 动态策略流水线实现均已公开；来源与权属见[M07 审查记录](./frontend-source-review-m07.md)。
+- M07 L05 起始 ZIP 五个文件哈希匹配且不含 `target/`；原项目五项公开测试全部失败，修复 `ColonParser` delimiter 后 `cargo fmt -- --check`、`cargo check --offline` 和五项测试通过。静态/动态分发组合示例与异构策略流水线两项测试通过；原生 async trait object 按设计触发 E0038。
+- M07 的 30 个 Rust 代码块按 Rust 1.95.0 核查，包含预期的泛型约束、trait implementation、dyn compatibility 反例及需前置类型的分块示例。公开清单、课程目录和搜索回归覆盖 42 篇课节；本地前端回归通过 13 个测试文件／83 个用例。
 
 ## FE05 开源与 Pages 首发 · DONE
 
@@ -71,4 +74,4 @@
 
 ## 未完成项
 
-FE01–FE05 已完成；M01–M06 已线上发布，FE06 继续推进 M07–M24。本站前端回归通过 13 个测试文件／82 个用例，内容清单验证 36 篇 Markdown 课节，M05 与 M06 的 Pages 和 Actions 均已确认。浏览器自动化受当前 Codex Work 设置限制；相关页面行为以本地 App 回归测试及已记录的线上资源检查为证。根路径 `/sw.js` 返回 404，而项目路径退役脚本可访问；结论只适用于当前真实部署地址。
+FE01–FE05 已完成；M01–M06 已线上发布，M07 本地内容与前端回归已通过，FE06 继续推进 M07–M24。M07 Pages 发布与线上检查待完成。浏览器自动化受当前 Codex Work 设置限制；相关页面行为以本地 App 回归测试及已记录的线上资源检查为证。根路径 `/sw.js` 返回 404，而项目路径退役脚本可访问；结论只适用于当前真实部署地址。
