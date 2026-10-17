@@ -54,7 +54,8 @@
 - M04 的 30 个 Rust 代码块均通过 Rust 1.95.0 编译核验：21 个正常示例通过，9 个明确的错误／待补全示例分别按预期触发 E0382 或 E0040。L05 起始 ZIP 与 manifest 文件 SHA-256 一致，原项目按预期因 E0382 失败；参考修复后 `cargo fmt -- --check`、`cargo check --offline` 和两项测试均通过。
 - M05 六节课、四份练习均已整理为公开内容，所有练习含逐题答案；L05 实验和 L06 自测含公开参考实现，已移除平台提交与隐藏评测说法。逐文件来源与权属见[M05 审查记录](./frontend-source-review-m05.md)。
 - M05 的 37 个 Rust 代码块已按 Rust 1.95.0 审核：可独立编译的示例通过；借用冲突、局部引用和共享引用写入等教学反例按预期失败；答案中的函数体片段按所在函数上下文解释。公开清单通过 1 个 JSON 课包与 30 篇 Markdown 课节验证，课程样例检查核对 5 个固定样例。M05 L05 ZIP 的五个文件哈希全部匹配，归档不含 `target/`；起始项目按预期触发 E0106，修复后 `cargo fmt -- --check`、`cargo check --offline` 和 4 项测试通过。
-- 前端检查通过格式、Lint、TypeScript、13 个测试文件／81 个用例和生产构建；产物含 M05 六课按需加载 chunk 与 L05 ZIP。M04 对应的 Quality 与 Deploy GitHub Actions 均成功，真实 Pages 首页、M04 课程 bundle 和 L05 ZIP 分别返回 200；M05 内容发布后的线上响应将在部署完成后补记。
+- 前端检查通过格式、Lint、TypeScript、13 个测试文件／81 个用例和生产构建；根路径与 `/rust_training/` 子路径构建均含 M05 六课按需加载 chunk 与 L05 ZIP。M04 对应的 Quality 与 Deploy GitHub Actions 均成功，真实 Pages 首页、M04 课程 bundle 和 L05 ZIP 分别返回 200。
+- M05 提交 `d20f192` 的 [Quality](https://github.com/liulewis67-ops/rust_training/actions/runs/39002896334) 与 [Deploy Pages](https://github.com/liulewis67-ops/rust_training/actions/runs/39002896260) 工作流均成功。线上 Pages 首页、M05 主 bundle、L05 课文 chunk 和 starter ZIP 都返回 200；课文 chunk 含公开参考实现，bundle 不含 `private_assessment_id`。
 
 ## FE05 开源与 Pages 首发 · DONE
 
@@ -66,4 +67,4 @@
 
 ## 未完成项
 
-FE01–FE05 已完成；M01–M04 已线上发布，M05 本地内容与前端回归已通过，FE06 继续推进 M05–M24。M05 Pages 响应与对应 Actions 结果将在部署后补记。浏览器自动化受当前 Codex Work 设置限制；相关页面行为以本地 App 回归测试及已记录的线上资源检查为证。根路径 `/sw.js` 返回 404，而项目路径退役脚本可访问；结论只适用于当前真实部署地址。
+FE01–FE05 已完成；M01–M05 已线上发布，FE06 继续推进 M06–M24。本站前端回归通过 13 个测试文件／81 个用例，内容清单验证 30 篇 Markdown 课节，M05 Pages 与 Actions 结果已确认。浏览器自动化受当前 Codex Work 设置限制；相关页面行为以本地 App 回归测试及已记录的线上资源检查为证。根路径 `/sw.js` 返回 404，而项目路径退役脚本可访问；结论只适用于当前真实部署地址。
