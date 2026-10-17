@@ -63,6 +63,7 @@
 - M07 六节课及 L01–L04 练习已整理为公开内容，逐题答案、L05 实验参考修复和 L06 动态策略流水线实现均已公开；来源与权属见[M07 审查记录](./frontend-source-review-m07.md)。
 - M07 L05 起始 ZIP 五个文件哈希匹配且不含 `target/`；原项目五项公开测试全部失败，修复 `ColonParser` delimiter 后 `cargo fmt -- --check`、`cargo check --offline` 和五项测试通过。静态/动态分发组合示例与异构策略流水线两项测试通过；原生 async trait object 按设计触发 E0038。
 - M07 的 30 个 Rust 代码块按 Rust 1.95.0 核查，包含预期的泛型约束、trait implementation、dyn compatibility 反例及需前置类型的分块示例。公开清单、课程目录和搜索回归覆盖 42 篇课节；本地前端回归通过 13 个测试文件／83 个用例。
+- M07 提交 `d62d5c4` 的 [Quality](https://github.com/liulewis67-ops/rust_training/actions/runs/39003880647) 与 [Deploy Pages](https://github.com/liulewis67-ops/rust_training/actions/runs/39003880560) 工作流均成功。根路径和 `/rust_training/` 子路径构建均含 M07 十个课文／练习 chunk 与 starter ZIP；线上 Pages 首页、主 bundle、L06 公开参考实现 chunk、L05 实验 chunk 和 ZIP 均返回 200，bundle 不含 `private_assessment_id`。
 
 ## FE05 开源与 Pages 首发 · DONE
 
@@ -74,4 +75,4 @@
 
 ## 未完成项
 
-FE01–FE05 已完成；M01–M06 已线上发布，M07 本地内容与前端回归已通过，FE06 继续推进 M07–M24。M07 Pages 发布与线上检查待完成。浏览器自动化受当前 Codex Work 设置限制；相关页面行为以本地 App 回归测试及已记录的线上资源检查为证。根路径 `/sw.js` 返回 404，而项目路径退役脚本可访问；结论只适用于当前真实部署地址。
+FE01–FE05 已完成；M01–M07 已线上发布，FE06 继续推进 M08–M24。本站前端回归通过 13 个测试文件／83 个用例，内容清单验证 42 篇 Markdown 课节，M05–M07 的 Pages 与 Actions 均已确认。浏览器自动化受当前 Codex Work 设置限制；相关页面行为以本地 App 回归测试及已记录的线上资源检查为证。根路径 `/sw.js` 返回 404，而项目路径退役脚本可访问；结论只适用于当前真实部署地址。
