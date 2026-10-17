@@ -1,0 +1,104 @@
+# M06-L01：引用有效性与生命周期关系
+
+## 学完后
+
+- 区分拥有值的绑定与借用该值的引用，并判断引用在哪段代码中可以安全使用。
+- 说明被引用值必须在引用的每次使用期间保持有效；缩短引用的使用范围不能让已经销毁的值复活。
+- 通过作用域和数据使用顺序修复悬垂引用意图，而不是试图用类型标注延长对象寿命。
+- 阅读编译器对悬垂引用的拒绝，指出 referent（被引用的值）离开作用域的位置。
+
+## 先修
+
+完成 M05-L06，能追踪共享切片何时仍被使用，以及切片来自哪个 owner。本节先用局部作用域理解引用有效性；下一节再学习函数签名里的生命周期标注。生命周期描述引用可用的区域，不会管理或延长 owner 的实际寿命。
+
+## 引用只能在被引用值有效时使用
+
+```rust
+/// Borrows a String while its owner remains in scope.
+fn main() {
+    let notice = String::from("ready");
+    let view = &notice;
+    println!("notice: {view}");
+    println!("owner: {notice}");
+}
+```
+
+`notice` 拥有 `String` 值，`view` 是指向它内容的共享引用。`notice` 在两次读取时都有效，所以 `view` 可安全使用；创建引用没有移动 `String`。结束借用后，owner 仍可继续使用。
+
+用两个区域想象这段关系：
+
+```text
+notice 的 String 有效：  ├──────────────────────────┤
+view 的使用：              ├───────┤
+```
+
+安全条件是：每一次使用 `view` 时，`notice` 的值都还存在且可被借用。变量名可见的词法范围、值的有效时间、引用实际会被使用的区间相关但不是同一个概念。
+
+## 返回局部值的引用会悬垂
+
+```rust
+/// Attempts to return a borrow of a local String.
+fn dangling_notice() -> &String {
+    let notice = String::from("temporary");
+    &notice
+}
+
+fn main() {
+    let view = dangling_notice();
+    println!("{view}");
+}
+```
+
+函数返回时，局部绑定 `notice` 离开作用域，拥有的 `String` 随之销毁。当前签名缺少输出引用的来源标注，Rust 1.95 首先以 E0106 拒绝它。即使给返回类型写上 `'static`，也不会让局部 `String` 存活到函数外；那种写法会因返回局部值引用而被拒绝（通常诊断为 E0515）。生命周期标注只能描述有效期关系，不能延长对象的实际寿命。
+
+可通过返回 owner 修复：
+
+```rust
+/// Transfers an owned notice to the caller.
+fn make_notice() -> String {
+    String::from("temporary")
+}
+
+fn main() {
+    let notice = make_notice();
+    let view = &notice;
+    println!("{view}");
+}
+```
+
+现在函数把 `String` 的所有权交给调用方；`notice` 在调用方作用域保持有效，`view` 只在借用期间读取它。另一个可行接口是借用调用方传入的文本并返回其中的切片，具体签名放到 M06-L02 学习。
+
+## 让引用不逃过 owner
+
+如果只在创建 owner 的内层作用域里使用引用，代码安全：
+
+```rust
+/// Reads a borrowed view before its owner leaves the inner scope.
+fn main() {
+    {
+        let notice = String::from("staged");
+        let view = &notice;
+        println!("view: {view}");
+    }
+    println!("inner owner has been dropped");
+}
+```
+
+`view` 最后一次使用发生在 `notice` 离开作用域之前。离开内层作用域后，`notice` 和引用都不能再使用。这不是“把引用声明得短一点就能引用死值”：修复改变的是引用使用位置，使它仍落在 owner 有效的区域中。
+
+分析引用代码时依次标记：谁拥有值、值在哪个作用域中存在、引用指向哪个值、引用的每次读取在哪里。如果引用使用延伸到 owner 被销毁之后，先重新设计数据流：把计算留在作用域内、返回拥有值，或借用调用者提供且仍有效的数据。
+
+## 分层提示
+
+1. **定位提示**：圈出 `String` 被创建的语句，以及它的右花括号。
+2. **关系提示**：给 owner 画有效区间；把通过引用的每次读取画在同一时间线上。
+3. **修复提示**：引用不能拥有值。要让结果逃出函数，就返回 owner；若无需逃出，就把读取放回 owner 仍有效的区域。
+4. **参考方案**：对照本节 `make_notice() -> String` 与内层作用域示例，确认修改保留了调用方真正需要的数据。
+
+## 来源
+
+- [The Rust Programming Language：References and Borrowing](https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html)
+- [The Rust Programming Language：The Slice Type](https://doc.rust-lang.org/book/ch04-03-slices.html)
+- [The Rust Reference：Destructors](https://doc.rust-lang.org/reference/destructors.html)
+
+解释、图示、例子和检查顺序为原创；来源用于核对引用与被引用值的有效性及 owner 离开作用域时值被销毁的规则。

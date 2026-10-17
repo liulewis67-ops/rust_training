@@ -208,7 +208,7 @@ it('学习进度只用已发布主线课节作分母', async () => {
   expect(screen.getByText('主线已发布课节')).toBeTruthy()
   expect(screen.getByText('M01 · 开发循环与语言入门')).toBeTruthy()
   expect(screen.getByText('公开专题')).toBeTruthy()
-  expect(screen.queryByText('/ 36')).toBeNull()
+  expect(screen.getByText('/ 36')).toBeTruthy()
   expect(screen.queryByRole('navigation', { name: 'Rust 学习路线' })).toBeNull()
 })
 
