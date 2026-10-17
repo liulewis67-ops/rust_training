@@ -1,0 +1,135 @@
+# M05-L01：共享借用与独占借用
+
+## 学完后
+
+- 用 `&T` 创建共享借用，用 `&mut T` 创建独占借用，并说明引用不取得值的所有权。
+- 允许多个同时存在的共享引用；当存在独占引用时，不同时保留其他指向同一值的引用。
+- 按冲突代码标出共享读取区间与写入借用区间，并根据编译诊断修复重叠。
+- 为修改被借用的值，同时提供可变绑定和独占借用。
+
+## 先修
+
+完成 M04-L06，能解释按值传参导致的 move、按引用传参只借用，以及调用后 owner 留在哪里。本节先用显式花括号限定借用区间；引用最后一次使用之后的非词法生命周期（NLL）细节留到 M05-L02。
+
+## 共享借用：可同时读取
+
+用 `&value` 创建共享引用。引用可读取被借用的值，但不能通过共享引用修改它；同一个值可以同时有多个共享借用：
+
+```rust
+/// Reads one String through two shared references.
+fn main() {
+    let message = String::from("review");
+    let first = &message;
+    let second = &message;
+    println!("{first} and {second}");
+    println!("owner still has: {message}");
+}
+```
+
+程序输出 `review and review` 与 `owner still has: review`。`first`、`second` 只是指向 owner 值的引用；创建它们不会移动 `message`，也不会复制其字符串缓冲区。多个读者同时查看同一文本是允许的。
+
+共享引用不能用于写入：
+
+```rust
+/// Tries to mutate a String through a shared reference.
+fn main() {
+    let message = String::from("review");
+    let shared = &message;
+    shared.push_str("ed");
+    println!("{shared}");
+}
+```
+
+这段程序编译失败：`shared` 的类型是 `&String`，而追加文本需要可变访问。仅仅因为原绑定的类型是 `String`，并不意味着共享引用可以改变它。
+
+## 独占借用：一个写入者
+
+用 `&mut value` 创建独占引用。它允许通过引用修改值，但创建它需要原绑定可变：
+
+```rust
+/// Appends text through an exclusive mutable reference.
+fn main() {
+    let mut message = String::from("review");
+    let exclusive = &mut message;
+    exclusive.push_str("ed");
+    println!("{exclusive}");
+}
+```
+
+输出为 `reviewed`。`message` 是 owner；`exclusive` 暂时独占借用该值。独占借用本身不会转移 owner。借用结束后，owner 仍是 `message`。
+
+## 共享与独占不可重叠
+
+对同一个值，Rust 允许多个共享引用，或一个独占引用；不能在共享引用仍需要读取该值时同时创建独占引用：
+
+```rust
+/// Creates conflicting shared and exclusive borrows of one String.
+fn main() {
+    let mut message = String::from("review");
+    let shared = &message;
+    let exclusive = &mut message;
+    exclusive.push_str("ed");
+    println!("before: {shared}; after: {exclusive}");
+}
+```
+
+编译器会拒绝 `let exclusive = &mut message`：`shared` 后面还要读取同一个值，因此共享读取区间覆盖到那次 `println!`；在其间写入会使共享读者的观察不再稳定。冲突点在可变借用创建的位置，而根因是 `shared` 尚待使用。
+
+一种直接修复是让只读和写入分别处在不重叠的显式作用域：
+
+```rust
+/// Reads, then exclusively updates the same owned String.
+fn main() {
+    let mut message = String::from("review");
+    {
+        let shared = &message;
+        println!("before: {shared}");
+    }
+    {
+        let exclusive = &mut message;
+        exclusive.push_str("ed");
+    }
+    println!("after: {message}");
+}
+```
+
+先完成共享读取并退出其作用域，再创建独占借用。输出为 `before: review`、`after: reviewed`。此处用花括号明确分开两段，不需要猜编译器何时能结束引用的有效期。
+
+## 函数参数也表达借用方式
+
+```rust
+/// Reads a label without taking its ownership.
+fn show_label(label: &String) {
+    println!("label: {label}");
+}
+
+/// Changes a value through an exclusive borrowed parameter.
+fn add_suffix(text: &mut String) {
+    text.push_str("!");
+}
+
+/// Keeps owning a String while borrowing it for two operations.
+fn main() {
+    let mut title = String::from("ready");
+    show_label(&title);
+    add_suffix(&mut title);
+    println!("owner: {title}");
+}
+```
+
+`show_label` 收到共享引用，只读而不接管 `title`。`add_suffix` 收到独占引用，可以修改 `title`，但仍不接管它。两个借用调用顺序执行且不重叠，所以调用后 main 仍拥有可用的 `title`。
+
+## 检查冲突的步骤
+
+1. 找 owner 绑定，并确认它是否声明为 `mut`。
+2. 标出每个 `&` 与 `&mut` 创建点，以及对该引用的最后一次读取或写入。
+3. 查找共享与独占借用是否指向同一值且同时处于需要使用的区间。
+4. 若要修改值，确认需要 `&mut` 并结束冲突共享读取；若只读，使用 `&`，不为方便而要求独占访问。
+5. 确认借用结束后 owner 仍能按契约使用；借用不等于 move。
+
+## 来源
+
+- [The Rust Programming Language：References and Borrowing](https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html)
+- [The Rust Reference：Borrow operators](https://doc.rust-lang.org/reference/expressions/operator-expr.html#borrow-operators)
+
+正文、代码、冲突区间图解和练习为原创；来源用于核对引用只借用值、共享/独占借用访问规则及 `&`/`&mut` 语义。

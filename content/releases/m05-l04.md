@@ -1,0 +1,125 @@
+# M05-L04：可变借用冲突与 API 设计
+
+## 学完后
+
+- 根据冲突的借用方向，区分共享读者尚未结束与需要独占修改两个条件。
+- 用至少两种结构安排读取和修改：先完成读取，或先抽取 Copy 摘要再修改。
+- 设计容器修改 API，避免同时传入容器的独占借用和指向其元素的共享引用。
+- 选择窄到所需操作的可变借用接口，不用复制整个集合来绕开借用检查。
+
+## 先修
+
+完成 M05-L03，能借用字符串切片并理解引用的来源。本节用 Vec<String> 展示容器 push 对容器的独占访问；按本地固定工具链 Rust 1.95.0、Edition 2024 验证示例。
+
+## 冲突由两个仍需同时成立的访问产生
+
+~~~rust
+/// Tries to keep reading an item while pushing into its vector.
+fn main() {
+    let mut titles = vec![String::from("draft")];
+    let first = &titles[0];
+    titles.push(String::from("published"));
+    println!("original: {first}");
+}
+~~~
+
+此程序因 E0502 拒绝编译。first 是指向 titles 元素的共享引用，最后读取在 push 之后；push 需要独占修改 titles，因此共享读取和独占修改重叠。诊断的两个位置分别是可变借用创建处 push 和之后仍要使用 first 的读取。
+
+不应把诊断简化成“只要有 &mut 就永远不能有 &”。限制只针对同一被借用数据上同时仍需使用的访问；问题在于程序安排了重叠的数据需求。
+
+## 调整一：在修改前完成读取
+
+如果业务要求报告原有文本本身，先通过共享借用打印，之后再追加新条目：
+
+~~~rust
+/// Reads an existing title before appending a new one.
+fn main() {
+    let mut titles = vec![String::from("draft")];
+    {
+        let first = &titles[0];
+        println!("original: {first}");
+    }
+    titles.push(String::from("published"));
+    println!("count: {}", titles.len());
+}
+~~~
+
+输出是 original: draft 和 count: 2。读取步骤在第一个作用域结束；随后 push 才取得对 titles 的可变访问。没有复制或克隆 titles。
+
+## 调整二：先读出 Copy 摘要，再修改并汇报摘要
+
+如果业务只要求更新之后汇报旧标题的字节数，就在借用范围内提取 usize，然后让引用结束，再写入：
+
+~~~rust
+/// Appends a title and reports a copied summary of the previous first title.
+fn append_and_measure(titles: &mut Vec<String>, next: String) -> (usize, usize) {
+    let previous_bytes = {
+        let first = &titles[0];
+        first.len()
+    };
+    titles.push(next);
+    (previous_bytes, titles.len())
+}
+
+/// Uses the summary and the updated vector after the call.
+fn main() {
+    let mut titles = vec![String::from("draft")];
+    let (previous_bytes, count) = append_and_measure(&mut titles, String::from("published"));
+    println!("previous bytes: {previous_bytes}; count: {count}");
+    println!("new item: {}", titles[1]);
+}
+~~~
+
+输出为 previous bytes: 5; count: 2 和 new item: published。引用只在读取 first.len() 期间使用；返回到后续代码的 previous_bytes 与 count 是 Copy 整数，不指向 titles，所以修改后仍可报告。这不是克隆整个字符串或整个 Vec。
+
+## API 形状避免互相别名的参数
+
+下面的签名容易令调用方同时借用同一 Vec 的元素并把 Vec 独占借给函数：
+
+~~~text
+fn append_existing(items: &mut Vec<String>, source: &String);
+~~~
+
+例如先写 let source = &items[0]; 再调用 append_existing(&mut items, source)，会因为同一个 Vec 同时被共享借用和独占借用而失败。盲目克隆整个 Vec 不是通用修复：它会复制与操作无关的全部内容，还掩盖接口到底需要哪份数据。
+
+~~~rust
+fn append_existing(items: &mut Vec<String>, source: &String) {
+    println!("existing title: {source}");
+    items.push(String::from("another"));
+}
+
+fn main() {
+    let mut items = vec![String::from("draft")];
+    let source = &items[0];
+    append_existing(&mut items, source);
+}
+~~~
+
+完整冲突版本可直接验证为 E0502。将接口改为只接收 &mut Vec<String> 和新 String 后，不再需要把指向该集合元素的共享引用跨入同一调用。
+
+让接口接收它真正要修改的对象，并由调用方按值交付新条目：
+
+~~~rust
+fn append_item(items: &mut Vec<String>, next: String) {
+    items.push(next);
+}
+~~~
+
+如果行为只需修改一个现有字符串，不需改集合长度，则把接口收窄为 fn add_marker(title: &mut String, marker: &str)，直接修改该标题。API 签名应表达哪一项数据需要独占访问，以及新 owned 值从哪里进入；不要同时传入指向容器元素的共享引用和同一容器的 &mut。
+
+## 设计检查表
+
+1. 明确需求是读取旧内容、修改某个元素，还是改变集合长度。
+2. 如果需要原文本，先完成读取；若只需稍后报告摘要，提取 Copy 值并结束引用。
+3. 对 push/删除/重排等集合修改，使用一个清晰的 &mut Vec 入口，不让元素引用横跨结构性修改。
+4. 如果修改单一元素，不改变集合结构，可改为传入 &mut 元素。
+5. 仅在契约真的要求两个独立拥有的数据时，考虑克隆所需的那一个值；不要全局复制集合来消音诊断。
+6. 修复后重新运行行为检查，确认原来要求的读取、写入和输出都还存在。
+
+## 来源
+
+- [The Rust Programming Language：References and Borrowing](https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html)
+- [The Rust Programming Language：Storing Lists of Values with Vectors](https://doc.rust-lang.org/book/ch08-01-vectors.html)
+- [Rust standard library：Vec](https://doc.rust-lang.org/std/vec/struct.Vec.html)
+
+正文、冲突示例、API 设计评审点和练习为原创；来源用于核对借用限制和 Vec 操作。

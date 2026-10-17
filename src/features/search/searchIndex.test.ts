@@ -35,6 +35,14 @@ it('indexes newly released M04 ownership lessons after lazy loading', async () =
   expect(result?.href).toBe('#/courses/m04/l01')
 })
 
+it('indexes newly released M05 borrowing lessons after lazy loading', async () => {
+  const result = (await searchLessons('split_whitespace')).find(
+    (lesson) => lesson.id === 'M05-L03',
+  )
+
+  expect(result?.href).toBe('#/courses/m05/l03')
+})
+
 // Ranking prefers exact lesson titles and result fields never expose answer payloads.
 it('ranks the matching title and returns only navigation-safe result data', async () => {
   const results = await searchLessons('AppState')
