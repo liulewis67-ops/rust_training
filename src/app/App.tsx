@@ -1,7 +1,12 @@
 import { useEffect, type JSX } from 'react'
-import { lessons, allExercises } from '../features/catalog'
+import { allExercises } from '../features/catalog'
+import { getLessons } from '../data/localizedLessons'
 import { summarizeProgress, useProgress } from '../features/learning'
-import { useTheme } from '../features/preferences'
+import {
+  LanguageProvider,
+  useLanguage,
+  useTheme,
+} from '../features/preferences'
 import { LessonPage } from '../pages/LessonPage'
 import { ReviewPage } from '../pages/ReviewPage'
 import { ProgressPage } from '../pages/ProgressPage'
@@ -16,6 +21,16 @@ import { useRoute } from './router'
 
 /** 连接应用路由、页面和功能 Hook，不在入口实现存储协议或答题规则。 */
 export default function App(): JSX.Element {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  )
+}
+
+function AppContent(): JSX.Element {
+  const { language, t } = useLanguage()
+  const lessons = getLessons(language)
   const {
     progress,
     saveStatus,
@@ -107,9 +122,10 @@ export default function App(): JSX.Element {
   } else if (route.page === 'course-lesson') {
     page = (
       <CourseLessonPage
-        key={`${route.moduleId}-${route.lessonId}`}
+        key={`${route.moduleId}-${route.lessonId}-${language}`}
         moduleId={route.moduleId}
         lessonId={route.lessonId}
+        sectionId={route.sectionId}
         completed={progress.completed.includes(lessonId ?? '')}
         onComplete={() => completeLesson(lessonId ?? '')}
         onNavigate={navigate}
@@ -148,10 +164,15 @@ export default function App(): JSX.Element {
   } else {
     page = (
       <section className="utility-page">
-        <h1>未找到课程或页面</h1>
-        <p>该链接不存在，课程可能尚未发布。</p>
+        <h1>{t('未找到课程或页面', 'Page or lesson not found')}</h1>
+        <p>
+          {t(
+            '该链接不存在，课程可能尚未发布。',
+            'This link does not exist, or the lesson has not been published.',
+          )}
+        </p>
         <button className="primary-button" onClick={openCourseCatalog}>
-          返回课程目录
+          {t('返回课程目录', 'Back to course catalog')}
         </button>
       </section>
     )

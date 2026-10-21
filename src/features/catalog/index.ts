@@ -1,4 +1,5 @@
 import type { Exercise } from '../../types/lesson'
+import type { Language } from '../preferences'
 export { lessons, categories } from '../../data/lessons'
 
 /** 汇总课程内原型练习，保留原题序。 */
@@ -15,7 +16,35 @@ export function allExercises(
 }
 
 /** 将原型知识点 ID 映射为标签，未知标签保留原文。 */
-export function tagLabel(tag: string): string {
+export function tagLabel(tag: string, language: Language = 'zh'): string {
+  if (language === 'en')
+    return (
+      (
+        {
+          ownership: 'Ownership',
+          borrowing: 'Borrowing',
+          'mutable-borrowing': 'Mutable borrowing',
+          lifetime: 'Lifetimes',
+          traits: 'Traits',
+          generics: 'Generics',
+          'dynamic-dispatch': 'Dynamic dispatch',
+          'error-handling': 'Error handling',
+          result: 'Result',
+          concurrency: 'Concurrency',
+          async: 'Async',
+          tokio: 'Tokio',
+          database: 'Database',
+          'agent-runtime': 'Agent runtime',
+          'java-go': 'Cross language',
+          'copy-clone': 'Copy / Clone',
+          'resource-lifecycle': 'Resource lifecycle',
+          'string-slice': '&str / String',
+          'memory-safety': 'Memory safety',
+          'api-design': 'API design',
+          web: 'Web backend',
+        } as Record<string, string>
+      )[tag] ?? tag
+    )
   return (
     (
       {
@@ -49,4 +78,10 @@ export const difficultyLabel = {
   beginner: '入门',
   intermediate: '进阶',
   advanced: '高级',
+}
+
+export const difficultyLabelEn = {
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
 }

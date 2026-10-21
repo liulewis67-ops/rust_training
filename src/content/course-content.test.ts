@@ -101,6 +101,77 @@ describe('课程包结构校验', () => {
     expect(validateCoursePack(pack, { privatePack }).errors).toEqual([])
   })
 
+  // Static course packages run on the learner's machine and need no worker image.
+  it('接受不绑定运行器镜像的本地课程环境', async () => {
+    const pack = await fixture()
+    pack.environment.resource_tier = 'LOCAL'
+    delete pack.environment.image_digest
+    expect(validateCoursePack(pack).errors).toEqual([])
+
+    pack.environment.resource_tier = 'R3'
+    expect(validateCoursePack(pack).errors).toContain(
+      'course.environment.image_digest: required for managed runner tiers',
+    )
+  })
+
+  it('接受不需要 Rust 工具链的文档型课程环境', async () => {
+    const pack = await fixture()
+    pack.environment = {
+      id: 'local-document-capstone',
+      kind: 'document',
+      version: '1.0.0',
+      resource_tier: 'LOCAL',
+    }
+    for (const lesson of pack.lessons) lesson.example_ids = []
+    pack.exercises[0]!.environment_id = 'local-document-capstone'
+
+    expect(
+      validateCoursePack(pack, { samples: await sampleFixture() }).errors,
+    ).toEqual([])
+  })
+
+  it('拒绝把 Rust 工具链或托管 runner 标成文档环境', async () => {
+    const pack = await fixture()
+    pack.environment = {
+      id: 'local-document-capstone',
+      kind: 'document',
+      version: '1.0.0',
+      resource_tier: 'LOCAL',
+      rust_version: '1.95.0',
+    }
+    expect(validateCoursePack(pack).errors).toContain(
+      'course.environment: value does not match any allowed schema',
+    )
+
+    pack.environment = {
+      id: 'local-document-capstone',
+      kind: 'document',
+      version: '1.0.0',
+      resource_tier: 'R3',
+      image_digest: `sha256:${'a'.repeat(64)}`,
+    }
+    expect(validateCoursePack(pack).errors).toContain(
+      'course.environment: value does not match any allowed schema',
+    )
+  })
+
+  it('拒绝未知的课程环境类型', async () => {
+    const pack = await fixture()
+    pack.environment.kind = 'browser'
+    expect(validateCoursePack(pack).errors).toContain(
+      'course.environment.kind: expected one of rust, document',
+    )
+  })
+
+  // A local environment cannot imply isolation provided by a managed container image.
+  it('拒绝本地课程环境声明托管运行器镜像', async () => {
+    const pack = await fixture()
+    pack.environment.resource_tier = 'LOCAL'
+    expect(validateCoursePack(pack).errors).toContain(
+      'course.environment.image_digest: local environments must not claim a container image digest',
+    )
+  })
+
   // Course metadata and referenced code examples must claim the same compiler environment.
   it('拒绝与样例清单工具链或 Edition 不一致的课包', async () => {
     const pack = await fixture()
@@ -133,7 +204,9 @@ describe('课程包结构校验', () => {
     pack.exercises[0].type = 'unknown-question-type'
     pack.lessons.push({ ...lessonAt(pack, 0), title: '' })
     const errors = validateCoursePack(pack).errors.join('\n')
-    expect(errors).toContain('environment.rust_version')
+    expect(errors).toContain(
+      'course.environment: value does not match any allowed schema',
+    )
     expect(errors).toContain('course.exercises[0].type')
     expect(errors).toContain('lessons[1].id')
     expect(errors).toContain('lessons[1].title')
@@ -161,6 +234,26 @@ describe('课程包结构校验', () => {
     pack.lessons.push(nextLesson)
     lesson.prerequisites = [nextLesson.id]
     expect(validateCoursePack(pack).errors.join('\n')).toContain('cycle')
+  })
+
+  it('要求公开课文链接的本地 ZIP 登记为本课资源', async () => {
+    const pack = await fixture()
+    const lesson = lessonAt(pack, 0)
+    lesson.blocks = [
+      { type: 'markdown', text: '[下载 starter](./starter.zip)' },
+    ]
+    expect(validateCoursePack(pack).errors.join('\n')).toContain(
+      'local ZIP "starter.zip" must be declared in resource_ids',
+    )
+
+    pack.resources.push({
+      id: 'starter-archive',
+      visibility: 'public',
+      path: 'public/starter.zip',
+      media_type: 'application/zip',
+    })
+    lesson.resource_ids.push('starter-archive')
+    expect(validateCoursePack(pack).errors).toEqual([])
   })
 
   // Resolve an external prerequisite only against its exact course version and lesson ID.

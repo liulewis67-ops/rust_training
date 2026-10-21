@@ -3,6 +3,7 @@ import { Code2 } from 'lucide-react'
 import { CodeBlock } from '../../components/CodeBlock'
 import type { CodeExample } from '../../types/lesson'
 import './CodeExamples.css'
+import { useLanguage } from '../preferences'
 
 /** Present public course examples for copying into a local Rust project. */
 export function CodeExamples({
@@ -11,6 +12,7 @@ export function CodeExamples({
   examples: CodeExample[]
   lessonId?: string
 }): JSX.Element {
+  const { t } = useLanguage()
   return (
     <section className="section-block code-section">
       <div className="section-heading">
@@ -18,8 +20,13 @@ export function CodeExamples({
           <Code2 size={15} />
         </span>
         <div>
-          <h2>代码示例</h2>
-          <small>复制示例，在本地项目中阅读和修改</small>
+          <h2>{t('代码示例', 'Code examples')}</h2>
+          <small>
+            {t(
+              '复制示例，在本地项目中阅读和修改',
+              'Copy examples to read and modify in a local project',
+            )}
+          </small>
         </div>
       </div>
       {examples.map((example, index) => (

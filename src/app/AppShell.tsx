@@ -18,19 +18,36 @@ import {
   X,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { lessons, tagLabel } from '../features/catalog'
+import { tagLabel } from '../features/catalog'
+import { getLessons } from '../data/localizedLessons'
 import { summarizeProgress, type Progress } from '../features/learning'
 import type { Lesson } from '../types/lesson'
 import type { Route } from './router'
-import type { Theme } from '../features/preferences'
+import { useLanguage, type Theme } from '../features/preferences'
 import {
   browserStorageKey,
   readStoredValue,
   writeStoredValue,
 } from '../lib/browserStorage'
 import './readingFocus.css'
+import { legacyLessonTitle } from '../data/courseText'
 
 const READING_FOCUS_KEY = browserStorageKey('reading-focus')
+const progressStatusEn: Record<string, string> = {
+  '本地练习 · 尚无学习记录': 'Local practice · no records yet',
+  '本地存储不可用，本次进度仅在内存中保留':
+    'Browser storage unavailable; progress is kept in memory for this session.',
+  '本地保存失败，本次进度仅在内存中保留':
+    'Saving failed; progress is kept in memory for this session.',
+  旧版本地进度已读取: 'Previous local progress restored.',
+  本地进度已恢复: 'Local progress restored.',
+  '本地记录无法识别，原数据已保留；本次进度仅在内存中保留':
+    'The saved record could not be read. The original data is preserved; this session stays in memory.',
+  进度保存在此浏览器: 'Progress saved in this browser.',
+  本站学习记录已清空: 'Learning records cleared.',
+  '记录已在本次会话清空；浏览器存储不可用':
+    'Records cleared for this session; browser storage is unavailable.',
+}
 
 /** Restore the optional focus layout without making storage availability a requirement. */
 function readReadingFocus(): boolean {
@@ -58,6 +75,12 @@ export function AppShell({
   saveStatus: string
   children: ReactNode
 }): JSX.Element {
+  const { language, setLanguage, t } = useLanguage()
+  const lessons = getLessons(language)
+  const displayedSaveStatus =
+    language === 'zh'
+      ? saveStatus
+      : (progressStatusEn[saveStatus] ?? saveStatus)
   const [drawer, setDrawer] = useState(false)
   const [showAll, setShowAll] = useState(true)
   const [readingFocus, setReadingFocus] = useState(readReadingFocus)
@@ -126,7 +149,7 @@ export function AppShell({
         {hasLegacyWorkspace && (
           <button
             className="icon-button mobile-menu"
-            aria-label="打开课程目录"
+            aria-label={t('打开课程目录', 'Open course catalog')}
             aria-expanded={drawer}
             aria-controls="course-sidebar"
             onClick={() => {
@@ -150,7 +173,7 @@ export function AppShell({
           </span>
         </button>
         <div className="topbar-divider" />
-        <nav className="top-nav" aria-label="主导航">
+        <nav className="top-nav" aria-label={t('主导航', 'Main navigation')}>
           <button
             className={route.page === 'home' ? 'selected' : ''}
             aria-current={route.page === 'home' ? 'page' : undefined}
@@ -159,7 +182,7 @@ export function AppShell({
               return nav({ page: 'home' })
             }}
           >
-            首页
+            {t('首页', 'Home')}
           </button>
           <button
             className={
@@ -181,7 +204,7 @@ export function AppShell({
               return nav({ page: 'track', trackSlug: 'rust-backend' })
             }}
           >
-            课程目录
+            {t('课程目录', 'Courses')}
           </button>
           <button
             className={route.page === 'search' ? 'selected' : ''}
@@ -191,32 +214,53 @@ export function AppShell({
               return nav({ page: 'search' })
             }}
           >
-            <Search size={13} /> 搜索
+            <Search size={13} /> {t('搜索', 'Search')}
           </button>
           <button
             className={route.page === 'review' ? 'selected' : ''}
             aria-current={route.page === 'review' ? 'page' : undefined}
             onClick={() => nav({ page: 'review' })}
           >
-            <RotateCcw size={13} /> 复习
+            <RotateCcw size={13} /> {t('复习', 'Review')}
           </button>
           <button
             className={route.page === 'progress' ? 'selected' : ''}
             aria-current={route.page === 'progress' ? 'page' : undefined}
             onClick={() => nav({ page: 'progress' })}
           >
-            <Target size={13} /> 进度
+            <Target size={13} /> {t('进度', 'Progress')}
           </button>
         </nav>
         <div className="topbar-right">
+          <select
+            className="theme-toggle language-select"
+            aria-label={t('语言', 'Language')}
+            value={language}
+            onChange={(event) =>
+              setLanguage(event.currentTarget.value as 'zh' | 'en')
+            }
+          >
+            <option value="zh">中文</option>
+            <option value="en">English</option>
+          </select>
           <button
             className="theme-toggle"
             onClick={onToggleTheme}
-            aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
-            title={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
+            aria-label={
+              theme === 'dark'
+                ? t('切换到浅色主题', 'Switch to light theme')
+                : t('切换到深色主题', 'Switch to dark theme')
+            }
+            title={
+              theme === 'dark'
+                ? t('切换到浅色主题', 'Switch to light theme')
+                : t('切换到深色主题', 'Switch to dark theme')
+            }
           >
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-            <span>{theme === 'dark' ? '浅色' : '深色'}</span>
+            <span>
+              {theme === 'dark' ? t('浅色', 'Light') : t('深色', 'Dark')}
+            </span>
           </button>
           {hasLegacyWorkspace && (
             <button
@@ -226,16 +270,32 @@ export function AppShell({
                 setReadingFocus((active) => !active)
               }}
               aria-pressed={readingFocus}
-              aria-label={readingFocus ? '退出专注模式' : '进入专注模式'}
-              title={readingFocus ? '退出专注模式' : '进入专注模式'}
+              aria-label={
+                readingFocus
+                  ? t('退出专注模式', 'Exit focus mode')
+                  : t('进入专注模式', 'Enter focus mode')
+              }
+              title={
+                readingFocus
+                  ? t('退出专注模式', 'Exit focus mode')
+                  : t('进入专注模式', 'Enter focus mode')
+              }
             >
               <Eye size={15} />
-              <span>{readingFocus ? '退出专注' : '专注模式'}</span>
+              <span>
+                {readingFocus
+                  ? t('退出专注', 'Exit focus')
+                  : t('专注模式', 'Focus mode')}
+              </span>
             </button>
           )}
           {hasLegacyWorkspace && (
-            <span className="status-live" role="status" title={saveStatus}>
-              <i /> 本机记录
+            <span
+              className="status-live"
+              role="status"
+              title={displayedSaveStatus}
+            >
+              <i /> {t('本机记录', 'Local record')}
             </span>
           )}
           <a
@@ -258,14 +318,14 @@ export function AppShell({
             tabIndex={-1}
             role={drawer ? 'dialog' : undefined}
             aria-modal={drawer || undefined}
-            aria-label="课程目录"
+            aria-label={t('课程目录', 'Course catalog')}
             className={`sidebar ${drawer ? 'drawer-open' : ''}`}
           >
             <div className="drawer-head">
-              <span>学习路线</span>
+              <span>{t('学习路线', 'Learning path')}</span>
               <button
                 className="icon-button"
-                aria-label="关闭课程目录"
+                aria-label={t('关闭课程目录', 'Close course catalog')}
                 onClick={() => {
                   // 关闭移动端课程目录。
                   return setDrawer(false)
@@ -277,13 +337,16 @@ export function AppShell({
             <div className="path-heading">
               <div className="path-icon">⌘</div>
               <div>
-                <strong>Rust 工程路线</strong>
-                <small>学习路线 · {lessons.length} 节</small>
+                <strong>{t('Rust 工程路线', 'Rust engineering path')}</strong>
+                <small>
+                  {t('学习路线', 'Learning path')} · {lessons.length}{' '}
+                  {t('节', 'lessons')}
+                </small>
               </div>
             </div>
             <div className="side-progress">
               <div className="side-progress-label">
-                <span>你的进度</span>
+                <span>{t('你的进度', 'Your progress')}</span>
                 <b>
                   {completedCount} / {lessons.length}
                 </b>
@@ -297,7 +360,7 @@ export function AppShell({
               </div>
             </div>
             <div className="section-label">
-              课程目录{' '}
+              {t('课程目录', 'Course catalog')}{' '}
               <button
                 onClick={() => {
                   // 切换目录展开状态。
@@ -307,11 +370,14 @@ export function AppShell({
                   })
                 }}
               >
-                {showAll ? '收起' : '展开'}
+                {showAll ? t('收起', 'Collapse') : t('展开', 'Expand')}
               </button>
             </div>
             {showAll && (
-              <nav className="lesson-nav" aria-label="Rust 学习路线">
+              <nav
+                className="lesson-nav"
+                aria-label={t('Rust 学习路线', 'Rust learning path')}
+              >
                 {lessons.map((lesson) => {
                   // 按课程完成与当前选中状态渲染导航项。
 
@@ -325,7 +391,11 @@ export function AppShell({
                         return selectLesson(lesson)
                       }}
                       className={`lesson-nav-item ${active ? 'active' : ''}`}
-                      title={lesson.title}
+                      title={legacyLessonTitle(
+                        lesson.id,
+                        language,
+                        lesson.title,
+                      )}
                     >
                       <span
                         className={`lesson-state ${isComplete ? 'is-complete' : active ? 'is-current' : ''}`}
@@ -341,7 +411,9 @@ export function AppShell({
                       <span className="lesson-number">
                         {String(lesson.order).padStart(2, '0')}
                       </span>
-                      <span className="lesson-name">{lesson.title}</span>
+                      <span className="lesson-name">
+                        {legacyLessonTitle(lesson.id, language, lesson.title)}
+                      </span>
                       {active && (
                         <ChevronRight size={13} className="active-chevron" />
                       )}
@@ -359,7 +431,7 @@ export function AppShell({
                 }}
               >
                 <RotateCcw size={15} />
-                薄弱点复习
+                {t('薄弱点复习', 'Review weak areas')}
                 {weakTags.length > 0 && (
                   <span className="weak-count">{weakTags.length}</span>
                 )}
@@ -372,7 +444,7 @@ export function AppShell({
                 }}
               >
                 <Target size={15} />
-                学习统计
+                {t('学习统计', 'Learning stats')}
               </button>
             </div>
           </aside>
@@ -380,7 +452,7 @@ export function AppShell({
         {hasLegacyWorkspace && drawer && (
           <button
             className="drawer-scrim"
-            aria-label="关闭课程目录"
+            aria-label={t('关闭课程目录', 'Close course catalog')}
             onClick={() => {
               // 点击遮罩关闭目录。
               return setDrawer(false)
@@ -393,7 +465,7 @@ export function AppShell({
         >
           {/失败|损坏|不可用|无法识别/.test(saveStatus) && (
             <p className="save-warning" role="alert">
-              {saveStatus}
+              {displayedSaveStatus}
             </p>
           )}
           {children}
@@ -402,18 +474,21 @@ export function AppShell({
         {hasLegacyWorkspace && (
           <aside className="right-rail">
             <div className="rail-title">
-              学习概览 <span className="sparkle">✳</span>
+              {t('学习概览', 'Learning overview')}{' '}
+              <span className="sparkle">✳</span>
             </div>
             <div className="overview-card">
               <div className="overview-heading">
-                <span>课程进度</span>
+                <span>{t('课程进度', 'Course progress')}</span>
                 <span className="mini-icon orange">
                   <BookOpen size={15} />
                 </span>
               </div>
               <div className="metric-line">
                 <strong>{completedCount}</strong>
-                <span>/ {lessons.length} 节课</span>
+                <span>
+                  / {lessons.length} {t('节课', 'lessons')}
+                </span>
               </div>
               <div className="progress-track large">
                 <span
@@ -422,38 +497,47 @@ export function AppShell({
                   }}
                 />
               </div>
-              <small>还有 {lessons.length - completedCount} 节课等待探索</small>
+              <small>
+                {t(
+                  `还有 ${lessons.length - completedCount} 节课等待探索`,
+                  `${lessons.length - completedCount} lessons left to explore`,
+                )}
+              </small>
             </div>
             <div className="stat-pair">
               <div className="stat-card">
                 <div className="overview-heading">
-                  <span>客观题正确率</span>
+                  <span>{t('客观题正确率', 'Quiz accuracy')}</span>
                   <span className="mini-icon green">
                     <Target size={14} />
                   </span>
                 </div>
                 <strong>{accuracy !== null ? `${accuracy}%` : '—'}</strong>
-                <small>{answered} 道已作答</small>
+                <small>
+                  {answered} {t('道已作答', 'answered')}
+                </small>
               </div>
               <div className="stat-card">
                 <div className="overview-heading">
-                  <span>连续学习</span>
+                  <span>{t('连续学习', 'Study streak')}</span>
                   <span className="mini-icon amber">
                     <Flame size={14} />
                   </span>
                 </div>
                 <strong>
                   {progress.streak}
-                  <em> 天</em>
+                  <em> {t('天', 'days')}</em>
                 </strong>
                 <small>
-                  {progress.streak ? '保持这个节奏' : '今天开始你的 streak'}
+                  {progress.streak
+                    ? t('保持这个节奏', 'Keep it going')
+                    : t('今天开始你的 streak', 'Start your streak today')}
                 </small>
               </div>
             </div>
             <div className="overview-card level-card">
               <div className="overview-heading">
-                <span>当前等级</span>
+                <span>{t('当前等级', 'Current level')}</span>
                 <span className="level-badge">
                   LVL 0{Math.min(9, 1 + Math.floor(completedCount / 4))}
                 </span>
@@ -470,11 +554,14 @@ export function AppShell({
                   style={{ width: `${((completedCount % 4) / 4) * 100}%` }}
                 />
               </div>
-              <small>{completedCount % 4}/4 课程至下一等级</small>
+              <small>
+                {completedCount % 4}/4{' '}
+                {t('课程至下一等级', 'lessons to next level')}
+              </small>
             </div>
             <div className="weak-panel">
               <div className="overview-heading">
-                <span>值得再看</span>
+                <span>{t('值得再看', 'Worth revisiting')}</span>
                 <button
                   onClick={() => {
                     // 查看全部薄弱点练习。
@@ -482,7 +569,7 @@ export function AppShell({
                   }}
                   className="text-link"
                 >
-                  全部 <ArrowRight size={12} />
+                  {t('全部', 'All')} <ArrowRight size={12} />
                 </button>
               </div>
               {weakTags.length ? (
@@ -498,9 +585,13 @@ export function AppShell({
                       }}
                     >
                       <span className="weak-dot" />
-                      <span>{tagLabel(tag)}</span>
+                      <span>{tagLabel(tag, language)}</span>
                       <span className="weak-level">
-                        {score > 3 ? '需加强' : score > 1 ? '练习中' : '待巩固'}
+                        {score > 3
+                          ? t('需加强', 'Needs work')
+                          : score > 1
+                            ? t('练习中', 'Practicing')
+                            : t('待巩固', 'Review')}
                       </span>
                     </button>
                   )
@@ -511,9 +602,14 @@ export function AppShell({
                     <Check size={12} />
                   </span>
                   <span>
-                    目前没有薄弱知识点
+                    {t('目前没有薄弱知识点', 'No weak areas yet')}
                     <br />
-                    <small>答错的题目会显示在这里</small>
+                    <small>
+                      {t(
+                        '答错的题目会显示在这里',
+                        'Missed questions will appear here',
+                      )}
+                    </small>
                   </span>
                 </div>
               )}
@@ -522,11 +618,17 @@ export function AppShell({
               <span className="tip-icon">
                 <Sparkles size={14} />
               </span>
-              <p>学习建议</p>
+              <p>{t('学习建议', 'Study tip')}</p>
               <small>
                 {weakTags.length
-                  ? `试试复习 ${tagLabel(weakTags[0][0])}，巩固刚才的知识。`
-                  : '每天完成一节短课，逐步搭建 Rust 心智模型。'}
+                  ? t(
+                      `试试复习 ${tagLabel(weakTags[0][0])}，巩固刚才的知识。`,
+                      `Review ${tagLabel(weakTags[0][0], language)} to strengthen your understanding.`,
+                    )
+                  : t(
+                      '每天完成一节短课，逐步搭建 Rust 心智模型。',
+                      'Complete one short lesson each day to build your Rust mental model.',
+                    )}
               </small>
             </div>
           </aside>

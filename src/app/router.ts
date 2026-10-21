@@ -6,7 +6,12 @@ export type Route =
   | { page: 'home' }
   | { page: 'search' }
   | { page: 'lesson'; lessonId: string }
-  | { page: 'course-lesson'; moduleId: string; lessonId: string }
+  | {
+      page: 'course-lesson'
+      moduleId: string
+      lessonId: string
+      sectionId?: string
+    }
   | { page: 'public-course-lesson'; lessonId: string }
   | { page: 'track'; trackSlug: string }
   | { page: 'review' | 'progress' }
@@ -14,19 +19,26 @@ export type Route =
 
 /** 解析现有路径；未知课程或非法编码明确显示未找到，不偷偷跳到首课。 */
 export function readRoute(pathname: string): Route {
-  if (pathname === '/') return { page: 'home' }
-  if (pathname === '/search' || pathname === '/search/')
+  const queryIndex = pathname.indexOf('?')
+  const routePath = queryIndex < 0 ? pathname : pathname.slice(0, queryIndex)
+  const query = queryIndex < 0 ? '' : pathname.slice(queryIndex + 1)
+  const sectionId = new URLSearchParams(query).get('section') || undefined
+
+  if (routePath === '/') return { page: 'home' }
+  if (routePath === '/search' || routePath === '/search/')
     return { page: 'search' }
-  if (pathname === '/review' || pathname === '/review/')
+  if (routePath === '/review' || routePath === '/review/')
     return { page: 'review' }
-  if (pathname === '/progress' || pathname === '/progress/')
+  if (routePath === '/progress' || routePath === '/progress/')
     return { page: 'progress' }
   if (
-    pathname === '/tracks/rust-backend' ||
-    pathname === '/tracks/rust-backend/'
+    routePath === '/tracks/rust-backend' ||
+    routePath === '/tracks/rust-backend/'
   )
     return { page: 'track', trackSlug: 'rust-backend' }
-  const courseLessonMatch = /^\/courses\/(m\d{2})\/(l\d{2})\/?$/i.exec(pathname)
+  const courseLessonMatch = /^\/courses\/(m\d{2})\/(l\d{2})\/?$/i.exec(
+    routePath,
+  )
   if (
     courseLessonMatch &&
     findCourseLesson(courseLessonMatch[1], courseLessonMatch[2])?.published
@@ -35,9 +47,10 @@ export function readRoute(pathname: string): Route {
       page: 'course-lesson',
       moduleId: courseLessonMatch[1].toUpperCase(),
       lessonId: courseLessonMatch[2].toUpperCase(),
+      ...(sectionId ? { sectionId } : {}),
     }
   }
-  const publicLessonMatch = /^\/public-lessons\/([^/]+)\/?$/i.exec(pathname)
+  const publicLessonMatch = /^\/public-lessons\/([^/]+)\/?$/i.exec(routePath)
   try {
     const id = publicLessonMatch ? decodeURIComponent(publicLessonMatch[1]) : ''
     if (id && findPublicCourseLesson(id))
@@ -45,7 +58,7 @@ export function readRoute(pathname: string): Route {
   } catch {
     // Invalid percent encoding is an unknown path, not a router failure.
   }
-  const match = /^\/lesson\/([^/]+)\/?$/.exec(pathname)
+  const match = /^\/lesson\/([^/]+)\/?$/.exec(routePath)
   try {
     const id = match ? decodeURIComponent(match[1]) : ''
     if (
@@ -69,8 +82,12 @@ function routePath(route: Route): string {
     return `/tracks/${encodeURIComponent(route.trackSlug)}`
   if (route.page === 'lesson')
     return `/lesson/${encodeURIComponent(route.lessonId ?? '')}`
-  if (route.page === 'course-lesson')
-    return `/courses/${route.moduleId.toLowerCase()}/${route.lessonId.toLowerCase()}`
+  if (route.page === 'course-lesson') {
+    const path = `/courses/${route.moduleId.toLowerCase()}/${route.lessonId.toLowerCase()}`
+    return route.sectionId
+      ? `${path}?section=${encodeURIComponent(route.sectionId)}`
+      : path
+  }
   if (route.page === 'public-course-lesson')
     return `/public-lessons/${encodeURIComponent(route.lessonId)}`
   if (route.page === 'not-found') return route.path

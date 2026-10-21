@@ -208,7 +208,7 @@ it('学习进度只用已发布主线课节作分母', async () => {
   expect(screen.getByText('主线已发布课节')).toBeTruthy()
   expect(screen.getByText('M01 · 开发循环与语言入门')).toBeTruthy()
   expect(screen.getByText('公开专题')).toBeTruthy()
-  expect(screen.getByText('/ 42')).toBeTruthy()
+  expect(screen.getByText('/ 144')).toBeTruthy()
   expect(screen.queryByRole('navigation', { name: 'Rust 学习路线' })).toBeNull()
 })
 
@@ -221,8 +221,8 @@ it('空复习页引导到公开课程目录', async () => {
   expect(window.location.hash).toBe('#/tracks/rust-backend')
 })
 
-// 课程目录展示完整路线规划，并明确标出暂无课件的条目。
-it('打开课程目录并显示课程准备状态', async () => {
+// 课程目录展示完整路线规划，当前所有课节均有公开内容。
+it('打开课程目录并显示完整公开课程', async () => {
   const user = userEvent.setup()
   render(<App />)
 
@@ -233,7 +233,7 @@ it('打开课程目录并显示课程准备状态', async () => {
     screen.getByRole('heading', { name: 'Rust 后端工程师路线' }),
   ).toBeTruthy()
   expect(screen.getByText('24 个模块')).toBeTruthy()
-  expect(screen.getAllByText('课程准备中').length).toBeGreaterThan(0)
+  expect(screen.queryByText('课程准备中')).toBeNull()
   expect(screen.getByText('约 10 小时')).toBeTruthy()
 })
 

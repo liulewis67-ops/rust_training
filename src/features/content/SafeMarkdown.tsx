@@ -1,24 +1,71 @@
 import { Fragment, type JSX, type ReactNode } from 'react'
-import { resolveCourseAsset } from '../../data/courseCatalog'
+import {
+  resolveCourseAsset,
+  resolveCourseLessonLink,
+} from '../../data/courseCatalog'
+import { markdownHeadingSlug } from '../../lib/markdownAnchor'
+import type { Language } from '../../lib/language'
 
-/** Allow HTTPS references and ZIP archives selected from the public lesson asset folder. */
+type TableAlignment = 'left' | 'center' | 'right'
+
+const disclosureHeadings = new Set([
+  '分层提示',
+  '提示',
+  '复盘提示',
+  '参考答案',
+  '参考实现',
+  '参考实现要点',
+  '公开答案',
+  '公开参考答案',
+  '公开参考实现',
+  '公开练习答案',
+  '案例答案与解释',
+  '合同答案',
+  'layered hints',
+  'layering tips',
+  'progressive hints',
+  'tiered hints',
+  'hints',
+  'tips',
+  'review hints',
+  'review tips',
+  'reference answer',
+  'reference answers',
+  'reference implementation',
+  'reference implementation notes',
+  'reference implementation points',
+  'public answer',
+  'public answers',
+  'public reference answer',
+  'public reference implementation',
+  'public exercise answers',
+  'case answer and explanation',
+  'case answers and explanations',
+  'contract answer',
+])
+
+/** Allow HTTPS references, public ZIPs, and known lesson routes. */
 function safeHref(
   destination: string,
-): { href: string; download?: string } | undefined {
+  language: Language,
+): { href: string; download?: string; openInNewTab?: boolean } | undefined {
   try {
     const url = new URL(destination)
-    if (url.protocol === 'https:') return { href: url.href }
+    if (url.protocol === 'https:') return { href: url.href, openInNewTab: true }
   } catch {
-    // Resolve relative lesson links only through the explicit public ZIP allowlist.
+    // Resolve relative links only through public archive/lesson allowlists.
   }
   if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(destination)) return undefined
-  const asset = resolveCourseAsset(destination)
+  const asset = resolveCourseAsset(destination, language)
   const fileName = destination.split(/[?#]/, 1)[0]?.split(/[\\/]/).pop()
-  return asset && fileName ? { href: asset, download: fileName } : undefined
+  if (asset && fileName)
+    return { href: asset, download: fileName, openInNewTab: true }
+  const lessonRoute = resolveCourseLessonLink(destination, language)
+  return lessonRoute ? { href: lessonRoute } : undefined
 }
 
 /** Render inline Markdown while leaving all text in React's escaped text context. */
-function renderInline(markdown: string): ReactNode[] {
+function renderInline(markdown: string, language: Language): ReactNode[] {
   const tokenPattern = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g
   return markdown.split(tokenPattern).map((part, index) => {
     // Raw HTML is never passed to an HTML parser or inserted with innerHTML.
@@ -34,13 +81,13 @@ function renderInline(markdown: string): ReactNode[] {
     const linkMatch = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(part)
     if (linkMatch) {
       const [, label, destination] = linkMatch
-      const safeDestination = safeHref(destination)
+      const safeDestination = safeHref(destination, language)
       return safeDestination ? (
         <a
           key={index}
           href={safeDestination.href}
-          target="_blank"
-          rel="noopener noreferrer"
+          target={safeDestination.openInNewTab ? '_blank' : undefined}
+          rel={safeDestination.openInNewTab ? 'noopener noreferrer' : undefined}
           download={safeDestination.download}
         >
           {label}
@@ -53,8 +100,58 @@ function renderInline(markdown: string): ReactNode[] {
   })
 }
 
+/** Split a Markdown table row while preserving escaped and code-span pipes. */
+function parseMarkdownTableCells(line: string): string[] | undefined {
+  let source = line.trim()
+  if (!source.includes('|')) return undefined
+  if (source.startsWith('|')) source = source.slice(1)
+  if (source.endsWith('|') && !source.endsWith('\\|'))
+    source = source.slice(0, -1)
+
+  const cells: string[] = []
+  let cell = ''
+  let codeDelimiterLength = 0
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index]
+    if (character === '\\' && source[index + 1] === '|') {
+      cell += '|'
+      index += 1
+      continue
+    }
+    if (character === '`') {
+      let delimiterLength = 1
+      while (source[index + delimiterLength] === '`') delimiterLength += 1
+      if (codeDelimiterLength === 0) codeDelimiterLength = delimiterLength
+      else if (codeDelimiterLength === delimiterLength) codeDelimiterLength = 0
+      cell += '`'.repeat(delimiterLength)
+      index += delimiterLength - 1
+      continue
+    }
+    if (character === '|' && codeDelimiterLength === 0) {
+      cells.push(cell.trim())
+      cell = ''
+      continue
+    }
+    cell += character
+  }
+  cells.push(cell.trim())
+  return cells
+}
+
+/** Convert a valid GFM separator cell into its display alignment. */
+function parseTableAlignment(cell: string): TableAlignment | undefined {
+  if (!/^:?-{3,}:?$/.test(cell)) return undefined
+  if (cell.startsWith(':') && cell.endsWith(':')) return 'center'
+  if (cell.endsWith(':')) return 'right'
+  return 'left'
+}
+
 /** Parse the learner-facing Markdown blocks used by authored course material. */
-function renderBlocks(markdown: string): ReactNode[] {
+function renderBlocks(
+  markdown: string,
+  headingOccurrences = new Map<string, number>(),
+  language: Language = 'zh',
+): ReactNode[] {
   const lines = markdown.split(/\r?\n/)
   const blocks: ReactNode[] = []
   let index = 0
@@ -88,9 +185,24 @@ function renderBlocks(markdown: string): ReactNode[] {
     const heading = /^(#{1,6})\s+(.+)$/.exec(line)
     if (heading) {
       const level = heading[1].length
-      const children = renderInline(heading[2])
+      const children = renderInline(heading[2], language)
       const key = `heading:${blocks.length}`
-      if (/^(?:分层提示|参考答案|参考实现)(?:[：:\s]|$)/.test(heading[2])) {
+      const headingSlug = markdownHeadingSlug(heading[2])
+      const occurrence = headingOccurrences.get(headingSlug) ?? 0
+      headingOccurrences.set(headingSlug, occurrence + 1)
+      const headingId = headingSlug
+        ? occurrence === 0
+          ? headingSlug
+          : `${headingSlug}-${occurrence}`
+        : undefined
+      if (
+        disclosureHeadings.has(
+          heading[2]
+            .trim()
+            .replace(/[：:]$/, '')
+            .toLowerCase(),
+        )
+      ) {
         const section: string[] = []
         index += 1
         while (index < lines.length) {
@@ -101,17 +213,96 @@ function renderBlocks(markdown: string): ReactNode[] {
         }
         blocks.push(
           <details className="course-markdown-disclosure" key={key}>
-            <summary>{children}</summary>
-            {renderBlocks(section.join('\n'))}
+            <summary id={headingId}>{children}</summary>
+            {renderBlocks(section.join('\n'), headingOccurrences, language)}
           </details>,
         )
         continue
       }
-      if (level === 1) blocks.push(<h2 key={key}>{children}</h2>)
-      else if (level === 2) blocks.push(<h2 key={key}>{children}</h2>)
-      else if (level === 3) blocks.push(<h3 key={key}>{children}</h3>)
-      else blocks.push(<h4 key={key}>{children}</h4>)
+      if (level === 1)
+        blocks.push(
+          <h2 id={headingId} key={key}>
+            {children}
+          </h2>,
+        )
+      else if (level === 2)
+        blocks.push(
+          <h2 id={headingId} key={key}>
+            {children}
+          </h2>,
+        )
+      else if (level === 3)
+        blocks.push(
+          <h3 id={headingId} key={key}>
+            {children}
+          </h3>,
+        )
+      else
+        blocks.push(
+          <h4 id={headingId} key={key}>
+            {children}
+          </h4>,
+        )
       index += 1
+      continue
+    }
+
+    const headerCells = parseMarkdownTableCells(line)
+    const separatorCells = parseMarkdownTableCells(lines[index + 1] ?? '')
+    const alignments = separatorCells?.map(parseTableAlignment)
+    if (
+      headerCells &&
+      line.includes('|') &&
+      alignments?.length === headerCells.length &&
+      alignments.every((alignment) => alignment !== undefined)
+    ) {
+      const normalizedCells = (cells: string[]): string[] =>
+        Array.from(
+          { length: headerCells.length },
+          (_, cellIndex) => cells[cellIndex] ?? '',
+        )
+      const renderCells = (cells: string[], isHeader: boolean): JSX.Element[] =>
+        normalizedCells(cells).map((cell, cellIndex) => {
+          const style = { textAlign: alignments[cellIndex] }
+          return isHeader ? (
+            <th key={cellIndex} scope="col" style={style}>
+              {renderInline(cell, language)}
+            </th>
+          ) : (
+            <td key={cellIndex} style={style}>
+              {renderInline(cell, language)}
+            </td>
+          )
+        })
+
+      const rows: string[][] = []
+      index += 2
+      while (
+        index < lines.length &&
+        lines[index].trim() &&
+        lines[index].includes('|')
+      ) {
+        const cells = parseMarkdownTableCells(lines[index])
+        if (!cells) break
+        rows.push(cells)
+        index += 1
+      }
+
+      const key = `table:${blocks.length}`
+      blocks.push(
+        <div className="course-markdown-table-wrapper" key={key}>
+          <table>
+            <thead>
+              <tr>{renderCells(headerCells, true)}</tr>
+            </thead>
+            <tbody>
+              {rows.map((row, rowIndex) => (
+                <tr key={`${key}:${rowIndex}`}>{renderCells(row, false)}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
+      )
       continue
     }
 
@@ -129,28 +320,91 @@ function renderBlocks(markdown: string): ReactNode[] {
       }
       blocks.push(
         <blockquote key={`quote:${blocks.length}`}>
-          <p>{renderInline(quote.join(' '))}</p>
+          <p>{renderInline(quote.join(' '), language)}</p>
         </blockquote>,
       )
       continue
     }
 
-    const listMarker = /^\s*(?:([-*+])|(\d+)[.)])\s+/.exec(lines[index])
+    const listMarker = /^(\s*)(?:([-*+])|(\d+)[.)])\s+(.+)$/.exec(lines[index])
     if (listMarker) {
-      const ordered = Boolean(listMarker[2])
-      const items: string[] = []
+      const baseIndent = listMarker[1].length
+      const ordered = Boolean(listMarker[3])
+      const start = ordered ? Number(listMarker[3]) : undefined
+      const items: { text: string; continuation: string[] }[] = []
       while (index < lines.length) {
-        const item = /^\s*(?:([-*+])|(\d+)[.)])\s+(.+)$/.exec(lines[index])
-        if (!item || Boolean(item[2]) !== ordered) break
-        items.push(item[3])
+        const item = /^(\s*)(?:([-*+])|(\d+)[.)])\s+(.+)$/.exec(lines[index])
+        if (
+          !item ||
+          item[1].length !== baseIndent ||
+          Boolean(item[3]) !== ordered
+        )
+          break
+        const continuation: string[] = []
+        const contentIndent = item[0].length - item[4].length
+        items.push({ text: item[4], continuation })
         index += 1
+        while (index < lines.length) {
+          const next = lines[index]
+          if (!next.trim()) {
+            // Blank lines belong to an item only when followed by indented content.
+            const following = lines[index + 1]
+            if (
+              following &&
+              /^\s+\S/.test(following) &&
+              following.length - following.trimStart().length >= contentIndent
+            ) {
+              continuation.push('')
+              index += 1
+              continue
+            }
+            index += 1
+            break
+          }
+          const indentation = next.length - next.trimStart().length
+          if (indentation < contentIndent) break
+          continuation.push(next.slice(contentIndent))
+          index += 1
+        }
       }
       const key = `list:${blocks.length}`
-      const children = items.map((item, itemIndex) => (
-        <li key={`${key}:${itemIndex}`}>{renderInline(item)}</li>
-      ))
+      const children = items.map(({ text, continuation }, itemIndex) => {
+        const task = /^\[([ xX])\]\s+(.+)$/.exec(text)
+        const additional = continuation.length
+          ? renderBlocks(continuation.join('\n'), headingOccurrences, language)
+          : null
+        return task ? (
+          <li className="course-task-list-item" key={`${key}:${itemIndex}`}>
+            <label>
+              <input type="checkbox" defaultChecked={task[1] !== ' '} />
+              <span>{renderInline(task[2], language)}</span>
+            </label>
+            {additional}
+          </li>
+        ) : (
+          <li key={`${key}:${itemIndex}`}>
+            {renderInline(text, language)}
+            {additional}
+          </li>
+        )
+      })
       blocks.push(
-        ordered ? <ol key={key}>{children}</ol> : <ul key={key}>{children}</ul>,
+        ordered ? (
+          <ol key={key} start={start}>
+            {children}
+          </ol>
+        ) : (
+          <ul
+            className={
+              items.some(({ text }) => /^\[[ xX]\]\s+/.test(text))
+                ? 'course-task-list'
+                : undefined
+            }
+            key={key}
+          >
+            {children}
+          </ul>
+        ),
       )
       continue
     }
@@ -171,7 +425,7 @@ function renderBlocks(markdown: string): ReactNode[] {
     }
     blocks.push(
       <p key={`paragraph:${blocks.length}`}>
-        {renderInline(paragraph.join(' '))}
+        {renderInline(paragraph.join(' '), language)}
       </p>,
     )
   }
@@ -179,12 +433,22 @@ function renderBlocks(markdown: string): ReactNode[] {
 }
 
 /** Display course prose, lists, headings, quotes, and code without executing authored HTML. */
-export function SafeMarkdown({ content }: { content: string }): JSX.Element {
+export function SafeMarkdown({
+  content,
+  language = 'zh',
+}: {
+  content: string
+  language?: Language
+}): JSX.Element {
   const learnerMarkdown = content
     .replace(
       /<(script|style|iframe|object|embed|template)\b[^>]*>[\s\S]*?(?:<\/\1\s*>|$)/gi,
       '',
     )
     .replace(/<(?:img|input|meta|link)\b[^>]*\/?>/gi, '')
-  return <div className="course-markdown">{renderBlocks(learnerMarkdown)}</div>
+  return (
+    <div className="course-markdown">
+      {renderBlocks(learnerMarkdown, undefined, language)}
+    </div>
+  )
 }

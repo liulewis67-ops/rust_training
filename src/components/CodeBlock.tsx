@@ -1,4 +1,5 @@
 import { useState, type JSX } from 'react'
+import { useLanguage } from '../lib/language'
 
 /** 按行显示代码文本；通过 React 转义内容，不注入 HTML。 */
 export function CodeBlock({
@@ -8,15 +9,26 @@ export function CodeBlock({
   code: string
   compact?: boolean
 }): JSX.Element {
+  const { t } = useLanguage()
   const [copyStatus, setCopyStatus] = useState('')
 
   /** Copy this public example for practice in the learner's local project. */
   async function copyCode(): Promise<void> {
     try {
       await navigator.clipboard.writeText(code)
-      setCopyStatus('已复制，可粘贴到本地项目')
+      setCopyStatus(
+        t(
+          '已复制，可粘贴到本地项目',
+          'Copied. Paste it into your local project.',
+        ),
+      )
     } catch {
-      setCopyStatus('复制失败，请手动选中代码复制')
+      setCopyStatus(
+        t(
+          '复制失败，请手动选中代码复制',
+          'Copy failed. Select and copy the code manually.',
+        ),
+      )
     }
   }
 
@@ -24,7 +36,7 @@ export function CodeBlock({
     <div className="code-example">
       <div className="code-example-actions">
         <button type="button" className="text-button" onClick={copyCode}>
-          复制代码
+          {t('复制代码', 'Copy code')}
         </button>
         <span role="status">{copyStatus}</span>
       </div>

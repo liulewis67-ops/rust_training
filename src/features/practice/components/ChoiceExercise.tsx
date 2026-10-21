@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2, XCircle } from 'lucide-react'
 import type { Exercise } from '../../../types/lesson'
 import type { Attempt } from '../../learning'
 import { Feedback } from './Feedback'
+import { useLanguage } from '../../preferences'
 
 /** 展示客观选择题并恢复已有本地作答；提交前允许修改选项。 */
 export function ChoiceExercise({
@@ -19,6 +20,7 @@ export function ChoiceExercise({
     correct: boolean,
   ) => void
 }): JSX.Element {
+  const { t } = useLanguage()
   const [selected, setSelected] = useState<number | null>(
     typeof existing?.answer === 'number' ? existing.answer : null,
   )
@@ -80,7 +82,7 @@ export function ChoiceExercise({
             onSubmit(exercise, selected, correct)
           }}
         >
-          提交答案 <ArrowRight size={14} />
+          {t('提交答案', 'Submit answer')} <ArrowRight size={14} />
         </button>
       )}
     </>

@@ -6,6 +6,8 @@ import { ChoiceExercise, OpenExercise } from '../features/practice'
 import { CodeBlock } from '../components/CodeBlock'
 import type { Progress } from '../features/learning'
 import type { Lesson, Exercise } from '../types/lesson'
+import { useLanguage } from '../features/preferences'
+import { legacyLessonTitle } from '../data/courseText'
 
 /** 从已完成课程中组合薄弱点练习，提交时保留原课程来源。 */
 export function ReviewPage({
@@ -27,6 +29,7 @@ export function ReviewPage({
   onNavigate: (lesson: Lesson) => void
   onOpenCatalog: () => void
 }): JSX.Element {
+  const { language, t } = useLanguage()
   const weak = Object.entries(progress.weakness)
     .filter(([, score]) => {
       // 排除已巩固的零分知识点。
@@ -65,30 +68,35 @@ export function ReviewPage({
   return (
     <div className="utility-page">
       <div className="breadcrumb">
-        <span>学习工具</span>
+        <span>{t('学习工具', 'Learning tools')}</span>
         <ChevronRight size={13} />
         <span>Review</span>
       </div>
       <div className="utility-title-row">
         <div>
           <span className="utility-eyebrow">REVIEW MODE</span>
-          <h1>薄弱点复习</h1>
-          <p>从已完成的互动课程中抽取与你的薄弱知识点相关的练习。</p>
+          <h1>{t('薄弱点复习', 'Review weak areas')}</h1>
+          <p>
+            {t(
+              '从已完成的互动课程中抽取与你的薄弱知识点相关的练习。',
+              'Practice weak topics from interactive lessons you have completed.',
+            )}
+          </p>
         </div>
         <div className="review-count">
           <RotateCcw size={17} />
           <b>{questionPool.length}</b>
-          <small>道待复习</small>
+          <small>{t('道待复习', 'to review')}</small>
         </div>
       </div>
       {weak.length > 0 && (
         <div className="weak-tag-list">
-          <h3>当前关注</h3>
+          <h3>{t('当前关注', 'Current focus')}</h3>
           {weak.map(([tag, score]) => {
             // 显示当前薄弱点及其累计分值。
             return (
               <span className="tag-pill" key={tag}>
-                {tagLabel(tag)} <b>{score}</b>
+                {tagLabel(tag, language)} <b>{score}</b>
               </span>
             )
           })}
@@ -98,8 +106,9 @@ export function ReviewPage({
         <section className="exercise-card review-exercise">
           <div className="exercise-eyebrow">
             <span className="exercise-dot" />
-            来自第 {String(entry.lesson.order).padStart(2, '0')} 课 ·{' '}
-            {entry.lesson.title}
+            {t('来自第', 'From lesson')}{' '}
+            {String(entry.lesson.order).padStart(2, '0')} ·{' '}
+            {legacyLessonTitle(entry.lesson.id, language, entry.lesson.title)}
           </div>
           <h2>{entry.exercise.prompt}</h2>
           {entry.exercise.code && (
@@ -135,7 +144,7 @@ export function ReviewPage({
               }}
             >
               <RotateCcw size={13} />
-              随机抽题
+              {t('随机抽题', 'Random question')}
             </button>
             <button
               className="text-link"
@@ -144,7 +153,7 @@ export function ReviewPage({
                 return onNavigate(entry.lesson)
               }}
             >
-              查看原课程 <ArrowRight size={13} />
+              {t('查看原课程', 'View original lesson')} <ArrowRight size={13} />
             </button>
           </div>
         </section>
@@ -155,15 +164,24 @@ export function ReviewPage({
           </span>
           <h2>
             {progress.completed.length
-              ? '暂时没有待复习的互动题'
-              : '当前没有待复习的互动题'}
+              ? t(
+                  '暂时没有待复习的互动题',
+                  'No interactive questions to review yet',
+                )
+              : t(
+                  '当前没有待复习的互动题',
+                  'No interactive questions to review',
+                )}
           </h2>
           <p>
-            M01
-            的开放练习和公开答案在对应课节中自查；已有互动练习的错题仍会在这里出现。
+            {t(
+              'M01 的开放练习和公开答案在对应课节中自查；已有互动练习的错题仍会在这里出现。',
+              'Check M01 open exercises and public answers in their lessons. Missed interactive questions will appear here.',
+            )}
           </p>
           <button className="primary-button" onClick={onOpenCatalog}>
-            查看已发布课程 <ArrowRight size={14} />
+            {t('查看已发布课程', 'View published lessons')}{' '}
+            <ArrowRight size={14} />
           </button>
         </div>
       )}

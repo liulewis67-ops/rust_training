@@ -1,5 +1,7 @@
 import { learningTrack } from './learningTrack'
 import publicManifest from '../../content/public-course-manifest.json'
+import { markdownHeadingSlug } from '../lib/markdownAnchor'
+import type { Language } from '../lib/language'
 
 interface ModuleDefinition {
   id: string
@@ -15,6 +17,7 @@ export interface CourseLesson {
   published: boolean
   content: string
   exercises: string[]
+  translationComplete?: boolean
 }
 
 export interface CourseModule extends ModuleDefinition {
@@ -52,7 +55,16 @@ const authoredMarkdown = import.meta.glob<string>('../../content/releases/m*.md'
     query: '?raw',
     import: 'default',
   })
+const englishMarkdown = import.meta.glob<string>('../../content/releases/en/m*.md', {
+  query: '?raw',
+  import: 'default',
+})
 const publicLessonArchives = import.meta.glob('../../content/releases/*.zip', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Record<string, string>
+const englishLessonArchives = import.meta.glob('../../content/releases/en/*.zip', {
   eager: true,
   query: '?url',
   import: 'default',
@@ -63,17 +75,56 @@ const releasedMarkdownLessons = new Set<string>(
 const releasedLessonTitles = publicManifest.markdown_lesson_titles as Record<string, string>
 
 /** Resolve only ZIP files explicitly stored in the public lesson asset folder. */
-export function resolveCourseAsset(destination: string): string | undefined {
+export function resolveCourseAsset(destination: string, language: Language = 'zh'): string | undefined {
   const fileName = destination.split(/[?#]/, 1)[0]?.split(/[\\/]/).pop()
   if (!fileName) return undefined
   const match = Object.entries(publicLessonArchives).find(([path]) => {
     return path.split('/').pop() === fileName
   })
-  return match?.[1]
+  if (!match) return undefined
+  if (language === 'en') {
+    const english = Object.entries(englishLessonArchives).find(([path]) => path.split('/').pop() === fileName)
+    if (english) return english[1]
+  }
+  return match[1]
+}
+
+/** Resolve a published Markdown filename to its GitHub Pages hash route. */
+const englishSectionAliases: Record<string, string> = {
+  'm20-l01#练习一预测请求轨迹': 'Exercise 1: Predicting request trajectories',
+  'm20-l04#本地练习': 'Local practice',
+}
+
+export function resolveCourseLessonLink(destination: string, language: Language = 'zh'): string | undefined {
+  const [filePath, rawFragment] = destination.split('#', 2)
+  const fileName = filePath
+    .split(/[?#]/, 1)[0]
+    ?.split(/[\\/]/)
+    .pop()
+    ?.toLowerCase()
+  if (!fileName?.endsWith('.md')) return undefined
+  const lessonId = fileName?.match(/^(m\d{2}-l\d{2})(?:[-.]|$)/)?.[1]
+  if (!lessonId || !releasedMarkdownLessons.has(lessonId.toUpperCase()))
+    return undefined
+  const [moduleId, lesson] = lessonId.split('-')
+  const route = `#/courses/${moduleId}/${lesson}`
+  if (rawFragment === undefined) return route
+
+  try {
+    const fragment = decodeURIComponent(rawFragment)
+    const sectionId = markdownHeadingSlug(
+      language === 'en' ? englishSectionAliases[`${lessonId}#${fragment}`] ?? fragment : fragment,
+    )
+    return sectionId
+      ? `${route}?section=${encodeURIComponent(sectionId)}`
+      : undefined
+  } catch {
+    return undefined
+  }
 }
 
 /** Keep author grading notes and private solution folders outside the learner catalog. */
-function learnerFileLoaders(moduleId: string, lessonId: string): { name: string; load: () => Promise<string> }[] {
+function learnerFileLoaders(moduleId: string, lessonId: string, language: Language): { name: string; load: () => Promise<string>; translated: boolean }[] {
   const prefix = `${moduleId.toLowerCase()}-${lessonId.toLowerCase()}`
   const files = Object.entries(authoredMarkdown)
     .filter(([path]) => {
@@ -92,10 +143,11 @@ function learnerFileLoaders(moduleId: string, lessonId: string): { name: string;
       // Prefer the canonical root draft if its public copy has the same filename.
       return Number(left.includes('/public/')) - Number(right.includes('/public/')) || left.localeCompare(right)
     })
-    .map(([path, load]) => ({
-      name: path.split('/').pop()?.toLowerCase() ?? '',
-      load,
-    }))
+    .map(([path, load]) => {
+      const name = path.split('/').pop()?.toLowerCase() ?? ''
+      const english = (englishMarkdown as Record<string, (() => Promise<string>) | undefined>)[`../../content/releases/en/${name}`]
+      return { name, load: language === 'en' && english ? english : load, translated: language === 'en' && Boolean(english) }
+    })
   const seenNames = new Set<string>()
   return files.filter(({ name }) => {
     if (seenNames.has(name)) return false
@@ -130,22 +182,30 @@ export function findCourseLesson(moduleId: string, lessonId: string): CourseLess
 }
 
 /** Load a single published lesson body only when its reader is opened. */
-export async function loadCourseLesson(moduleId: string, lessonId: string): Promise<CourseLesson | undefined> {
+export async function loadCourseLesson(moduleId: string, lessonId: string, language: Language = 'zh'): Promise<CourseLesson | undefined> {
   const lesson = findCourseLesson(moduleId, lessonId)
   if (!lesson?.published) return undefined
-  const files = learnerFileLoaders(moduleId, lessonId)
+  const files = learnerFileLoaders(moduleId, lessonId, language)
   const loaded = await Promise.all(files.map(async ({ name, load }) => ({ name, markdown: await load() })))
+  const mainFileName = `${moduleId.toLowerCase()}-${lessonId.toLowerCase()}.md`
+  const mainLesson = loaded.find(({ name }) => name === mainFileName)
   return {
     ...lesson,
-    content: loaded.find(({ name }) => !name.includes('exercises'))?.markdown ?? '',
-    exercises: loaded.filter(({ name }) => name.includes('exercises')).map(({ markdown }) => markdown),
+    content: mainLesson?.markdown ?? '',
+    translationComplete: language === 'en' && files.length > 0 && files.every(({ translated }) => translated),
+    exercises: loaded
+      .filter(
+        ({ name, markdown }) =>
+          name !== mainFileName && markdown !== mainLesson?.markdown,
+      )
+      .map(({ markdown }) => markdown),
   }
 }
 
 /** Load released lesson text for search only after the learner opens search. */
-export async function loadAllPublishedCourseLessons(): Promise<CourseLesson[]> {
+export async function loadAllPublishedCourseLessons(language: Language = 'zh'): Promise<CourseLesson[]> {
   const lessons = courseModules.flatMap((module) => module.lessons.filter((lesson) => lesson.published).map((lesson) => ({ module, lesson })))
-  return Promise.all(lessons.map(async ({ module, lesson }) => (await loadCourseLesson(module.id, lesson.id))!))
+  return Promise.all(lessons.map(async ({ module, lesson }) => (await loadCourseLesson(module.id, lesson.id, language))!))
 }
 
 /** Resolve a module row used by course reading breadcrumbs and navigation. */

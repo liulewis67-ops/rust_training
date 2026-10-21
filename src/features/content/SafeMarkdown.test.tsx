@@ -1,6 +1,11 @@
 import { expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { SafeMarkdown } from './SafeMarkdown'
+import { resolveCourseAsset } from '../../data/courseCatalog'
+import m08ReferenceAnswers from '../../../content/releases/m08-l01-exercises.md?raw'
+import m02Lab from '../../../content/releases/m02-l05.md?raw'
+import m20Exercises from '../../../content/releases/m20-l01-exercises.md?raw'
+import englishM24Exercises from '../../../content/releases/en/m24-l05-exercises.md?raw'
 
 // Only a small Markdown subset is rendered; active HTML and unsafe links stay inert.
 it('filters active HTML and unsafe URL schemes while rendering safe Markdown', () => {
@@ -37,9 +42,192 @@ it('keeps published hints and reference answers available behind disclosures', (
   expect(screen.getByText('核对边界。')).toBeTruthy()
 })
 
+it('also folds hints and reference answers in English lessons', () => {
+  const { container } = render(
+    <SafeMarkdown
+      content={
+        '### Layering Tips\nStart with the input.\n\n### Reference answer\nThe result is 125.'
+      }
+    />,
+  )
+  expect(
+    Array.from(container.querySelectorAll('details > summary')).map(
+      (summary) => summary.textContent,
+    ),
+  ).toEqual(['Layering Tips', 'Reference answer'])
+})
+
+it('keeps translated case answers folded until the learner opens them', () => {
+  const { container, unmount } = render(
+    <SafeMarkdown content={englishM24Exercises} language="en" />,
+  )
+  const caseAnswers = Array.from(container.querySelectorAll('details')).find(
+    (item) =>
+      item.querySelector('summary')?.textContent?.trim() ===
+      'Case answers and explanations',
+  )
+  expect(caseAnswers).toBeTruthy()
+  expect(caseAnswers?.open).toBe(false)
+  unmount()
+})
+
 it('gives released ZIP downloads a stable file name', () => {
   render(<SafeMarkdown content="[下载样例](./m01-l03-samples.zip)" />)
   const link = screen.getByRole('link', { name: '下载样例' })
   expect(link.getAttribute('download')).toBe('m01-l03-samples.zip')
   expect(link.getAttribute('href')).toContain('m01-l03-samples')
+})
+
+it('links to the English download in English Markdown', () => {
+  render(
+    <SafeMarkdown
+      content="[Reference project](./m01-l06-reference.zip)"
+      language="en"
+    />,
+  )
+  expect(
+    screen
+      .getByRole('link', { name: 'Reference project' })
+      .getAttribute('href'),
+  ).toBe(resolveCourseAsset('./m01-l06-reference.zip', 'en'))
+})
+
+it('routes published lesson links through the static hash router', () => {
+  render(
+    <SafeMarkdown content="[M20-L03](./m20-l03-sse-connection-lifecycle.md) [not published](./m99-l01-missing.md)" />,
+  )
+  const lessonLink = screen.getByRole('link', { name: 'M20-L03' })
+  expect(lessonLink.getAttribute('href')).toBe('#/courses/m20/l03')
+  expect(lessonLink.hasAttribute('target')).toBe(false)
+  expect(screen.queryByRole('link', { name: 'not published' })).toBeNull()
+})
+
+it('preserves a released Markdown heading fragment in the lesson route', () => {
+  render(
+    <SafeMarkdown content="[请求轨迹](./m20-l01-exercises.md#练习一预测请求轨迹)" />,
+  )
+  const link = screen.getByRole('link', { name: '请求轨迹' })
+  const href = link.getAttribute('href') ?? ''
+
+  expect(href.split('?')[0]).toBe('#/courses/m20/l01')
+  expect(new URLSearchParams(href.split('?')[1]).get('section')).toBe(
+    '练习一预测请求轨迹',
+  )
+})
+
+it('maps a Chinese source fragment to the translated English heading', () => {
+  render(
+    <SafeMarkdown
+      content="[Request trace](./m20-l01-exercises.md#练习一预测请求轨迹)"
+      language="en"
+    />,
+  )
+  const href =
+    screen.getByRole('link', { name: 'Request trace' }).getAttribute('href') ??
+    ''
+  expect(new URLSearchParams(href.split('?')[1]).get('section')).toBe(
+    'exercise-1-predicting-request-trajectories',
+  )
+})
+
+it('renders stable IDs for Unicode headings and repeated headings', () => {
+  const { container } = render(
+    <SafeMarkdown
+      content={`## 练习一：预测请求轨迹
+
+## 练习一：预测请求轨迹`}
+    />,
+  )
+
+  expect(container.querySelectorAll('h2')[0]?.id).toBe('练习一预测请求轨迹')
+  expect(container.querySelectorAll('h2')[1]?.id).toBe('练习一预测请求轨迹-1')
+})
+
+it('renders Markdown tables with alignment and inline formatting', () => {
+  const { container } = render(
+    <SafeMarkdown
+      content={`| 状态 | 返回值 | 说明 |
+| :--- | ---: | :---: |
+| Queued | 202 | \`Accepted\` |
+| Running | 409 | retry\\|conflict |`}
+    />,
+  )
+  const table = screen.getByRole('table')
+  const headers = screen.getAllByRole('columnheader')
+  const rows = table.querySelectorAll('tbody tr')
+
+  expect(headers.map((header) => header.textContent)).toEqual([
+    '状态',
+    '返回值',
+    '说明',
+  ])
+  expect(headers[0]?.getAttribute('style')).toContain('text-align: left')
+  expect(headers[1]?.getAttribute('style')).toContain('text-align: right')
+  expect(headers[2]?.getAttribute('style')).toContain('text-align: center')
+  expect(rows).toHaveLength(2)
+  expect(rows[0]?.querySelector('code')?.textContent).toBe('Accepted')
+  expect(rows[1]?.textContent).toContain('retry|conflict')
+  expect(
+    container.querySelector('.course-markdown-table-wrapper'),
+  ).not.toBeNull()
+})
+
+it('renders GFM task lists as accessible page-local checkboxes', () => {
+  const { container } = render(
+    <SafeMarkdown
+      content={'- [ ] 待完成的 **检查项**\n- [x] 已完成的 `测试`\n- 普通列表项'}
+    />,
+  )
+  const unchecked = screen.getByRole('checkbox', { name: '待完成的 检查项' })
+  const checked = screen.getByRole('checkbox', { name: '已完成的 测试' })
+
+  expect((unchecked as HTMLInputElement).checked).toBe(false)
+  expect((checked as HTMLInputElement).checked).toBe(true)
+  expect(unchecked.hasAttribute('disabled')).toBe(false)
+  fireEvent.click(unchecked)
+  expect((unchecked as HTMLInputElement).checked).toBe(true)
+  fireEvent.click(unchecked)
+  expect((unchecked as HTMLInputElement).checked).toBe(false)
+  expect(container.querySelector('ul.course-task-list')).not.toBeNull()
+  expect(
+    screen
+      .getByText('普通列表项')
+      .closest('li')
+      ?.classList.contains('course-task-list-item'),
+  ).toBe(false)
+})
+
+it('keeps numbered reference answers and their code inside one list', () => {
+  const { container } = render(<SafeMarkdown content={m08ReferenceAnswers} />)
+
+  const lists = container.querySelectorAll('ol')
+  expect(lists).toHaveLength(1)
+  const items = lists[0].querySelectorAll(':scope > li')
+  expect(items).toHaveLength(3)
+  expect(items[1].querySelector('pre code')?.textContent).toContain(
+    'fn task_at(tasks: &[String], index: usize)',
+  )
+  expect(items[1].textContent).toContain('get 将越界或缺失键表示为 None')
+  expect(items[2].textContent).toContain('map 的键借自输入')
+})
+
+it('folds published hints and solutions while keeping combined exercise sections visible', () => {
+  const lab = render(<SafeMarkdown content={m02Lab} />)
+  expect(
+    Array.from(lab.container.querySelectorAll('details > summary')).map(
+      (summary) => summary.textContent,
+    ),
+  ).toEqual(['提示', '公开参考实现'])
+  lab.unmount()
+
+  const exercises = render(<SafeMarkdown content={m20Exercises} />)
+  expect(
+    Array.from(exercises.container.querySelectorAll('h2')).some(
+      (heading) => heading.textContent === '公开练习与参考答案',
+    ),
+  ).toBe(true)
+  expect(
+    exercises.container.querySelector('details > summary')?.textContent,
+  ).toBe('公开答案')
+  expect(exercises.container.querySelectorAll('details')).toHaveLength(1)
 })

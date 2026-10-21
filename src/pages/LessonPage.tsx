@@ -9,13 +9,20 @@ import {
   ChevronRight,
   Clock3,
 } from 'lucide-react'
-import { lessons, tagLabel, difficultyLabel } from '../features/catalog'
+import {
+  tagLabel,
+  difficultyLabel,
+  difficultyLabelEn,
+} from '../features/catalog'
+import { useLanguage } from '../features/preferences'
 import { ChoiceExercise, OpenExercise } from '../features/practice'
 import { CodeExamples } from '../features/reading'
 import { CodeBlock } from '../components/CodeBlock'
 import type { Progress } from '../features/learning'
 import type { Lesson, Exercise } from '../types/lesson'
 import './lessonReflection.css'
+import { legacyLessonTitle } from '../data/courseText'
+import { getLessons } from '../data/localizedLessons'
 
 /** 组合课程正文、示例和练习；将状态变更交给学习模块。 */
 export function LessonPage({
@@ -40,6 +47,8 @@ export function LessonPage({
   onNavigate: (lesson: Lesson) => void
   onReview: () => void
 }): JSX.Element {
+  const { language, t } = useLanguage()
+  const lessons = getLessons(language)
   const [activeExercise, setActiveExercise] = useState(0)
   const done = progress.completed.includes(lesson.id)
   const exercise = exercises[activeExercise]
@@ -70,14 +79,20 @@ export function LessonPage({
             <i>/ {lessons.length}</i>
           </span>
           <span className={`difficulty ${lesson.difficulty}`}>
-            {difficultyLabel[lesson.difficulty]}
+            {language === 'zh'
+              ? difficultyLabel[lesson.difficulty]
+              : difficultyLabelEn[lesson.difficulty]}
           </span>
           <span className="meta-time">
             <Clock3 size={13} />
-            {lesson.estimatedMinutes} 分钟
+            {lesson.estimatedMinutes} {t('分钟', 'min')}
           </span>
         </div>
-        <h1>{lesson.order === 1 ? '谁负责这个值？' : lesson.title}</h1>
+        <h1>
+          {lesson.order === 1
+            ? t('谁负责这个值？', 'Who owns this value?')
+            : legacyLessonTitle(lesson.id, language, lesson.title)}
+        </h1>
         <p className="lesson-objective">{lesson.objective}</p>
       </div>
       {lesson.order === 1 && (
@@ -85,10 +100,10 @@ export function LessonPage({
           <div>
             <small>JAVA / GO</small>
             <p>
-              内存生命周期 <span>→</span> <b>GC</b>
+              {t('内存生命周期', 'Memory lifetime')} <span>→</span> <b>GC</b>
             </p>
           </div>
-          <div className="model-separator">对比</div>
+          <div className="model-separator">{t('对比', 'vs')}</div>
           <div>
             <small>RUST</small>
             <p>
@@ -106,8 +121,10 @@ export function LessonPage({
                 <BookOpen size={15} />
               </span>
               <div>
-                <h2>核心概念</h2>
-                <small>先从 Rust 自身语义出发</small>
+                <h2>{t('核心概念', 'Core concepts')}</h2>
+                <small>
+                  {t('先从 Rust 自身语义出发', 'Start with Rust semantics')}
+                </small>
               </div>
             </div>
             <p className="explanation">{lesson.explanation}</p>
@@ -115,7 +132,7 @@ export function LessonPage({
           {lesson.mentalModel && (
             <section className="mental-card">
               <div className="mental-title">
-                <span>心智模型</span>
+                <span>{t('心智模型', 'Mental model')}</span>
                 <small>{lesson.mentalModel.description}</small>
               </div>
               <div className="mental-diagrams">
@@ -144,11 +161,14 @@ export function LessonPage({
             <div>
               <span className="exercise-eyebrow">
                 <span className="exercise-dot" />
-                互动练习
+                {t('互动练习', 'Interactive exercise')}
               </span>
               <h2>
                 {activeExercise === 0 && lesson.order === 1
-                  ? '这段代码会发生什么？'
+                  ? t(
+                      '这段代码会发生什么？',
+                      'What happens when this code runs?',
+                    )
                   : exercise.prompt}
               </h2>
             </div>
@@ -160,13 +180,21 @@ export function LessonPage({
           {exercise.code && <CodeBlock code={exercise.code} compact />}
           {exercise.code && (
             <p className="exercise-prompt">
-              复制上方代码到本地 Rust 项目，在自己的电脑上修改并运行。
+              {t(
+                '复制上方代码到本地 Rust 项目，在自己的电脑上修改并运行。',
+                'Copy the code into a local Rust project, then modify and run it on your computer.',
+              )}
             </p>
           )}
           {exercise.prompt !== '提交后预测：程序会怎样？' &&
             lesson.order === 1 &&
             activeExercise === 0 && (
-              <p className="exercise-prompt">预测下面这段代码的结果。</p>
+              <p className="exercise-prompt">
+                {t(
+                  '预测下面这段代码的结果。',
+                  'Predict the result of this code.',
+                )}
+              </p>
             )}
           {exercise.type === 'concept_question' ||
           exercise.type === 'architecture_question' ||
@@ -192,7 +220,7 @@ export function LessonPage({
                 // 展示练习关联的知识点标签。
                 return (
                   <span key={tag} className="tag-pill">
-                    {tagLabel(tag)}
+                    {tagLabel(tag, language)}
                   </span>
                 )
               })}
@@ -211,7 +239,7 @@ export function LessonPage({
               }}
             >
               <ArrowLeft size={14} />
-              上一题
+              {t('上一题', 'Previous question')}
             </button>
             <span>
               {activeExercise + 1} / {exercises.length}
@@ -227,7 +255,7 @@ export function LessonPage({
                   })
                 }}
               >
-                下一题 <ArrowRight size={14} />
+                {t('下一题', 'Next question')} <ArrowRight size={14} />
               </button>
             ) : (
               <button
@@ -235,7 +263,10 @@ export function LessonPage({
                 disabled={!allAnswered || done}
                 onClick={onComplete}
               >
-                {done ? '本课已完成' : '标记本课完成'} <Check size={14} />
+                {done
+                  ? t('本课已完成', 'Lesson complete')
+                  : t('标记本课完成', 'Mark lesson complete')}{' '}
+                <Check size={14} />
               </button>
             )}
           </div>
@@ -247,10 +278,16 @@ export function LessonPage({
             <BookOpen size={17} />
           </span>
           <div>
-            <b>路线节点预告 · {lesson.title}</b>
+            <b>
+              {t('路线节点预告', 'Upcoming path topic')} ·{' '}
+              {legacyLessonTitle(lesson.id, language, lesson.title)}
+            </b>
             <p>
-              {lesson.objective} 前 8
-              节提供完整课程与互动练习；后续节点先展示学习方向。
+              {lesson.objective}{' '}
+              {t(
+                '前 8 节提供完整课程与互动练习；后续节点先展示学习方向。',
+                'The first 8 lessons include complete content and interactive exercises. Later topics currently show the planned learning direction.',
+              )}
             </p>
           </div>
         </section>
@@ -260,15 +297,19 @@ export function LessonPage({
           {done ? (
             <>
               <CheckCircle2 size={15} />
-              已完成本课{' '}
+              {t('已完成本课', 'Lesson complete')}{' '}
               <button className="text-link" onClick={onReview}>
-                复习错题 <ArrowRight size={12} />
+                {t('复习错题', 'Review missed questions')}{' '}
+                <ArrowRight size={12} />
               </button>
             </>
           ) : (
             <>
               <span className="completion-ring" />
-              完成练习后可标记本课完成
+              {t(
+                '完成练习后可标记本课完成',
+                'Finish the exercises to mark this lesson complete',
+              )}
             </>
           )}
         </div>
@@ -281,8 +322,10 @@ export function LessonPage({
                 <BookOpen size={15} />
               </span>
               <div>
-                <h2>核心概念</h2>
-                <small>先从 Rust 自身语义出发</small>
+                <h2>{t('核心概念', 'Core concepts')}</h2>
+                <small>
+                  {t('先从 Rust 自身语义出发', 'Start with Rust semantics')}
+                </small>
               </div>
             </div>
             <p className="explanation">{lesson.explanation}</p>
@@ -290,7 +333,7 @@ export function LessonPage({
           {lesson.mentalModel && (
             <section className="mental-card">
               <div className="mental-title">
-                <span>心智模型</span>
+                <span>{t('心智模型', 'Mental model')}</span>
                 <small>{lesson.mentalModel.description}</small>
               </div>
               <div className="mental-diagrams">
@@ -313,7 +356,12 @@ export function LessonPage({
           <span className="comparison-symbol">⇄</span>
           <div>
             <h3>Rust vs Java vs Go</h3>
-            <p>相似的代码，不同的内存模型</p>
+            <p>
+              {t(
+                '相似的代码，不同的内存模型',
+                'Similar code, different memory models',
+              )}
+            </p>
           </div>
         </div>
         <div className="comparison-grid">
@@ -322,30 +370,44 @@ export function LessonPage({
               <CompareCode
                 language="RUST"
                 code={'let b = a;'}
-                detail="String 所有权 move"
+                detail={t('String 所有权 move', 'String ownership moves')}
                 color="orange"
               />
               <CompareCode
                 language="JAVA"
                 code={'String b = a;'}
-                detail="复制引用，GC 管理对象"
+                detail={t(
+                  '复制引用，GC 管理对象',
+                  'Copy the reference; GC manages the object',
+                )}
                 color="blue"
               />
               <CompareCode
                 language="GO"
                 code={'b := a'}
-                detail="复制 string 值，GC 管理内存"
+                detail={t(
+                  '复制 string 值，GC 管理内存',
+                  'Copy the string value; GC manages memory',
+                )}
                 color="cyan"
               />
             </>
           ) : (
             <div className="comparison-question">
-              <span>试着回答</span>
+              <span>{t('试着回答', 'Try to answer')}</span>
               <b>
                 {lesson.comparisonQuestion?.prompt ??
-                  '完成本节后，想一想 Rust 的规则和你熟悉的语言有何差异。'}
+                  t(
+                    '完成本节后，想一想 Rust 的规则和你熟悉的语言有何差异。',
+                    'After this lesson, compare Rust rules with a language you know.',
+                  )}
               </b>
-              <p>答题后会显示对照解析，帮助建立准确的语言模型。</p>
+              <p>
+                {t(
+                  '答题后会显示对照解析，帮助建立准确的语言模型。',
+                  'An explanation appears after you answer to clarify the language model.',
+                )}
+              </p>
             </div>
           )}
         </div>
@@ -353,7 +415,7 @@ export function LessonPage({
       <section className="summary-block">
         <div className="summary-title">
           <span>✓</span>
-          <h3>本课小结</h3>
+          <h3>{t('本课小结', 'Lesson summary')}</h3>
         </div>
         <ul>
           {lesson.summary.map((item) => {
@@ -372,15 +434,21 @@ export function LessonPage({
           disabled={lesson.order === 1}
         >
           <ArrowLeft size={14} />
-          上一课
+          {t('上一课', 'Previous lesson')}
         </button>
-        <span>{done ? '本课已标记完成' : '完成练习后标记本课'}</span>
+        <span>
+          {done
+            ? t('本课已标记完成', 'Lesson marked complete')
+            : t('完成练习后标记本课', 'Finish exercises to mark complete')}
+        </span>
         <button
           className="primary-button"
           disabled={!allAnswered || done}
           onClick={onComplete}
         >
-          {done ? '本课已完成' : '标记本课完成'}
+          {done
+            ? t('本课已完成', 'Lesson complete')
+            : t('标记本课完成', 'Mark lesson complete')}
           <Check size={15} />
         </button>
       </div>

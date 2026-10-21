@@ -4,6 +4,8 @@ import { courseModules, coursePhases } from '../data/courseCatalog'
 import { learningTrack } from '../data/learningTrack'
 import { getPublicCourse, listPublicCourseLessons } from '../data/publicCourse'
 import type { Route } from '../app/router'
+import { lessonTitle, moduleText, phaseText } from '../data/courseText'
+import { useLanguage } from '../features/preferences'
 
 /** Browse every phase, module, and lesson in the authored Rust learning track. */
 export function TrackPage({
@@ -11,8 +13,9 @@ export function TrackPage({
 }: {
   onNavigate: (route: Route) => void
 }): JSX.Element {
-  const publishedCourse = getPublicCourse()
-  const publishedLessons = listPublicCourseLessons()
+  const { language, t } = useLanguage()
+  const publishedCourse = getPublicCourse(language)
+  const publishedLessons = listPublicCourseLessons(language)
 
   /** Return to the platform home page. */
   function goHome(): void {
@@ -22,21 +25,23 @@ export function TrackPage({
   return (
     <article className="track-page course-catalog-page">
       <button className="text-button track-back" onClick={goHome}>
-        <ArrowLeft size={13} /> 首页
+        <ArrowLeft size={13} /> {t('首页', 'Home')}
       </button>
       <header className="track-heading">
         <p className="home-eyebrow">COURSE CATALOG · RUST BACKEND</p>
-        <h1>{learningTrack.title}</h1>
+        <h1>{t(learningTrack.title, 'Rust Backend Engineer Path')}</h1>
         <p>
-          按阶段浏览 24 个模块和规划中的 144
-          节课程。已经准备好的课件可以直接阅读；其余课程会标明准备状态。
+          {t(
+            '按阶段浏览 24 个模块和规划中的 144 节课程。已经准备好的课件可以直接阅读；其余课程会标明准备状态。',
+            'Explore 24 modules and 144 planned lessons by phase. Available lessons can be opened directly; the rest show their preparation status.',
+          )}
         </p>
         <div className="track-meta">
           <span>
-            <BookOpen size={14} /> 8 个学习阶段
+            <BookOpen size={14} /> {t('8 个学习阶段', '8 learning phases')}
           </span>
-          <span>24 个模块</span>
-          <span>144 节课程</span>
+          <span>{t('24 个模块', '24 modules')}</span>
+          <span>{t('144 节课程', '144 lessons')}</span>
         </div>
       </header>
 
@@ -46,8 +51,15 @@ export function TrackPage({
       >
         <div>
           <p className="home-eyebrow">PUBLISHED COURSE</p>
-          <h2 id="published-course-title">已发布课件</h2>
-          <p>只有明确列入公开清单的课节会出现在这里。</p>
+          <h2 id="published-course-title">
+            {t('已发布课件', 'Published course pack')}
+          </h2>
+          <p>
+            {t(
+              '只有明确列入公开清单的课节会出现在这里。',
+              'Only lessons explicitly listed in the public manifest appear here.',
+            )}
+          </p>
         </div>
         {publishedLessons.length > 0 ? (
           <ol>
@@ -70,7 +82,12 @@ export function TrackPage({
             ))}
           </ol>
         ) : (
-          <p>首批 Markdown 课程仍在准备中。</p>
+          <p>
+            {t(
+              '首批 Markdown 课程仍在准备中。',
+              'The first Markdown lessons are still in preparation.',
+            )}
+          </p>
         )}
       </section>
 
@@ -90,21 +107,41 @@ export function TrackPage({
                     <span className="phase-code">
                       {phase.id} · {phase.moduleRange}
                     </span>
-                    <h2>{phase.title}</h2>
+                    <h2>
+                      {phaseText(phase.id, language, 'title', phase.title)}
+                    </h2>
                   </div>
-                  <span className="phase-duration">约 {phase.hours} 小时</span>
+                  <span className="phase-duration">
+                    {t(`约 ${phase.hours} 小时`, `About ${phase.hours} hours`)}
+                  </span>
                 </div>
-                <p>{phase.outcome}</p>
+                <p>{phaseText(phase.id, language, 'outcome', phase.outcome)}</p>
                 <div className="course-module-list">
                   {modules.map((module) => (
                     <details className="course-module" key={module.id}>
                       <summary>
                         <span className="course-module-id">{module.id}</span>
                         <span className="course-module-title">
-                          <strong>{module.title}</strong>
-                          <small>{module.outcome}</small>
+                          <strong>
+                            {moduleText(
+                              module.id,
+                              language,
+                              'title',
+                              module.title,
+                            )}
+                          </strong>
+                          <small>
+                            {moduleText(
+                              module.id,
+                              language,
+                              'outcome',
+                              module.outcome,
+                            )}
+                          </small>
                         </span>
-                        <span className="course-module-count">6 节</span>
+                        <span className="course-module-count">
+                          {t('6 节', '6 lessons')}
+                        </span>
                       </summary>
                       <ol className="course-lesson-list">
                         {module.lessons.map((lesson) => (
@@ -123,7 +160,14 @@ export function TrackPage({
                                 <span>
                                   {module.id}-{lesson.id}
                                 </span>
-                                <strong>{lesson.title}</strong>
+                                <strong>
+                                  {lessonTitle(
+                                    module.id,
+                                    lesson.id,
+                                    language,
+                                    lesson.title,
+                                  )}
+                                </strong>
                                 <ArrowRight size={13} aria-hidden="true" />
                               </button>
                             ) : (
@@ -131,8 +175,17 @@ export function TrackPage({
                                 <span>
                                   {module.id}-{lesson.id}
                                 </span>
-                                <strong>{lesson.title}</strong>
-                                <small>课程准备中</small>
+                                <strong>
+                                  {lessonTitle(
+                                    module.id,
+                                    lesson.id,
+                                    language,
+                                    lesson.title,
+                                  )}
+                                </strong>
+                                <small>
+                                  {t('课程准备中', 'In preparation')}
+                                </small>
                               </span>
                             )}
                           </li>
