@@ -1,0 +1,34 @@
+{
+  "title": "Borrow Text and Return Slices Safely",
+  "lessons": {
+    "borrowed-text-first-token": {
+      "title": "Return the First Word in Text",
+      "objectives": [
+        "Explain why a returned slice must remain valid only as long as its input text"
+      ],
+      "terms": [
+        {
+          "term": "string slice (&str)",
+          "definition": "A borrowed view of a contiguous range of UTF-8 bytes in a string; it does not own the underlying text."
+        },
+        {
+          "term": "borrowing",
+          "definition": "Temporary access to a value through a reference without transferring ownership."
+        }
+      ],
+      "blocks": [
+        {
+          "text": "A slice borrows part of the original string; it does not own the underlying text."
+        }
+      ]
+    }
+  },
+  "exercises": {
+    "borrowed-text-prediction": {
+      "prompt": "Explain the lifetime relationship between the returned &str and the input String.",
+      "hints": [
+        "Find the whitespace boundary, then return a slice of the original string."
+      ]
+    }
+  }
+}
