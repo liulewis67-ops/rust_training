@@ -106,7 +106,7 @@
   color: var(--muted);
 }
 .course-reader {
-  width: min(100%, 850px);
+  width: 100%;
   margin: 0 auto;
   padding: 8px 0 56px;
 }
@@ -147,7 +147,7 @@
   margin-top: 16px;
 }
 .local-practice-note {
-  max-width: 74ch;
+  width: 90%;
   margin: 18px auto 0;
   padding: 12px 15px;
   border: 1px solid var(--line);
@@ -169,7 +169,7 @@
 }
 .course-reader-section,
 .course-reader-exercises {
-  max-width: 74ch;
+  width: 90%;
   margin: 28px auto 0;
 }
 .course-reader-exercises {
@@ -342,7 +342,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  max-width: 74ch;
+  width: 90%;
   margin: 34px auto 0;
 }
 .course-reader-navigation > button {
