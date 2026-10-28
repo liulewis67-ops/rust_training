@@ -460,12 +460,66 @@ function validatePrivateAssessment(
   }
 }
 
+/** Keep public Markdown download links tied to the lesson's declared public resources. */
+function validateLocalZipReferences(lessons, resources, errors) {
+  for (const [lessonIndex, lesson] of lessons.entries()) {
+    const declaredResources = new Set(
+      Array.isArray(lesson?.resource_ids) ? lesson.resource_ids : [],
+    )
+    const blocks = Array.isArray(lesson?.blocks) ? lesson.blocks : []
+    for (const block of blocks) {
+      if (typeof block?.text !== 'string') continue
+      const links = block.text.matchAll(/\]\(\.\/([^)?#]+\.zip)(?:[?#][^)]*)?\)/gi)
+      for (const link of links) {
+        const archive = link[1].split('/').pop()
+        if (!archive) continue
+        const declared = resources.some(
+          (resource) =>
+            declaredResources.has(resource.id) &&
+            resource.visibility === 'public' &&
+            (resource.path === archive ||
+              resource.path.endsWith(`/${archive}`)),
+        )
+        if (!declared) {
+          errors.push(
+            `lessons[${lessonIndex}].blocks: local ZIP "${archive}" must be declared in resource_ids`,
+          )
+        }
+      }
+    }
+  }
+}
+
 /** Validate course-pack shape, stable identifiers, references, prerequisites and visibility. */
 export function validateCoursePack(pack, options = {}) {
   const errors = []
   validateSchema(pack, courseSchema, 'course', errors, courseSchema)
   if (!pack || typeof pack !== 'object' || Array.isArray(pack))
     return { errors }
+
+  const environment = pack.environment
+  if (environment && typeof environment === 'object') {
+    if (
+      environment.kind !== undefined &&
+      environment.kind !== 'rust' &&
+      environment.kind !== 'document'
+    ) {
+      errors.push('course.environment.kind: expected one of rust, document')
+    }
+    if (environment.resource_tier === 'LOCAL' && environment.image_digest) {
+      errors.push(
+        'course.environment.image_digest: local environments must not claim a container image digest',
+      )
+    }
+    if (
+      ['R1', 'R2', 'R3'].includes(environment.resource_tier) &&
+      !environment.image_digest
+    ) {
+      errors.push(
+        'course.environment.image_digest: required for managed runner tiers',
+      )
+    }
+  }
 
   const lessons = Array.isArray(pack.lessons) ? pack.lessons : []
   const exercises = Array.isArray(pack.exercises) ? pack.exercises : []
@@ -474,6 +528,7 @@ export function validateCoursePack(pack, options = {}) {
   const exerciseIds = indexEntities(exercises, 'exercises', errors)
   const sourceIds = indexEntities(sources, 'sources', errors)
   const resourceIds = validatePublicResources(pack, lessonIds, errors)
+  validateLocalZipReferences(lessons, resources, errors)
   const environmentIds = new Set(
     pack.environment?.id ? [pack.environment.id] : [],
   )
@@ -509,6 +564,7 @@ export function validateCoursePack(pack, options = {}) {
     for (const field of ['rust_version', 'edition']) {
       if (
         typeof options.samples?.[field] === 'string' &&
+        pack.environment?.kind !== 'document' &&
         pack.environment?.[field] !== options.samples[field]
       ) {
         errors.push(
