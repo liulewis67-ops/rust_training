@@ -218,7 +218,7 @@ it('folds published hints and solutions while keeping combined exercise sections
     Array.from(lab.container.querySelectorAll('details > summary')).map(
       (summary) => summary.textContent,
     ),
-  ).toEqual(['提示', '公开参考实现'])
+  ).toEqual(['分层提示', '公开参考实现'])
   lab.unmount()
 
   const exercises = render(
