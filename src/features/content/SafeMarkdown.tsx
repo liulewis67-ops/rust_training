@@ -157,7 +157,9 @@ function CourseCodeBlock({
   syntax: string
   language: Language
 }): JSX.Element {
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>(
+    'idle',
+  )
   const syntaxNames: Record<string, string> = {
     rust: 'Rust',
     rs: 'Rust',

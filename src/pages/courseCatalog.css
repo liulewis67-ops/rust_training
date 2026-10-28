@@ -788,7 +788,9 @@
 
 .course-reader .course-reading-toc a {
   min-height: 42px;
-  transition: background-color 120ms ease, color 120ms ease;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
 }
 
 .course-reader .course-reading-toc a:focus-visible {
@@ -1075,7 +1077,10 @@
     padding-left: 16px;
   }
 
-  .course-reader .course-reading-step--concept .course-markdown > h2:first-child {
+  .course-reader
+    .course-reading-step--concept
+    .course-markdown
+    > h2:first-child {
     font-size: 22px;
   }
 
