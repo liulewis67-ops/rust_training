@@ -1,5 +1,11 @@
 # M09-L03 练习：库错误和应用错误边界
 
+> **练习路线：** 用同一组领域错误分别验证 CLI 和 HTTP 适配器，防止传输协议渗入业务库。
+
+## 学习目标与顺序
+
+按“预测 → 修复 → 实现”完成三项练习。先记录预期的编译结果、返回值或错误来源，再运行本地 Rust 1.95.0 / Edition 2024 检查；本稿尚未作为公开课程发布。
+
 ## 1. 预测：一个 CoreError，两个应用结果
 
 使用正文中的 CoreError、map_cli 和 map_api，预测 InvalidPort、ProfileNotFound 与 Storage 三种错误分别得到的 CLI 退出码和 API 状态码。Storage 包含一条模拟的 PermissionDenied 底层原因；说明它在库层是否仍可通过 source() 访问、API 会不会回传这段内部信息。
@@ -63,3 +69,11 @@ fn library_errors_map_to_cli_and_api_contracts() {
 **提示**：分别验证 API 的 status 与 code。不要强行要求 CLI 和 API 使用同一种表示；两个边界的契约不同。
 
 **验证契约**：invalid port → CLI 2/API 400 invalid_port；missing profile → CLI 3/API 404 profile_not_found；storage → CLI 1/API 500 internal_error。source() 可下转型为 io::Error；API 响应不包含 private path。
+
+## 自查清单
+
+- [ ] 业务错误、缺失资源和内部错误被映射成不同的外部类别。
+- [ ] 内部 SQL/地址/凭据不出现在公开响应。
+- [ ] CLI 与 API 各有独立契约断言，不互相复用状态码。
+
+以上检查请以实际代码和行为断言为准，而不是仅凭工具链返回退出码为 0。
