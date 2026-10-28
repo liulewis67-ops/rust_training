@@ -130,11 +130,11 @@
   line-height: 1.2;
 }
 .course-reader-heading > p:not(.home-eyebrow) {
-  max-width: 68ch;
-  margin: 13px 0 15px;
+  max-width: 100%;
+  margin: 16px 0 18px;
   color: var(--soft);
-  font-size: 13px;
-  line-height: 1.75;
+  font-size: 15px;
+  line-height: 1.85;
 }
 .course-reader-heading > span {
   display: inline-flex;
@@ -177,13 +177,13 @@
   border-top: 1px solid var(--line);
 }
 .course-reader-exercises > h2 {
-  margin: 0 0 16px;
+  margin: 0 0 20px;
   color: #e7e7e9;
-  font-size: 19px;
+  font-size: 22px;
   font-weight: 600;
 }
 .course-reader-exercise {
-  padding: 18px 20px;
+  padding: 24px 26px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -575,21 +575,21 @@
 /* Guided chapter reading: preserve authored Markdown and anchor IDs. */
 .course-reading-guide {
   width: 100%;
-  margin: 24px auto 0;
+  margin: 30px auto 0;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--panel);
-  padding: 18px 20px;
+  padding: 24px 26px;
 }
 .course-reading-guide-intro strong {
   display: block;
-  font-size: 15px;
+  font-size: 17px;
   color: #f0eff0;
 }
 .course-reading-guide-intro p {
-  margin: 7px 0 16px;
+  margin: 10px 0 18px;
   color: var(--soft);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.7;
 }
 .course-reading-toc {
@@ -600,14 +600,14 @@
 .course-reading-toc a {
   display: flex;
   align-items: baseline;
-  gap: 9px;
+  gap: 10px;
   min-width: 0;
-  padding: 9px 10px;
+  padding: 11px 12px;
   border-radius: 6px;
   color: var(--soft);
   text-decoration: none;
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.6;
 }
 .course-reading-toc a:hover,
 .course-reading-toc a:focus-visible {
@@ -653,7 +653,7 @@
   padding-top: 22px;
 }
 .course-reading-step--prepare .course-markdown h2 {
-  font-size: 16px;
+  font-size: 18px;
 }
 .course-reading-step--reference {
   font-size: 12px;
