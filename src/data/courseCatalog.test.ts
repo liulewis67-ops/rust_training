@@ -30,7 +30,9 @@ it('keeps planned modules visible without publishing unreviewed lessons', async 
   expect(findCourseLesson('M08', 'L01')?.published).toBe(true)
   expect((await loadCourseLesson('M08', 'L01'))?.content).toContain('Vec、HashMap 与访问策略')
   expect(findCourseLesson('M09', 'L01')?.published).toBe(true)
-  expect((await loadCourseLesson('M09', 'L01'))?.content).toContain('Result、? 与错误传播')
+  expect((await loadCourseLesson('M09', 'L01'))?.content).toContain(
+    'Result、? 与错误传播',
+  )
   expect(findCourseLesson('M10', 'L01')?.published).toBe(false)
   expect(await loadCourseLesson('M10', 'L01')).toBeUndefined()
   expect(await loadCourseLesson('M24', 'L06')).toBeUndefined()
