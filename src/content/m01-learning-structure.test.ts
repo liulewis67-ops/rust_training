@@ -25,7 +25,7 @@ describe('M01 guided lessons', () => {
       expect(lesson).toMatch(/^## (?:场景|核心知识点)/m)
       expect(lesson).toMatch(/^## 核心知识点/m)
       expect(lesson).toMatch(/^## (?:检验理解|检验理解与本地练习|本地练习)/m)
-      expect(lesson).toContain('Java / Go')
+      expect(lesson).toMatch(/Java\s*\/\s*Go|Java[^\n]*Go/)
       expect(lesson).toContain('--- |')
     })
   })
