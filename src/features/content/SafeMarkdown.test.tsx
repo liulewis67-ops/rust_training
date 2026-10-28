@@ -103,9 +103,7 @@ it('routes published lesson links through the static hash router', () => {
 })
 
 it('preserves a released Markdown heading fragment in the lesson route', () => {
-  render(
-    <SafeMarkdown content="[请求轨迹](./m01-l01.md#检验理解)" />,
-  )
+  render(<SafeMarkdown content="[请求轨迹](./m01-l01.md#检验理解)" />)
   const link = screen.getByRole('link', { name: '请求轨迹' })
   const href = link.getAttribute('href') ?? ''
 
