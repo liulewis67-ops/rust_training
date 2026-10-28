@@ -1,5 +1,11 @@
 # M10-L01 练习：workspace 与模块边界
 
+> **练习路线：** 预测包与 crate 是否可见 → 修复循环依赖 → 最小化公开接口
+
+## 学习目标与顺序
+
+按照题目顺序先记录预期，再运行 Cargo 检查并针对失败给出最小修复。M10 仍为预发布草稿，未提供统一的正式 ZIP 或线上评测；可以在自建本地工程中验证这些契约。
+
 ## 1. 预测：workspace member 能否直接被导入？
 
 仓库根的 `Cargo.toml` 声明 `crates/profile-core` 和 `crates/profile-cli` 是 workspace members。CLI 的 `main.rs` 写了 `use profile_core::render_profile_report;`，但 `profile-cli/Cargo.toml` 没有 `[dependencies]`。预测 `cargo check -p profile-cli` 是成功还是失败；指出 Cargo 和 rustc 分别还缺少什么关系。
@@ -45,3 +51,11 @@ assert_eq!(
 **提示**：实现模块可以留在私有名字空间中；通过 `pub use` 选择性重导出。
 
 **验证契约**：CLI 和外部集成测试均能只用固定的函数与错误类型；验证成功/失败结果，且不需要访问 `profile_core::name` 或 `profile_core::report`。全 workspace 和两个 package 单独检查均通过。解释为什么成员身份、Rust 模块可见性和 Cargo path dependency 是三个不同概念。
+
+## 自查清单
+
+- [ ] 明确 workspace member 不自动成为依赖。
+- [ ] 使用 CLI → core 的单向依赖，保留独立构建能力。
+- [ ] 集成测试只能依赖公开 API，不能通过随意 pub 绕开私有边界。
+
+验收需要可运行的断言或编译诊断，不以未执行的参考结论代替本地证据。
