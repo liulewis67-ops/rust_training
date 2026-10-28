@@ -526,6 +526,7 @@ export function validateCoursePack(pack, options = {}) {
   const lessons = Array.isArray(pack.lessons) ? pack.lessons : []
   const exercises = Array.isArray(pack.exercises) ? pack.exercises : []
   const sources = Array.isArray(pack.sources) ? pack.sources : []
+  const resources = Array.isArray(pack.resources) ? pack.resources : []
   const lessonIds = indexEntities(lessons, 'lessons', errors)
   const exerciseIds = indexEntities(exercises, 'exercises', errors)
   const sourceIds = indexEntities(sources, 'sources', errors)
