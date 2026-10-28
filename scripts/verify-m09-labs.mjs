@@ -34,7 +34,9 @@ const intendedFailures = [
 if (
   starter.code === 0 ||
   !starter.output.includes('test result: FAILED') ||
-  !intendedFailures.every((test) => starter.output.includes(`tests::${test} ... FAILED`)) ||
+  !intendedFailures.every((test) =>
+    starter.output.includes(`tests::${test} ... FAILED`),
+  ) ||
   !starter.output.includes('6 passed; 2 failed')
 ) {
   throw new Error(
@@ -49,4 +51,6 @@ if (
 ) {
   throw new Error(`M09 reference tests failed:\n${reference.output}`)
 }
-console.log('M09: intentional starter failures and all reference contracts verified.')
+console.log(
+  'M09: intentional starter failures and all reference contracts verified.',
+)
