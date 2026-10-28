@@ -461,7 +461,7 @@ export function AppShell({
         )}
 
         <main
-          className={`main-content ${hasLegacyWorkspace ? '' : 'main-content-wide'}`}
+          className={`main-content ${hasLegacyWorkspace ? '' : 'main-content-wide'} ${route.page === 'course-lesson' ? 'main-content-course' : ''}`}
         >
           {/失败|损坏|不可用|无法识别/.test(saveStatus) && (
             <p className="save-warning" role="alert">
