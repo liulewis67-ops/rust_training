@@ -104,7 +104,9 @@ export function CourseLessonPage({
   const body = lesson.content.replace(/^#\s+[^\r\n]*(?:\r?\n|$)\s*/, '')
   const sourceHeading = /^#\s+([^\r\n]+)/.exec(lesson.content)?.[1]
   const sections = organizeLessonMarkdown(body)
-  const navigationSections = sections.filter((section) => section.title && section.id && section.kind !== 'reference')
+  const navigationSections = sections.filter(
+    (section) => section.title && section.id && section.kind !== 'reference',
+  )
 
   return (
     <article className="course-reader">
@@ -150,25 +152,55 @@ export function CourseLessonPage({
       <div className="course-reading-guide">
         <div className="course-reading-guide-intro">
           <strong>{t('本节学习路线', 'Learning path')}</strong>
-          <p>{t('先确认目标与前置知识，再逐个理解核心概念，最后通过本地练习检验。', 'Check the goals and prerequisites, explore each concept, then verify your understanding locally.')}</p>
+          <p>
+            {t(
+              '先确认目标与前置知识，再逐个理解核心概念，最后通过本地练习检验。',
+              'Check the goals and prerequisites, explore each concept, then verify your understanding locally.',
+            )}
+          </p>
         </div>
-        <nav aria-label={t('本节目录', 'On this page')} className="course-reading-toc">
+        <nav
+          aria-label={t('本节目录', 'On this page')}
+          className="course-reading-toc"
+        >
           {navigationSections.map((section) => (
-            <a key={section.id} href={`#${section.id}`} onClick={(event) => {
-              event.preventDefault()
-              document.getElementById(section.id!)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }}>
-              {section.step !== null && <span aria-hidden="true">{String(section.step).padStart(2, '0')}</span>}
+            <a
+              key={section.id}
+              href={`#${section.id}`}
+              onClick={(event) => {
+                event.preventDefault()
+                document
+                  .getElementById(section.id!)
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }}
+            >
+              {section.step !== null && (
+                <span aria-hidden="true">
+                  {String(section.step).padStart(2, '0')}
+                </span>
+              )}
               {section.title}
             </a>
           ))}
-          {lesson.exercises.length > 0 && <a href="#lesson-practice" onClick={(event) => {
-            event.preventDefault()
-            document.getElementById('lesson-practice')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }}>{t('练习与实验', 'Exercises and labs')}</a>}
+          {lesson.exercises.length > 0 && (
+            <a
+              href="#lesson-practice"
+              onClick={(event) => {
+                event.preventDefault()
+                document
+                  .getElementById('lesson-practice')
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }}
+            >
+              {t('练习与实验', 'Exercises and labs')}
+            </a>
+          )}
         </nav>
       </div>
-      <div className="course-reading-sections" aria-label={t('课程正文', 'Lesson content')}>
+      <div
+        className="course-reading-sections"
+        aria-label={t('课程正文', 'Lesson content')}
+      >
         {sections.map((section, index) => (
           <section
             className={`course-reading-step course-reading-step--${section.kind}`}
@@ -176,7 +208,9 @@ export function CourseLessonPage({
             key={section.id ?? `intro-${index}`}
           >
             {section.step !== null && (
-              <span className="course-reading-step-label">{t('知识点', 'Concept')} {String(section.step).padStart(2, '0')}</span>
+              <span className="course-reading-step-label">
+                {t('知识点', 'Concept')} {String(section.step).padStart(2, '0')}
+              </span>
             )}
             <SafeMarkdown
               content={section.markdown}

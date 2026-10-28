@@ -12,13 +12,28 @@ export interface ReadingSection {
   headingOccurrences: Record<string, number>
 }
 
+/** Group navigation into learning preparation, concepts, practice and sources. */
 function sectionKind(title: string | null): LessonSectionKind {
-  if (!title || /^(先修|学习目标|学完后|学习前|prerequisites|learning objectives|after this lesson)/i.test(title))
+  if (
+    !title ||
+    /^(先修|学习目标|学完后|学习前|实验目标|prerequisites|learning objectives|after this lesson)/i.test(
+      title,
+    )
+  ) {
     return 'prepare'
-  if (/^(来源|参考资料|延伸阅读|sources|references|further reading)/i.test(title))
+  }
+  if (
+    /^(来源|参考资料|延伸阅读|sources|references|further reading)/i.test(title)
+  ) {
     return 'reference'
-  if (/^(练习|实践|实验|检查|复盘|自测|本节小结|分层提示|任务|做一张|local practice|practice|exercise|lab|check|review|summary|hints)/i.test(title))
+  }
+  if (
+    /^(本地练习|练习|检验理解|检验|实践|实验|检查|自查|分阶段验收|先预测|代码验证|本地操作|公开检查|公开参考|参考实现|起点与观察|完成与重置|提交说明|重置与验收|任务|独立任务|公开行为契约|行为契约|分层提示|提示|复盘|自测|本节小结|任务拆解|分阶段|训练|分层|设计检查|local practice|practice|exercise|lab|check|review|summary|hints)/i.test(
+      title,
+    )
+  ) {
     return 'apply'
+  }
   return 'concept'
 }
 
@@ -58,9 +73,12 @@ export function organizeLessonMarkdown(markdown: string): ReadingSection[] {
     const delimiter = /^(`{3,}|~{3,})/.exec(trimmed)
     if (fence) {
       currentLines.push(line)
-      if (delimiter && delimiter[1][0] === fence.char &&
+      if (
+        delimiter &&
+        delimiter[1][0] === fence.char &&
         delimiter[1].length >= fence.length &&
-        trimmed.slice(delimiter[1].length).trim() === '') {
+        trimmed.slice(delimiter[1].length).trim() === ''
+      ) {
         fence = null
       }
       continue

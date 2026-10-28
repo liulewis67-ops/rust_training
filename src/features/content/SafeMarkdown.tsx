@@ -451,7 +451,11 @@ export function SafeMarkdown({
     .replace(/<(?:img|input|meta|link)\b[^>]*\/?>/gi, '')
   return (
     <div className="course-markdown">
-      {renderBlocks(learnerMarkdown, new Map(Object.entries(initialHeadingOccurrences ?? {})), language)}
+      {renderBlocks(
+        learnerMarkdown,
+        new Map(Object.entries(initialHeadingOccurrences ?? {})),
+        language,
+      )}
     </div>
   )
 }
