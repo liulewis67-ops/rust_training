@@ -1,8 +1,76 @@
-import { expect, it } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { SafeMarkdown } from './SafeMarkdown'
 import { resolveCourseAsset } from '../../data/courseCatalog'
 import m02Lab from '../../../content/releases/m02-l05.md?raw'
+
+it('identifies fenced Rust examples and copies exactly the visible code', async () => {
+  const previousClipboard = Object.getOwnPropertyDescriptor(
+    navigator,
+    'clipboard',
+  )
+  const writeText = vi.fn(async () => undefined)
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText },
+  })
+
+  try {
+    const example = 'fn main() {\n    println!("hi");\n}'
+    const { container } = render(
+      <SafeMarkdown content={`\`\`\`rust\n${example}\n\`\`\``} />,
+    )
+    expect(container.querySelector('.course-code-language')?.textContent).toBe(
+      'Rust',
+    )
+    expect(container.querySelector('pre code')?.textContent).toBe(example)
+
+    fireEvent.click(screen.getByRole('button', { name: '复制代码' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(example))
+    expect(screen.getByRole('button', { name: '已复制' })).toBeTruthy()
+  } finally {
+    if (previousClipboard) {
+      Object.defineProperty(navigator, 'clipboard', previousClipboard)
+    } else {
+      Reflect.deleteProperty(navigator, 'clipboard')
+    }
+  }
+})
+
+it('keeps code readable and reports unavailable clipboard access', async () => {
+  const previousClipboard = Object.getOwnPropertyDescriptor(
+    navigator,
+    'clipboard',
+  )
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: undefined,
+  })
+
+  try {
+    const { container } = render(
+      <SafeMarkdown
+        language="en"
+        content={`\`\`\`toml\n[package]\nname = "test"\n\`\`\``}
+      />,
+    )
+    expect(container.querySelector('pre code')?.textContent).toContain(
+      '[package]',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Copy code' }))
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Copy unavailable' }),
+      ).toBeTruthy(),
+    )
+  } finally {
+    if (previousClipboard) {
+      Object.defineProperty(navigator, 'clipboard', previousClipboard)
+    } else {
+      Reflect.deleteProperty(navigator, 'clipboard')
+    }
+  }
+})
 
 // Only a small Markdown subset is rendered; active HTML and unsafe links stay inert.
 it('filters active HTML and unsafe URL schemes while rendering safe Markdown', () => {

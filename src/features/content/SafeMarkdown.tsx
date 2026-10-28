@@ -1,4 +1,5 @@
-import { Fragment, type JSX, type ReactNode } from 'react'
+import { Fragment, useState, type JSX, type ReactNode } from 'react'
+import { Check, Copy } from 'lucide-react'
 import {
   resolveCourseAsset,
   resolveCourseLessonLink,
@@ -146,6 +147,86 @@ function parseTableAlignment(cell: string): TableAlignment | undefined {
   return 'left'
 }
 
+/** Keep rendered code unchanged while exposing a clear language and copy affordance. */
+function CourseCodeBlock({
+  code,
+  syntax,
+  language,
+}: {
+  code: string
+  syntax: string
+  language: Language
+}): JSX.Element {
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>(
+    'idle',
+  )
+  const syntaxNames: Record<string, string> = {
+    rust: 'Rust',
+    rs: 'Rust',
+    bash: 'Shell',
+    sh: 'Shell',
+    shell: 'Shell',
+    text: 'Text',
+    json: 'JSON',
+    toml: 'TOML',
+  }
+  const syntaxLabel =
+    syntaxNames[syntax.toLowerCase()] ??
+    (syntax ? syntax.toUpperCase() : language === 'zh' ? '代码' : 'Code')
+  const copyLabel =
+    copyState === 'copied'
+      ? language === 'zh'
+        ? '已复制'
+        : 'Copied'
+      : copyState === 'failed'
+        ? language === 'zh'
+          ? '复制不可用'
+          : 'Copy unavailable'
+        : language === 'zh'
+          ? '复制代码'
+          : 'Copy code'
+
+  async function copy(): Promise<void> {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        setCopyState('failed')
+        return
+      }
+      await navigator.clipboard.writeText(code)
+      setCopyState('copied')
+    } catch {
+      setCopyState('failed')
+    }
+  }
+
+  return (
+    <div className="course-code-frame">
+      <div className="course-code-header">
+        <span className="course-code-language">
+          <span className="course-code-language-dot" aria-hidden="true" />
+          {syntaxLabel}
+        </span>
+        <button
+          type="button"
+          className="course-code-copy"
+          onClick={() => void copy()}
+          aria-label={copyLabel}
+        >
+          {copyState === 'copied' ? (
+            <Check size={14} aria-hidden="true" />
+          ) : (
+            <Copy size={14} aria-hidden="true" />
+          )}
+          <span aria-live="polite">{copyLabel}</span>
+        </button>
+      </div>
+      <pre className="course-code-block">
+        <code>{code}</code>
+      </pre>
+    </div>
+  )
+}
+
 /** Parse the learner-facing Markdown blocks used by authored course material. */
 function renderBlocks(
   markdown: string,
@@ -175,9 +256,12 @@ function renderBlocks(
       }
       if (index < lines.length) index += 1
       blocks.push(
-        <pre className="course-code-block" key={`code:${blocks.length}`}>
-          <code>{code.join('\n')}</code>
-        </pre>,
+        <CourseCodeBlock
+          key={`code:${blocks.length}`}
+          code={code.join('\n')}
+          syntax={fence[2]}
+          language={language}
+        />,
       )
       continue
     }
