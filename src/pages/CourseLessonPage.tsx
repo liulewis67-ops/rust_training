@@ -125,23 +125,25 @@ export function CourseLessonPage({
           {lessonTitle(module.id, lesson.id, language, lesson.title)}
         </h1>
         <p>{moduleText(module.id, language, 'outcome', module.outcome)}</p>
-        <span>
-          <BookOpen size={14} />{' '}
-          {t(
-            '课程阅读 · 编程练习在本地电脑完成',
-            'Read the lesson · Complete coding exercises locally',
-          )}
-        </span>
-        <button
-          type="button"
-          className="secondary-button course-completion-button"
-          onClick={onComplete}
-        >
-          {completed
-            ? t('已自报完成', 'Marked complete')
-            : t('标记本节已完成', 'Mark lesson complete')}{' '}
-          <Check size={14} />
-        </button>
+        <div className="course-reader-heading-meta">
+          <span className="course-reader-reading-status">
+            <BookOpen size={14} aria-hidden="true" />{' '}
+            {t(
+              '课程阅读 · 编程练习在本地电脑完成',
+              'Read the lesson · Complete coding exercises locally',
+            )}
+          </span>
+          <button
+            type="button"
+            className="secondary-button course-completion-button"
+            onClick={onComplete}
+          >
+            {completed
+              ? t('已自报完成', 'Marked complete')
+              : t('标记本节已完成', 'Mark lesson complete')}{' '}
+            <Check size={14} aria-hidden="true" />
+          </button>
+        </div>
       </header>
 
       {language === 'en' && !lesson.translationComplete && (
