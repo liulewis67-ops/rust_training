@@ -1,5 +1,11 @@
 # M10-L04 短练习：feature、锁文件和文档
 
+> **练习路线：** 发现诊断污染 stdout → 加入可选 feature → 比较默认/feature 构建
+
+## 学习目标与顺序
+
+按照题目顺序先记录预期，再运行 Cargo 检查并针对失败给出最小修复。M10 仍为预发布草稿，未提供统一的正式 ZIP 或线上评测；可以在自建本地工程中验证这些契约。
+
 ## 1. 修复：诊断 feature 污染 stdout
 
 某同学加入 trace-input-source feature，但 feature 打开后子进程输出变成：
@@ -44,3 +50,11 @@ profile=training_user
 1. 分清 manifest 版本范围和 lock 的精确解析结果。
 2. Cargo features 面向编译期可选能力，不能假设依赖方的开启状态是私有的。
 3. 若只是用户运行时偏好，考虑 CLI flag/config；测试默认与 all-features 两条契约。
+
+## 自查清单
+
+- [ ] 默认与 feature 模式的正常 stdout 完全一致。
+- [ ] 诊断信息仅写 stderr，不破坏管道输出。
+- [ ] 锁文件由 Cargo 管理，构建测试包含对应 feature 组合。
+
+验收需要可运行的断言或编译诊断，不以未执行的参考结论代替本地证据。
