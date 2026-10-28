@@ -256,7 +256,7 @@ function renderBlocks(
       blocks.push(
         <CourseCodeBlock
           key={`code:${blocks.length}`}
-          code={code.join('\\n')}
+          code={code.join('\n')}
           syntax={fence[2]}
           language={language}
         />,
