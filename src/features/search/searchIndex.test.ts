@@ -59,9 +59,14 @@ it('indexes newly released M07 trait lessons after lazy loading', async () => {
   expect(result?.href).toBe('#/courses/m07/l05')
 })
 
-it('indexes M08 iterator practice but still hides M09–M24', async () => {
+it('indexes M08–M09 practice while hiding later modules', async () => {
   const results = await searchLessons('iter_mut')
   expect(results.some((result) => result.id === 'M08-L03')).toBe(true)
+  expect(
+    (await searchLessons('ConfigErrorKind')).some(
+      (result) => result.id === 'M09-L05',
+    ),
+  ).toBe(true)
   expect(
     (await searchLessons('JoinError')).some(
       (result) => result.id === 'M14-L01',
