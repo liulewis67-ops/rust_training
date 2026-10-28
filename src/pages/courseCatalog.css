@@ -719,3 +719,388 @@
     padding: 14px 16px;
   }
 }
+
+/*
+ * Editorial rhythm for long-form Rust lessons.
+ * Deliberately scoped to the course reader; catalog and legacy lessons keep their styling.
+ */
+.course-reader {
+  --reader-accent: #df946b;
+  --reader-rule: #353237;
+  --reader-subtle: #1c1c1e;
+}
+
+.course-reader-heading {
+  padding-bottom: 30px;
+}
+
+.course-reader-heading h1 {
+  max-width: 100%;
+  text-wrap: balance;
+}
+
+.course-reader-heading-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-top: 22px;
+}
+
+.course-reader-reading-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--soft);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.course-reader .course-completion-button {
+  margin-top: 0;
+  min-height: 36px;
+  padding-inline: 14px;
+  font-size: 12px;
+}
+
+.course-reader .course-reading-guide {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.55fr);
+  align-items: start;
+  gap: 24px;
+  background: var(--reader-subtle);
+  border-color: var(--reader-rule);
+}
+
+.course-reader .course-reading-guide-intro {
+  padding-right: 24px;
+  border-right: 1px solid var(--reader-rule);
+}
+
+.course-reader .course-reading-guide-intro p {
+  margin-bottom: 0;
+}
+
+.course-reader .course-reading-toc {
+  gap: 5px 8px;
+}
+
+.course-reader .course-reading-toc a {
+  min-height: 42px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.course-reader .course-reading-toc a:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.course-reader .course-reading-step--concept {
+  padding-left: clamp(16px, 2.6vw, 30px);
+  border-left: 2px solid var(--reader-rule);
+}
+
+.course-reader .course-reading-step--concept .course-reading-step-label {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.course-reader .course-reading-step--concept .course-markdown > h2:first-child {
+  font-size: clamp(22px, 2.1vw, 27px);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.4;
+}
+
+.course-reader .course-reading-step--prepare {
+  background: var(--reader-subtle);
+  border-color: var(--reader-rule);
+}
+
+.course-reader .course-reading-step--apply {
+  background: var(--reader-subtle);
+  border-color: var(--reader-rule);
+}
+
+.course-reader .course-reading-step--reference .course-markdown {
+  font-size: 13px;
+  line-height: 1.85;
+}
+
+.course-reader .course-reading-step--apply .course-markdown > h2:first-child {
+  font-size: 21px;
+}
+
+.course-reader .course-markdown {
+  line-height: 1.88;
+}
+
+.course-reader .course-markdown p {
+  margin-block: 0;
+}
+
+.course-reader .course-markdown > * + * {
+  margin-top: 1.2rem;
+}
+
+.course-reader .course-markdown > :is(h2, h3, h4) {
+  margin-top: 1.8em;
+  margin-bottom: 0.55em;
+  letter-spacing: -0.012em;
+}
+
+.course-reader .course-markdown > :is(h2, h3, h4):first-child {
+  margin-top: 0;
+}
+
+.course-reader .course-markdown :is(ul, ol) {
+  padding-left: 1.55em;
+}
+
+.course-reader .course-markdown :is(ul, ol) li::marker {
+  color: var(--reader-accent);
+}
+
+.course-reader .course-markdown blockquote {
+  padding: 14px 18px;
+  border-left: 3px solid var(--reader-accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--reader-subtle);
+  line-height: 1.85;
+}
+
+.course-reader .course-markdown blockquote p {
+  margin: 0;
+}
+
+.course-reader .course-markdown-table-wrapper {
+  border-radius: 9px;
+}
+
+.course-reader .course-markdown th,
+.course-reader .course-markdown td {
+  padding: 12px 16px;
+}
+
+.course-reader .course-markdown-disclosure {
+  padding: 16px 20px;
+  border-color: var(--reader-rule);
+  border-radius: 9px;
+  background: var(--reader-subtle);
+}
+
+.course-reader .course-markdown-disclosure summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+  line-height: 1.55;
+}
+
+.course-reader .course-markdown-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.course-reader .course-markdown-disclosure summary::after {
+  content: '+';
+  margin-left: auto;
+  font: 20px/1 var(--mono);
+  color: var(--soft);
+}
+
+.course-reader .course-markdown-disclosure[open] summary::after {
+  content: '−';
+}
+
+.course-reader .course-markdown-disclosure summary:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 4px;
+}
+
+.course-reader .course-reader-exercise {
+  border-color: var(--reader-rule);
+  border-radius: 10px;
+}
+
+.course-reader .course-reader-navigation {
+  gap: 16px;
+  margin-top: 44px;
+}
+
+.course-reader .course-reader-navigation > button {
+  min-height: 80px;
+  padding: 16px 20px;
+  border-radius: 9px;
+}
+
+.course-reader .course-reader-navigation small {
+  font-size: 11px;
+}
+
+.course-reader .course-reader-navigation strong {
+  font-size: 13px;
+}
+
+.course-reader .local-practice-note {
+  padding: 16px 20px;
+  border-left: 3px solid var(--reader-accent);
+  border-radius: 0 8px 8px 0;
+}
+
+/* Shared fenced-code presentation keeps the source exact and horizontally scrollable. */
+.course-code-frame {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid #34363e;
+  border-radius: 10px;
+  background: #141518;
+}
+
+.course-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 40px;
+  padding: 4px 14px 4px 18px;
+  border-bottom: 1px solid #303238;
+  background: #1a1b1e;
+}
+
+.course-code-language {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #bfc1c7;
+  font: 11px var(--mono);
+}
+
+.course-code-language-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #dd8658;
+}
+
+.course-code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #b8bac1;
+  font-size: 11px;
+}
+
+.course-code-copy:hover {
+  border-color: #41434b;
+  background: #26282e;
+  color: #f4f4f5;
+}
+
+.course-code-copy:focus-visible {
+  outline: 2px solid #ed995f;
+  outline-offset: 2px;
+}
+
+.course-code-frame .course-code-block,
+.course-reader .course-code-frame .course-code-block {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 20px 22px;
+  border: 0;
+  border-radius: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  scrollbar-width: thin;
+}
+
+:root[data-theme='light'] .course-reader {
+  --reader-accent: #aa5b35;
+  --reader-rule: #e1e2e6;
+  --reader-subtle: #fafafb;
+}
+
+:root[data-theme='light'] .course-reader .course-reading-guide,
+:root[data-theme='light'] .course-reader .course-reading-step--prepare,
+:root[data-theme='light'] .course-reader .course-reading-step--apply,
+:root[data-theme='light'] .course-reader .course-markdown-disclosure {
+  background: var(--reader-subtle);
+}
+
+:root[data-theme='light'] .course-reader .course-reading-step--concept {
+  border-left-color: #d9d3ce;
+}
+
+:root[data-theme='light'] .course-reader .course-markdown blockquote {
+  background: #fbf6f2;
+}
+
+:root[data-theme='light'] .course-reader .course-reading-guide-intro strong {
+  color: #292b30;
+}
+
+@media (max-width: 1080px) {
+  .course-reader .course-reading-guide {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .course-reader .course-reading-guide-intro {
+    padding-right: 0;
+    padding-bottom: 18px;
+    border-right: 0;
+    border-bottom: 1px solid var(--reader-rule);
+  }
+}
+
+@media (max-width: 720px) {
+  .course-reader-heading-meta {
+    align-items: flex-start;
+  }
+
+  .course-reader .course-reading-guide {
+    gap: 12px;
+  }
+
+  .course-reader .course-reading-step--concept {
+    padding-left: 16px;
+  }
+
+  .course-reader .course-reading-step--concept .course-markdown > h2:first-child {
+    font-size: 22px;
+  }
+
+  .course-reader .course-reading-step--prepare,
+  .course-reader .course-reading-step--apply {
+    padding: 17px 18px;
+  }
+
+  .course-code-frame .course-code-block,
+  .course-reader .course-code-frame .course-code-block {
+    padding: 15px 16px;
+    font-size: 12px;
+  }
+
+  .course-reader .course-markdown-disclosure {
+    padding: 14px 16px;
+  }
+
+  .course-reader .course-reader-navigation > button {
+    min-height: 64px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .course-reader .course-reading-toc a {
+    transition: none;
+  }
+}
