@@ -228,11 +228,18 @@ it('空复习页引导到公开课程目录', async () => {
 it('uses full-width reading layout only for published course lessons', async () => {
   window.history.replaceState({}, '', '/#/courses/m04/l01')
   render(<App />)
-  await screen.findByRole('heading', { name: /所有权/ })
+  await screen.findByRole('heading', { name: /owner、scope/ })
 
   const main = document.querySelector('main.main-content')
   expect(main?.classList.contains('main-content-course')).toBe(true)
   expect(document.querySelector('.course-reading-sections')).not.toBeNull()
+})
+
+it('keeps the regular width for the course catalog', () => {
+  window.history.replaceState({}, '', '/#/tracks/rust-backend')
+  render(<App />)
+  const main = document.querySelector('main.main-content')
+  expect(main?.classList.contains('main-content-course')).toBe(false)
 })
 
 // 课程目录展示完整路线规划，当前所有课节均有公开内容。
