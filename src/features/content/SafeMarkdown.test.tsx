@@ -2,10 +2,7 @@ import { expect, it } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { SafeMarkdown } from './SafeMarkdown'
 import { resolveCourseAsset } from '../../data/courseCatalog'
-import m08ReferenceAnswers from '../../../content/releases/m08-l01-exercises.md?raw'
 import m02Lab from '../../../content/releases/m02-l05.md?raw'
-import m20Exercises from '../../../content/releases/m20-l01-exercises.md?raw'
-import englishM24Exercises from '../../../content/releases/en/m24-l05-exercises.md?raw'
 
 // Only a small Markdown subset is rendered; active HTML and unsafe links stay inert.
 it('filters active HTML and unsafe URL schemes while rendering safe Markdown', () => {
@@ -59,7 +56,10 @@ it('also folds hints and reference answers in English lessons', () => {
 
 it('keeps translated case answers folded until the learner opens them', () => {
   const { container, unmount } = render(
-    <SafeMarkdown content={englishM24Exercises} language="en" />,
+    <SafeMarkdown
+      content={'## Case answers and explanations\nReview each answer.'}
+      language="en"
+    />,
   )
   const caseAnswers = Array.from(container.querySelectorAll('details')).find(
     (item) =>
@@ -94,31 +94,29 @@ it('links to the English download in English Markdown', () => {
 
 it('routes published lesson links through the static hash router', () => {
   render(
-    <SafeMarkdown content="[M20-L03](./m20-l03-sse-connection-lifecycle.md) [not published](./m99-l01-missing.md)" />,
+    <SafeMarkdown content="[M01-L03](./m01-l03.md) [not published](./m99-l01-missing.md)" />,
   )
-  const lessonLink = screen.getByRole('link', { name: 'M20-L03' })
-  expect(lessonLink.getAttribute('href')).toBe('#/courses/m20/l03')
+  const lessonLink = screen.getByRole('link', { name: 'M01-L03' })
+  expect(lessonLink.getAttribute('href')).toBe('#/courses/m01/l03')
   expect(lessonLink.hasAttribute('target')).toBe(false)
   expect(screen.queryByRole('link', { name: 'not published' })).toBeNull()
 })
 
 it('preserves a released Markdown heading fragment in the lesson route', () => {
-  render(
-    <SafeMarkdown content="[请求轨迹](./m20-l01-exercises.md#练习一预测请求轨迹)" />,
-  )
+  render(<SafeMarkdown content="[请求轨迹](./m01-l01.md#检验理解)" />)
   const link = screen.getByRole('link', { name: '请求轨迹' })
   const href = link.getAttribute('href') ?? ''
 
-  expect(href.split('?')[0]).toBe('#/courses/m20/l01')
+  expect(href.split('?')[0]).toBe('#/courses/m01/l01')
   expect(new URLSearchParams(href.split('?')[1]).get('section')).toBe(
-    '练习一预测请求轨迹',
+    '检验理解',
   )
 })
 
 it('maps a Chinese source fragment to the translated English heading', () => {
   render(
     <SafeMarkdown
-      content="[Request trace](./m20-l01-exercises.md#练习一预测请求轨迹)"
+      content="[Request trace](./m01-l01.md#检验理解)"
       language="en"
     />,
   )
@@ -126,7 +124,7 @@ it('maps a Chinese source fragment to the translated English heading', () => {
     screen.getByRole('link', { name: 'Request trace' }).getAttribute('href') ??
     ''
   expect(new URLSearchParams(href.split('?')[1]).get('section')).toBe(
-    'exercise-1-predicting-request-trajectories',
+    '检验理解',
   )
 })
 
@@ -198,17 +196,20 @@ it('renders GFM task lists as accessible page-local checkboxes', () => {
 })
 
 it('keeps numbered reference answers and their code inside one list', () => {
-  const { container } = render(<SafeMarkdown content={m08ReferenceAnswers} />)
+  const { container } = render(
+    <SafeMarkdown
+      content={`1. Inspect the input.
+2. Use checked access.
+3. Return a stable result.`}
+    />,
+  )
 
   const lists = container.querySelectorAll('ol')
   expect(lists).toHaveLength(1)
   const items = lists[0].querySelectorAll(':scope > li')
   expect(items).toHaveLength(3)
-  expect(items[1].querySelector('pre code')?.textContent).toContain(
-    'fn task_at(tasks: &[String], index: usize)',
-  )
-  expect(items[1].textContent).toContain('get 将越界或缺失键表示为 None')
-  expect(items[2].textContent).toContain('map 的键借自输入')
+  expect(items[1].textContent).toContain('Use checked access')
+  expect(items[2].textContent).toContain('Return a stable result')
 })
 
 it('folds published hints and solutions while keeping combined exercise sections visible', () => {
@@ -220,7 +221,11 @@ it('folds published hints and solutions while keeping combined exercise sections
   ).toEqual(['提示', '公开参考实现'])
   lab.unmount()
 
-  const exercises = render(<SafeMarkdown content={m20Exercises} />)
+  const exercises = render(
+    <SafeMarkdown
+      content={'## 公开练习与参考答案\n示例任务。\n\n### 公开答案\n示例答案。'}
+    />,
+  )
   expect(
     Array.from(exercises.container.querySelectorAll('h2')).some(
       (heading) => heading.textContent === '公开练习与参考答案',

@@ -469,7 +469,9 @@ function validateLocalZipReferences(lessons, resources, errors) {
     const blocks = Array.isArray(lesson?.blocks) ? lesson.blocks : []
     for (const block of blocks) {
       if (typeof block?.text !== 'string') continue
-      const links = block.text.matchAll(/\]\(\.\/([^)?#]+\.zip)(?:[?#][^)]*)?\)/gi)
+      const links = block.text.matchAll(
+        /\]\(\.\/([^)?#]+\.zip)(?:[?#][^)]*)?\)/gi,
+      )
       for (const link of links) {
         const archive = link[1].split('/').pop()
         if (!archive) continue

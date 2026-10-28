@@ -4,7 +4,7 @@ import { CourseLessonPage } from './CourseLessonPage'
 
 afterEach(() => cleanup())
 
-it('scrolls to the requested section after the lesson and practice render', async () => {
+it('scrolls to a published lesson section after content renders', async () => {
   const original = Object.getOwnPropertyDescriptor(
     HTMLElement.prototype,
     'scrollIntoView',
@@ -18,7 +18,7 @@ it('scrolls to the requested section after the lesson and practice render', asyn
 
   try {
     const props = {
-      moduleId: 'M20',
+      moduleId: 'M01',
       lessonId: 'L01',
       completed: false,
       onComplete: vi.fn(),
@@ -26,10 +26,10 @@ it('scrolls to the requested section after the lesson and practice render', asyn
     }
     const view = render(<CourseLessonPage {...props} />)
 
-    await screen.findByRole('heading', { name: '幂等键和重复请求' })
-    view.rerender(
-      <CourseLessonPage {...props} sectionId="练习一预测请求轨迹" />,
-    )
+    await screen.findByRole('heading', {
+      name: 'Rust 解决的问题与路线选择',
+    })
+    view.rerender(<CourseLessonPage {...props} sectionId="学习目标" />)
 
     await waitFor(() =>
       expect(scrollIntoView).toHaveBeenCalledWith({
@@ -37,7 +37,7 @@ it('scrolls to the requested section after the lesson and practice render', asyn
         block: 'start',
       }),
     )
-    expect(document.getElementById('练习一预测请求轨迹')).not.toBeNull()
+    expect(document.getElementById('学习目标')).not.toBeNull()
   } finally {
     if (original) {
       Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', original)
