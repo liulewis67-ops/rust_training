@@ -30,6 +30,8 @@ jobs:
         run: pnpm content:check-samples
       - name: M08 local lab behavior contracts
         run: node scripts/verify-m08-labs.mjs
+      - name: M09 error modeling lab contracts
+        run: node scripts/verify-m09-labs.mjs
       - name: Published course manifest validation
         run: pnpm content:validate-public
       - name: Production build
