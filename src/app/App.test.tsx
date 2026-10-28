@@ -3,6 +3,7 @@ import { act, cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 import { progressStorageKey } from '../features/learning/progressStorage'
+import publicManifest from '../../content/public-course-manifest.json'
 
 /** Open a legacy lesson through the static site's hash route. */
 function renderLegacyLesson() {
@@ -208,7 +209,9 @@ it('学习进度只用已发布主线课节作分母', async () => {
   expect(screen.getByText('主线已发布课节')).toBeTruthy()
   expect(screen.getByText('M01 · 开发循环与语言入门')).toBeTruthy()
   expect(screen.getByText('公开专题')).toBeTruthy()
-  expect(screen.getByText('/ 42')).toBeTruthy()
+  expect(
+    screen.getByText(`/ ${publicManifest.markdown_lessons.length}`),
+  ).toBeTruthy()
   expect(screen.queryByRole('navigation', { name: 'Rust 学习路线' })).toBeNull()
 })
 

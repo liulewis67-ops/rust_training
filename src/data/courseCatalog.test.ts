@@ -27,8 +27,10 @@ it('keeps planned modules visible without publishing unreviewed lessons', async 
       )
     }
   }
-  expect(findCourseLesson('M08', 'L01')?.published).toBe(false)
-  expect(await loadCourseLesson('M08', 'L01')).toBeUndefined()
+  expect(findCourseLesson('M08', 'L01')?.published).toBe(true)
+  expect((await loadCourseLesson('M08', 'L01'))?.content).toContain('Vec、HashMap 与访问策略')
+  expect(findCourseLesson('M09', 'L01')?.published).toBe(false)
+  expect(await loadCourseLesson('M09', 'L01')).toBeUndefined()
   expect(await loadCourseLesson('M24', 'L06')).toBeUndefined()
 })
 
@@ -42,6 +44,9 @@ it('keeps lesson bodies and separate public exercises independently accessible',
   expect(lab?.content).toContain('## 参考实现')
   const assessment = await loadCourseLesson('M07', 'L06')
   expect(assessment?.content).toContain('## 参考实现')
+  const m08 = await loadCourseLesson('M08', 'L01')
+  expect(m08?.exercises[0]).toContain('## 参考答案')
+  expect(m08?.content).toContain('## 检验理解与本地练习')
 })
 
 it('resolves published downloads without manufacturing unavailable assets', () => {
