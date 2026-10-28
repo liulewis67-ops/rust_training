@@ -59,82 +59,10 @@ it('indexes newly released M07 trait lessons after lazy loading', async () => {
   expect(result?.href).toBe('#/courses/m07/l05')
 })
 
-it('indexes newly released M08 collection and iterator lessons after lazy loading', async () => {
-  const result = (await searchLessons('iter_mut')).find(
-    (lesson) => lesson.id === 'M08-L03',
-  )
-
-  expect(result?.href).toBe('#/courses/m08/l03')
-})
-
-it('indexes newly released M09 custom error lessons after lazy loading', async () => {
-  const result = (await searchLessons('Error::source')).find(
-    (lesson) => lesson.id === 'M09-L02',
-  )
-
-  expect(result?.href).toBe('#/courses/m09/l02')
-})
-
-it('indexes newly released M10 workspace lessons after lazy loading', async () => {
-  const result = (await searchLessons('Cargo workspace')).find(
-    (lesson) => lesson.id === 'M10-L01',
-  )
-
-  expect(result?.href).toBe('#/courses/m10/l01')
-})
-
-it('indexes newly released M11 smart pointer lessons after lazy loading', async () => {
-  const result = (await searchLessons('Weak::upgrade')).find(
-    (lesson) => lesson.id === 'M11-L04',
-  )
-
-  expect(result?.href).toBe('#/courses/m11/l04')
-})
-
-it('indexes newly released M12 concurrency lessons after lazy loading', async () => {
-  const result = (await searchLessons('并行日志统计')).find(
-    (lesson) => lesson.id === 'M12-L05',
-  )
-
-  expect(result?.href).toBe('#/courses/m12/l05')
-})
-
-it('indexes newly released M13 async runtime lessons after lazy loading', async () => {
-  const result = (await searchLessons('spawn_blocking')).find(
-    (lesson) => lesson.id === 'M13-L04',
-  )
-
-  expect(result?.href).toBe('#/courses/m13/l04')
-})
-
-it('indexes newly released M14 task results lessons after lazy loading', async () => {
-  const result = (await searchLessons('JoinError')).find(
-    (lesson) => lesson.id === 'M14-L01',
-  )
-
-  expect(result?.href).toBe('#/courses/m14/l01')
-})
-
-it('indexes newly released M15 shutdown lessons after lazy loading', async () => {
-  const result = (await searchLessons('优雅停机')).find(
-    (lesson) => lesson.id === 'M15-L03',
-  )
-
-  expect(result?.href).toBe('#/courses/m15/l03')
-})
-
-it('indexes the released Axum HTTP contract lesson after lazy loading', async () => {
-  const result = (await searchLessons('Allow')).find(
-    (lesson) => lesson.id === 'M16-L01',
-  )
-  expect(result).toBeTruthy()
-})
-
-it('indexes the released request context lesson after lazy loading', async () => {
-  const result = (await searchLessons('X-Request-ID')).find(
-    (lesson) => lesson.id === 'M17-L05',
-  )
-  expect(result).toBeTruthy()
+it('does not publish planned M08–M24 lessons through search', async () => {
+  const results = await searchLessons('iter_mut')
+  expect(results.some((result) => result.id === 'M08-L03')).toBe(false)
+  expect((await searchLessons('JoinError')).some((result) => result.id === 'M14-L01')).toBe(false)
 })
 
 // Ranking prefers exact lesson titles and result fields never expose answer payloads.
