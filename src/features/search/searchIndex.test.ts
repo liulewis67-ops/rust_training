@@ -62,7 +62,11 @@ it('indexes newly released M07 trait lessons after lazy loading', async () => {
 it('does not publish planned M08–M24 lessons through search', async () => {
   const results = await searchLessons('iter_mut')
   expect(results.some((result) => result.id === 'M08-L03')).toBe(false)
-  expect((await searchLessons('JoinError')).some((result) => result.id === 'M14-L01')).toBe(false)
+  expect(
+    (await searchLessons('JoinError')).some(
+      (result) => result.id === 'M14-L01',
+    ),
+  ).toBe(false)
 })
 
 // Ranking prefers exact lesson titles and result fields never expose answer payloads.

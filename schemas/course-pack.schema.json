@@ -37,10 +37,7 @@
       "minLength": 2
     },
     "visibility": {
-      "enum": [
-        "public",
-        "private"
-      ]
+      "enum": ["public", "private"]
     },
     "environment": {
       "$ref": "#/$defs/environment"
@@ -94,11 +91,7 @@
     "externalPrerequisite": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "course_id",
-        "version",
-        "lesson_id"
-      ],
+      "required": ["course_id", "version", "lesson_id"],
       "properties": {
         "course_id": {
           "$ref": "#/$defs/stableId"
@@ -140,11 +133,7 @@
               "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
             },
             "edition": {
-              "enum": [
-                "2018",
-                "2021",
-                "2024"
-              ]
+              "enum": ["2018", "2021", "2024"]
             },
             "target": {
               "type": "string",
@@ -162,11 +151,7 @@
               "pattern": "^sha256:[a-f0-9]{64}$"
             },
             "resource_tier": {
-              "enum": [
-                "R1",
-                "R2",
-                "R3"
-              ]
+              "enum": ["R1", "R2", "R3"]
             }
           }
         },
@@ -195,11 +180,7 @@
               "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
             },
             "edition": {
-              "enum": [
-                "2018",
-                "2021",
-                "2024"
-              ]
+              "enum": ["2018", "2021", "2024"]
             },
             "target": {
               "type": "string",
@@ -220,12 +201,7 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "id",
-            "kind",
-            "version",
-            "resource_tier"
-          ],
+          "required": ["id", "kind", "version", "resource_tier"],
           "properties": {
             "id": {
               "$ref": "#/$defs/stableId"
@@ -319,16 +295,10 @@
     "contentBlock": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "type",
-        "text"
-      ],
+      "required": ["type", "text"],
       "properties": {
         "type": {
-          "enum": [
-            "markdown",
-            "callout"
-          ]
+          "enum": ["markdown", "callout"]
         },
         "text": {
           "type": "string",
@@ -339,10 +309,7 @@
     "term": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "term",
-        "definition"
-      ],
+      "required": ["term", "definition"],
       "properties": {
         "term": {
           "type": "string",
@@ -454,11 +421,7 @@
           "minLength": 1
         },
         "license_status": {
-          "enum": [
-            "approved",
-            "review_required",
-            "original"
-          ]
+          "enum": ["approved", "review_required", "original"]
         },
         "adaptation_notes": {
           "type": "string",
@@ -469,21 +432,13 @@
     "resource": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "visibility",
-        "path",
-        "media_type"
-      ],
+      "required": ["id", "visibility", "path", "media_type"],
       "properties": {
         "id": {
           "$ref": "#/$defs/stableId"
         },
         "visibility": {
-          "enum": [
-            "public",
-            "private"
-          ]
+          "enum": ["public", "private"]
         },
         "path": {
           "type": "string",

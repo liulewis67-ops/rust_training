@@ -59,9 +59,7 @@ it('解析已发布课包并拒绝未发布课包', () => {
 
 it('保留静态课程路由的章节锚点查询参数', () => {
   expect(
-    readRoute(
-      '/courses/m01/l01?section=%E5%AD%A6%E4%B9%A0%E7%9B%AE%E6%A0%87',
-    ),
+    readRoute('/courses/m01/l01?section=%E5%AD%A6%E4%B9%A0%E7%9B%AE%E6%A0%87'),
   ).toEqual({
     page: 'course-lesson',
     moduleId: 'M01',
