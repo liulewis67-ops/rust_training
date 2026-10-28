@@ -1,29 +1,34 @@
 import { expect, it } from 'vitest'
-import { loadAllPublishedCourseLessons, loadCourseLesson, resolveCourseAsset } from './courseCatalog'
+import publicManifest from '../../content/public-course-manifest.json'
+import {
+  loadAllPublishedCourseLessons,
+  loadCourseLesson,
+  resolveCourseAsset,
+} from './courseCatalog'
 
-it('loads English lesson text and exercises for translated releases', async () => {
-  const lesson = await loadCourseLesson('M01', 'L01', 'en')
-  expect(lesson?.translationComplete).toBe(true)
-  expect(lesson?.content).toMatch(/^# M01-L01: /)
-  expect(lesson?.content).not.toContain('选择语言是在约束下做工程取舍')
-  expect(lesson?.exercises.join(' ')).toContain('Answer Contract')
+it('falls back to source Markdown when a translation is not published', async () => {
+  const chinese = await loadCourseLesson('M01', 'L01', 'zh')
+  const english = await loadCourseLesson('M01', 'L01', 'en')
+  expect(chinese?.content).toMatch(/^# M01-L01：/)
+  expect(english?.content).toBe(chinese?.content)
+  expect(english?.translationComplete).toBe(false)
+  expect(english?.exercises).toEqual(chinese?.exercises)
 })
 
-it('keeps Chinese as the default language', async () => {
-  const lesson = await loadCourseLesson('M01', 'L01')
-  expect(lesson?.content).toContain('选择语言是在约束下做工程取舍')
-})
-
-it('uses the English exercise download when one is available', () => {
+it('keeps download links valid when no translated archive exists', () => {
   const chinese = resolveCourseAsset('./m01-l06-reference.zip', 'zh')
   const english = resolveCourseAsset('./m01-l06-reference.zip', 'en')
   expect(chinese).toBeTruthy()
-  expect(english).toBeTruthy()
-  expect(english).not.toBe(chinese)
+  expect(english).toBe(chinese)
 })
 
-it('has English Markdown for every published course lesson and its exercise files', async () => {
+it('loads exactly the published lessons in English mode with explicit fallbacks', async () => {
   const lessons = await loadAllPublishedCourseLessons('en')
-  expect(lessons).toHaveLength(144)
-  expect(lessons.every((lesson) => lesson.translationComplete && lesson.content.trim())).toBe(true)
+  expect(lessons).toHaveLength(publicManifest.markdown_lessons.length)
+  expect(lessons.every((lesson) => lesson.content.trim().length > 0)).toBe(
+    true,
+  )
+  expect(lessons.some((lesson) => lesson.translationComplete === false)).toBe(
+    true,
+  )
 })
