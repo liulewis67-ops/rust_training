@@ -42,7 +42,9 @@ if (
 
 const reference = runCargo('m08-reference', 'test')
 if (reference.exitCode !== 0 || !reference.output.includes('test result: ok')) {
-  throw new Error(`M08 reference must pass all public tests:\n${reference.output}`)
+  throw new Error(
+    `M08 reference must pass all public tests:\n${reference.output}`,
+  )
 }
 
 console.log('M08 local lab: starter fails expected checks; reference passes.')
