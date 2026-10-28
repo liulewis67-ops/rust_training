@@ -230,11 +230,8 @@ it('uses full-width reading layout only for published course lessons', async () 
   render(<App />)
   await screen.findByRole('heading', { name: /所有权/ })
 
-  expect(
-    document.querySelector('main.main-content')?.classList.contains(
-      'main-content-course',
-    ),
-  ).toBe(true)
+  const main = document.querySelector('main.main-content')
+  expect(main?.classList.contains('main-content-course')).toBe(true)
   expect(document.querySelector('.course-reading-sections')).not.toBeNull()
 })
 
