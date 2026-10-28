@@ -23,9 +23,7 @@ function sectionKind(title: string | null): LessonSectionKind {
     return 'prepare'
   }
   if (
-    /^(来源|参考资料|延伸阅读|sources|references|further reading)/i.test(
-      title,
-    )
+    /^(来源|参考资料|延伸阅读|sources|references|further reading)/i.test(title)
   ) {
     return 'reference'
   }
@@ -98,11 +96,7 @@ export function organizeLessonMarkdown(markdown: string): ReadingSection[] {
       if (heading[1].length === 2) {
         pushSection()
         title = heading[2]
-        id = slug
-          ? occurrence === 0
-            ? slug
-            : `${slug}-${occurrence}`
-          : null
+        id = slug ? (occurrence === 0 ? slug : `${slug}-${occurrence}`) : null
         currentLines = []
         before = Object.fromEntries(headingCounts)
       }
