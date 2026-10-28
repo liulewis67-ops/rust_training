@@ -13,11 +13,22 @@ export interface ReadingSection {
 }
 
 function sectionKind(title: string | null): LessonSectionKind {
-  if (!title || /^(先修|学习目标|学完后|学习前|prerequisites|learning objectives|after this lesson)/i.test(title))
+  if (
+    !title ||
+    /^(先修|学习目标|学完后|学习前|prerequisites|learning objectives|after this lesson)/i.test(
+      title,
+    )
+  )
     return 'prepare'
-  if (/^(来源|参考资料|延伸阅读|sources|references|further reading)/i.test(title))
+  if (
+    /^(来源|参考资料|延伸阅读|sources|references|further reading)/i.test(title)
+  )
     return 'reference'
-  if (/^(练习|实践|实验|检查|复盘|自测|本节小结|分层提示|任务|做一张|local practice|practice|exercise|lab|check|review|summary|hints)/i.test(title))
+  if (
+    /^(练习|实践|实验|检查|复盘|自测|本节小结|分层提示|任务|做一张|local practice|practice|exercise|lab|check|review|summary|hints)/i.test(
+      title,
+    )
+  )
     return 'apply'
   return 'concept'
 }
@@ -58,9 +69,12 @@ export function organizeLessonMarkdown(markdown: string): ReadingSection[] {
     const delimiter = /^(`{3,}|~{3,})/.exec(trimmed)
     if (fence) {
       currentLines.push(line)
-      if (delimiter && delimiter[1][0] === fence.char &&
+      if (
+        delimiter &&
+        delimiter[1][0] === fence.char &&
         delimiter[1].length >= fence.length &&
-        trimmed.slice(delimiter[1].length).trim() === '') {
+        trimmed.slice(delimiter[1].length).trim() === ''
+      ) {
         fence = null
       }
       continue
