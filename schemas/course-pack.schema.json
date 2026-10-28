@@ -18,33 +18,58 @@
     "resources"
   ],
   "properties": {
-    "schema_version": { "const": "1.0.0" },
-    "course_id": { "$ref": "#/$defs/stableId" },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "course_id": {
+      "$ref": "#/$defs/stableId"
+    },
     "version": {
       "type": "string",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
     },
-    "title": { "type": "string", "minLength": 1 },
-    "locale": { "type": "string", "minLength": 2 },
-    "visibility": { "enum": ["public", "private"] },
-    "environment": { "$ref": "#/$defs/environment" },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "locale": {
+      "type": "string",
+      "minLength": 2
+    },
+    "visibility": {
+      "enum": [
+        "public",
+        "private"
+      ]
+    },
+    "environment": {
+      "$ref": "#/$defs/environment"
+    },
     "lessons": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/lesson" }
+      "items": {
+        "$ref": "#/$defs/lesson"
+      }
     },
     "exercises": {
       "type": "array",
-      "items": { "$ref": "#/$defs/exercise" }
+      "items": {
+        "$ref": "#/$defs/exercise"
+      }
     },
     "sources": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/source" }
+      "items": {
+        "$ref": "#/$defs/source"
+      }
     },
     "resources": {
       "type": "array",
-      "items": { "$ref": "#/$defs/resource" }
+      "items": {
+        "$ref": "#/$defs/resource"
+      }
     }
   },
   "$defs": {
@@ -55,58 +80,169 @@
     "idList": {
       "type": "array",
       "uniqueItems": true,
-      "items": { "$ref": "#/$defs/stableId" }
+      "items": {
+        "$ref": "#/$defs/stableId"
+      }
     },
     "externalPrerequisiteList": {
       "type": "array",
       "uniqueItems": true,
-      "items": { "$ref": "#/$defs/externalPrerequisite" }
+      "items": {
+        "$ref": "#/$defs/externalPrerequisite"
+      }
     },
     "externalPrerequisite": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["course_id", "version", "lesson_id"],
+      "required": [
+        "course_id",
+        "version",
+        "lesson_id"
+      ],
       "properties": {
-        "course_id": { "$ref": "#/$defs/stableId" },
+        "course_id": {
+          "$ref": "#/$defs/stableId"
+        },
         "version": {
           "type": "string",
           "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
         },
-        "lesson_id": { "$ref": "#/$defs/stableId" }
+        "lesson_id": {
+          "$ref": "#/$defs/stableId"
+        }
       }
     },
     "environment": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "version",
-        "rust_version",
-        "edition",
-        "target",
-        "dependency_lock",
-        "image_digest",
-        "resource_tier"
-      ],
-      "properties": {
-        "id": { "$ref": "#/$defs/stableId" },
-        "version": {
-          "type": "string",
-          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "rust_version",
+            "edition",
+            "target",
+            "dependency_lock",
+            "image_digest",
+            "resource_tier"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/stableId"
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+            },
+            "rust_version": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+            },
+            "edition": {
+              "enum": [
+                "2018",
+                "2021",
+                "2024"
+              ]
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1
+            },
+            "dependency_lock": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "const": "rust"
+            },
+            "image_digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            },
+            "resource_tier": {
+              "enum": [
+                "R1",
+                "R2",
+                "R3"
+              ]
+            }
+          }
         },
-        "rust_version": {
-          "type": "string",
-          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version",
+            "rust_version",
+            "edition",
+            "target",
+            "dependency_lock",
+            "resource_tier"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/stableId"
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+            },
+            "rust_version": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+            },
+            "edition": {
+              "enum": [
+                "2018",
+                "2021",
+                "2024"
+              ]
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1
+            },
+            "dependency_lock": {
+              "type": "string",
+              "minLength": 1
+            },
+            "kind": {
+              "const": "rust"
+            },
+            "resource_tier": {
+              "const": "LOCAL"
+            }
+          }
         },
-        "edition": { "enum": ["2018", "2021", "2024"] },
-        "target": { "type": "string", "minLength": 1 },
-        "dependency_lock": { "type": "string", "minLength": 1 },
-        "image_digest": {
-          "type": "string",
-          "pattern": "^sha256:[a-f0-9]{64}$"
-        },
-        "resource_tier": { "enum": ["R1", "R2", "R3"] }
-      }
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "kind",
+            "version",
+            "resource_tier"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/stableId"
+            },
+            "kind": {
+              "const": "document"
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+            },
+            "resource_tier": {
+              "const": "LOCAL"
+            }
+          }
+        }
+      ]
     },
     "lesson": {
       "type": "object",
@@ -125,7 +261,9 @@
         "blocks"
       ],
       "properties": {
-        "id": { "$ref": "#/$defs/stableId" },
+        "id": {
+          "$ref": "#/$defs/stableId"
+        },
         "version": {
           "type": "string",
           "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
@@ -134,46 +272,86 @@
           "type": "string",
           "pattern": "^sha256:[a-f0-9]{64}$"
         },
-        "title": { "type": "string", "minLength": 1 },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
         "objectives": {
           "type": "array",
           "minItems": 1,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "terms": {
           "type": "array",
-          "items": { "$ref": "#/$defs/term" }
+          "items": {
+            "$ref": "#/$defs/term"
+          }
         },
-        "prerequisites": { "$ref": "#/$defs/idList" },
+        "prerequisites": {
+          "$ref": "#/$defs/idList"
+        },
         "external_prerequisites": {
           "$ref": "#/$defs/externalPrerequisiteList"
         },
-        "source_ids": { "$ref": "#/$defs/idList" },
-        "resource_ids": { "$ref": "#/$defs/idList" },
-        "exercise_ids": { "$ref": "#/$defs/idList" },
-        "example_ids": { "$ref": "#/$defs/idList" },
+        "source_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "resource_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "exercise_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "example_ids": {
+          "$ref": "#/$defs/idList"
+        },
         "blocks": {
           "type": "array",
-          "items": { "$ref": "#/$defs/contentBlock" }
+          "items": {
+            "$ref": "#/$defs/contentBlock"
+          }
         }
       }
     },
     "contentBlock": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "text"],
+      "required": [
+        "type",
+        "text"
+      ],
       "properties": {
-        "type": { "enum": ["markdown", "callout"] },
-        "text": { "type": "string", "minLength": 1 }
+        "type": {
+          "enum": [
+            "markdown",
+            "callout"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "term": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["term", "definition"],
+      "required": [
+        "term",
+        "definition"
+      ],
       "properties": {
-        "term": { "type": "string", "minLength": 1 },
-        "definition": { "type": "string", "minLength": 1 }
+        "term": {
+          "type": "string",
+          "minLength": 1
+        },
+        "definition": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "exercise": {
@@ -190,12 +368,16 @@
         "public_test_ids"
       ],
       "properties": {
-        "id": { "$ref": "#/$defs/stableId" },
+        "id": {
+          "$ref": "#/$defs/stableId"
+        },
         "version": {
           "type": "string",
           "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
         },
-        "lesson_id": { "$ref": "#/$defs/stableId" },
+        "lesson_id": {
+          "$ref": "#/$defs/stableId"
+        },
         "type": {
           "enum": [
             "multiple_choice",
@@ -207,16 +389,35 @@
             "architecture_question"
           ]
         },
-        "prompt": { "type": "string", "minLength": 1 },
-        "environment_id": { "$ref": "#/$defs/stableId" },
-        "source_ids": { "$ref": "#/$defs/idList" },
-        "public_test_ids": { "$ref": "#/$defs/idList" },
+        "prompt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "environment_id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "source_ids": {
+          "$ref": "#/$defs/idList"
+        },
+        "public_test_ids": {
+          "$ref": "#/$defs/idList"
+        },
         "private_assessment_id": {
-          "anyOf": [{ "$ref": "#/$defs/stableId" }, { "type": "null" }]
+          "anyOf": [
+            {
+              "$ref": "#/$defs/stableId"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "hints": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
@@ -233,29 +434,65 @@
         "adaptation_notes"
       ],
       "properties": {
-        "id": { "$ref": "#/$defs/stableId" },
-        "url": { "type": "string", "pattern": "^https://[^\\s]+$" },
-        "author": { "type": "string", "minLength": 1 },
+        "id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://[^\\s]+$"
+        },
+        "author": {
+          "type": "string",
+          "minLength": 1
+        },
         "accessed_at": {
           "type": "string",
           "format": "date"
         },
-        "revision": { "type": "string", "minLength": 1 },
-        "license_status": {
-          "enum": ["approved", "review_required", "original"]
+        "revision": {
+          "type": "string",
+          "minLength": 1
         },
-        "adaptation_notes": { "type": "string", "minLength": 1 }
+        "license_status": {
+          "enum": [
+            "approved",
+            "review_required",
+            "original"
+          ]
+        },
+        "adaptation_notes": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "resource": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "visibility", "path", "media_type"],
+      "required": [
+        "id",
+        "visibility",
+        "path",
+        "media_type"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/stableId" },
-        "visibility": { "enum": ["public", "private"] },
-        "path": { "type": "string", "minLength": 1 },
-        "media_type": { "type": "string", "minLength": 1 }
+        "id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "visibility": {
+          "enum": [
+            "public",
+            "private"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
   }
