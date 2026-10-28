@@ -10,7 +10,7 @@ const lessons = [l01, l02, l03, l04, l05, l06]
 
 /** Guard the educational structure of the released M01 module, not its exact prose. */
 describe('M01 guided lessons', () => {
-  it('keeps all six canonical IDs, objectives, self-checks and references', () => {
+  it('keeps the six lesson IDs, goals and references', () => {
     lessons.forEach((lesson, index) => {
       const id = `M01-L${String(index + 1).padStart(2, '0')}`
       expect(lesson).toMatch(new RegExp(`^# ${id}：`))
@@ -20,7 +20,7 @@ describe('M01 guided lessons', () => {
     })
   })
 
-  it('teaches concept lessons through scenarios, examples and practice', () => {
+  it('teaches concepts through scenarios and practice', () => {
     lessons.slice(0, 4).forEach((lesson) => {
       expect(lesson).toMatch(/^## (?:场景|核心知识点)/m)
       expect(lesson).toMatch(/^## 核心知识点/m)
@@ -30,7 +30,7 @@ describe('M01 guided lessons', () => {
     })
   })
 
-  it('keeps hints and reference solutions behind their authored headings in labs', () => {
+  it('keeps lab hints and solutions behind disclosures', () => {
     lessons.slice(4).forEach((lesson) => {
       const hints = lesson.indexOf('\n## 分层提示\n')
       const answers = lesson.indexOf('\n## 参考实现\n')
