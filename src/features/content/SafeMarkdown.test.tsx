@@ -124,7 +124,7 @@ it('maps a Chinese source fragment to the translated English heading', () => {
     screen.getByRole('link', { name: 'Request trace' }).getAttribute('href') ??
     ''
   expect(new URLSearchParams(href.split('?')[1]).get('section')).toBe(
-    'exercise-1-predicting-request-trajectories',
+    '检验理解',
   )
 })
 
