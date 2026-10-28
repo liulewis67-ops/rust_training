@@ -224,6 +224,20 @@ it('空复习页引导到公开课程目录', async () => {
   expect(window.location.hash).toBe('#/tracks/rust-backend')
 })
 
+// Only the full course reader uses the expanded reading measure.
+it('uses full-width reading layout only for published course lessons', async () => {
+  window.history.replaceState({}, '', '/#/courses/m04/l01')
+  render(<App />)
+  await screen.findByRole('heading', { name: /所有权/ })
+
+  expect(
+    document.querySelector('main.main-content')?.classList.contains(
+      'main-content-course',
+    ),
+  ).toBe(true)
+  expect(document.querySelector('.course-reading-sections')).not.toBeNull()
+})
+
 // 课程目录展示完整路线规划，当前所有课节均有公开内容。
 it('打开课程目录并显示完整公开课程', async () => {
   const user = userEvent.setup()
