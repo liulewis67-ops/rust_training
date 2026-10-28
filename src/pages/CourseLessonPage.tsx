@@ -9,6 +9,7 @@ import {
 import type { Route } from '../app/router'
 import { SafeMarkdown } from '../features/content/SafeMarkdown'
 import { markdownHeadingSlug } from '../lib/markdownAnchor'
+import { organizeLessonMarkdown } from '../features/reading/lessonStructure'
 import { lessonTitle, moduleText } from '../data/courseText'
 import { useLanguage } from '../features/preferences'
 
@@ -102,6 +103,8 @@ export function CourseLessonPage({
 
   const body = lesson.content.replace(/^#\s+[^\r\n]*(?:\r?\n|$)\s*/, '')
   const sourceHeading = /^#\s+([^\r\n]+)/.exec(lesson.content)?.[1]
+  const sections = organizeLessonMarkdown(body)
+  const navigationSections = sections.filter((section) => section.title && section.id && section.kind !== 'reference')
 
   return (
     <article className="course-reader">
@@ -144,12 +147,45 @@ export function CourseLessonPage({
           Some lesson text and exercises are still available only in Chinese.
         </p>
       )}
-      <section
-        className="course-reader-section"
-        aria-label={t('课程正文', 'Lesson content')}
-      >
-        <SafeMarkdown content={body} language={language} />
-      </section>
+      <div className="course-reading-guide">
+        <div className="course-reading-guide-intro">
+          <strong>{t('本节学习路线', 'Learning path')}</strong>
+          <p>{t('先确认目标与前置知识，再逐个理解核心概念，最后通过本地练习检验。', 'Check the goals and prerequisites, explore each concept, then verify your understanding locally.')}</p>
+        </div>
+        <nav aria-label={t('本节目录', 'On this page')} className="course-reading-toc">
+          {navigationSections.map((section) => (
+            <a key={section.id} href={`#${section.id}`} onClick={(event) => {
+              event.preventDefault()
+              document.getElementById(section.id!)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}>
+              {section.step !== null && <span aria-hidden="true">{String(section.step).padStart(2, '0')}</span>}
+              {section.title}
+            </a>
+          ))}
+          {lesson.exercises.length > 0 && <a href="#lesson-practice" onClick={(event) => {
+            event.preventDefault()
+            document.getElementById('lesson-practice')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }}>{t('练习与实验', 'Exercises and labs')}</a>}
+        </nav>
+      </div>
+      <div className="course-reading-sections" aria-label={t('课程正文', 'Lesson content')}>
+        {sections.map((section, index) => (
+          <section
+            className={`course-reading-step course-reading-step--${section.kind}`}
+            aria-label={section.title ?? t('导读', 'Introduction')}
+            key={section.id ?? `intro-${index}`}
+          >
+            {section.step !== null && (
+              <span className="course-reading-step-label">{t('知识点', 'Concept')} {String(section.step).padStart(2, '0')}</span>
+            )}
+            <SafeMarkdown
+              content={section.markdown}
+              language={language}
+              initialHeadingOccurrences={section.headingOccurrences}
+            />
+          </section>
+        ))}
+      </div>
       <aside className="local-practice-note">
         {t(
           '代码练习在你的本地电脑上完成。复制示例或下载课件中的模板，再按题面给出的命令运行和检查结果。',
@@ -160,6 +196,7 @@ export function CourseLessonPage({
       {lesson.exercises.length > 0 && (
         <section
           className="course-reader-exercises"
+          id="lesson-practice"
           aria-label={t('练习与实验题面', 'Exercises and labs')}
         >
           <h2>{t('练习与实验', 'Exercises and labs')}</h2>

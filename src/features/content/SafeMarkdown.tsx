@@ -436,9 +436,12 @@ function renderBlocks(
 export function SafeMarkdown({
   content,
   language = 'zh',
+  initialHeadingOccurrences,
 }: {
   content: string
   language?: Language
+  /** Reuse document-wide anchor numbering when a lesson is rendered in sections. */
+  initialHeadingOccurrences?: Readonly<Record<string, number>>
 }): JSX.Element {
   const learnerMarkdown = content
     .replace(
@@ -448,7 +451,7 @@ export function SafeMarkdown({
     .replace(/<(?:img|input|meta|link)\b[^>]*\/?>/gi, '')
   return (
     <div className="course-markdown">
-      {renderBlocks(learnerMarkdown, undefined, language)}
+      {renderBlocks(learnerMarkdown, new Map(Object.entries(initialHeadingOccurrences ?? {})), language)}
     </div>
   )
 }
