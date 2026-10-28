@@ -16,9 +16,9 @@ it('identifies fenced Rust examples and copies exactly the visible code', async 
   })
 
   try {
-    const example = 'fn main() {\\n    println!("hi");\\n}'
+    const example = 'fn main() {\n    println!("hi");\n}'
     const { container } = render(
-      <SafeMarkdown content={`\`\`\`rust\\n${example}\\n\`\`\``} />,
+      <SafeMarkdown content={`\`\`\`rust\n${example}\n\`\`\``} />,
     )
     expect(container.querySelector('.course-code-language')?.textContent).toBe(
       'Rust',
@@ -51,7 +51,7 @@ it('keeps code readable and reports unavailable clipboard access', async () => {
     const { container } = render(
       <SafeMarkdown
         language="en"
-        content={`\`\`\`toml\\n[package]\\nname = "test"\\n\`\`\``}
+        content={`\`\`\`toml\n[package]\nname = "test"\n\`\`\``}
       />,
     )
     expect(container.querySelector('pre code')?.textContent).toContain(
