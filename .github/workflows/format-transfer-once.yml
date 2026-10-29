@@ -1,0 +1,32 @@
+name: Temporary curriculum test formatting
+on:
+  push:
+    branches: [test/verify-48-published-course-transfer-20261029]
+permissions:
+  contents: write
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.19.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prettier --write src/content/course-transfer-structure.test.ts
+      - name: Commit formatted test
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/content/course-transfer-structure.test.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "style(curriculum): format transfer verification"
+            git push
+          fi
