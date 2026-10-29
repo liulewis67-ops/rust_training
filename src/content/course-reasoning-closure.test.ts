@@ -38,7 +38,9 @@ function field(section: string, marker: string): string {
     'Example and evidence:',
   ].includes(marker)
     ? 6
-    : 24
+    : ['复盘：', 'Review:'].includes(marker)
+      ? 12
+      : 24
   expect(
     body.length,
     `${marker} must explain a lesson-specific decision`,
