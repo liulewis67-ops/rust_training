@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import curriculum from '../../content/course-continuity.json'
-import { findContinuity, locateContinuity, adjacentContinuity } from '../data/learningContinuity'
+import {
+  findContinuity,
+  locateContinuity,
+  adjacentContinuity,
+} from '../data/learningContinuity'
 import { organizeLessonMarkdown } from '../features/reading/lessonStructure'
 
 const pilotChinese = import.meta.glob<string>(
@@ -23,11 +27,19 @@ describe('Coherent, bilingual engineering lesson dependencies', () => {
       expect(module.goal.zh.length).toBeGreaterThan(6)
       expect(module.goal.en.length).toBeGreaterThan(6)
       for (const step of module.steps) {
-        for (const field of [step.label, step.problem, step.decision, step.artifact, step.evidence]) {
+        for (const field of [
+          step.label,
+          step.problem,
+          step.decision,
+          step.artifact,
+          step.evidence,
+        ]) {
           expect(field.zh.trim().length).toBeGreaterThan(4)
           expect(field.en.trim().length).toBeGreaterThan(4)
         }
-        expect(locateContinuity(module.id, step.id.slice(-3))?.step.id).toBe(step.id)
+        expect(locateContinuity(module.id, step.id.slice(-3))?.step.id).toBe(
+          step.id,
+        )
       }
     }
     expect(findContinuity('M10')).toBeUndefined()
@@ -50,10 +62,24 @@ describe('Coherent, bilingual engineering lesson dependencies', () => {
       expect(step).toBeDefined()
       expect(zh).toContain(`## 工程推进：${step?.label.zh}`)
       expect(en).toContain(`## Engineering thread: ${step?.label.en}`)
-      for (const marker of ['**从哪里来：**', '**当前问题：**', '**本节决策：**', '**完成产物：**', '**验证证据：**', '**为什么下一节需要它：**']) {
+      for (const marker of [
+        '**从哪里来：**',
+        '**当前问题：**',
+        '**本节决策：**',
+        '**完成产物：**',
+        '**验证证据：**',
+        '**为什么下一节需要它：**',
+      ]) {
         expect(zh).toContain(marker)
       }
-      for (const marker of ['**Carry forward:**', '**Current obstacle:**', '**Decision to make:**', '**Deliverable:**', '**Evidence:**', '**Why it leads forward:**']) {
+      for (const marker of [
+        '**Carry forward:**',
+        '**Current obstacle:**',
+        '**Decision to make:**',
+        '**Deliverable:**',
+        '**Evidence:**',
+        '**Why it leads forward:**',
+      ]) {
         expect(en).toContain(marker)
       }
       const body = zh.replace(/^# [^\n]+\n/, '')
