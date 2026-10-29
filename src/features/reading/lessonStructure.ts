@@ -16,7 +16,7 @@ export interface ReadingSection {
 function sectionKind(title: string | null): LessonSectionKind {
   if (
     !title ||
-    /^(先修|学习目标|学完后|学习前|实验目标|prerequisites|learning objectives|learning goals|after this lesson|get the starter|get and run locally|lab objectives)/i.test(
+    /^(先修|学习目标|学完后|学习前|实验目标|prerequisites|learning objectives|learning goals|after this lesson|get the starter|get and run locally|lab objectives|工程推进|engineering thread)/i.test(
       title,
     )
   ) {
