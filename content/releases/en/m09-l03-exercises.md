@@ -88,6 +88,12 @@ fn library_errors_map_to_cli_and_api_contracts() {
 
 Use observable behavior tests, not compilation alone.
 
+## Exercise 4: Verified transfer — CLI/API mapping contracts and sensitive-error leakage
+
+Predict the CLI/API outcomes of InvalidPort, ProfileNotFound and Storage, then run the two tests. Temporarily map every case to HTTP 500 and identify the failed assertion. Next expose the source message in the public response and observe the privacy assertion; restore the correct boundary.
+
+**Acceptance:** Supply the result of `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m09_boundaries::`, an observed error or behavioral regression, and a minimal repair that preserves the contract.
+
 ## Reference answers
 
 1. The domain layer contains only stable categories: `InvalidPort` → 2/400, `ProfileNotFound` → 3/404, `Storage` → 1/500 once adapted at the edges.

@@ -38,6 +38,12 @@ fn render_both(value: &dyn Renderer) -> String {
 
 **验证契约**：dyn-compatible 版本对 `QueueItem` 与 `ImportBatch` 的混合数组返回预期标签，空数组返回空结果；原生 async trait object 负例在 Rust 1.95.0、Edition 2024 下以 dyn compatibility 类诊断拒绝。
 
+## 4. 进阶实证：泛型静态分发、异构 trait object 与 dyn compatibility
+
+预测静态和动态调用是否改变同一个对象的返回值，再运行三项测试。复现 E0038 后将泛型方法改为接收 `&dyn Display` 的固定类型接口，验证可以通过 `&dyn Renderer` 调用；另比较用 `where Self: Sized` 保留方法却不允许经 trait object 调用的方案。
+
+**验收：** 提供 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m07_dispatch::` 的通过结果、错误示例或行为回归的证据，并解释最小修复不如何改变原有接口契约。
+
 ## 参考答案
 
 1. `render_static(&item)` 与 `render_static(&batch)` 分别在编译期以 `QueueItem` 和 `ImportBatch` 实例化；`render_dynamic(&item)` 通过 `Label` trait object 调用实际实现。`Vec<T>` 的所有元素必须是同一个具体 `T`，而 `Vec<Box<dyn Label>>` 的元素共享指针类型、可指向不同实现。

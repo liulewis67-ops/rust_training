@@ -20,6 +20,12 @@ Implement one generic strategy processor and one Vec<Box<dyn Trait>> processor.
 
 **Acceptance evidence:** Test two formatter outputs and document the static/dynamic choice and error.
 
+## Exercise 4: Verified transfer — Generic dispatch, heterogeneous trait objects and dyn compatibility
+
+Predict whether static or dynamic dispatch changes the returned label, then run three tests. Reproduce E0038; change the generic method into a fixed `&dyn Display` parameter and verify object calls. Compare this with `where Self: Sized`, which leaves the method available only for sized implementors.
+
+**Acceptance:** Supply the result of `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m07_dispatch::`, an observed error or behavioral regression, and a minimal repair that preserves the contract.
+
 ## Progressive hints
 
 1. Identify whether the caller needs one concrete type or many types at runtime.
