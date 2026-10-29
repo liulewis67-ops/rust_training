@@ -25,7 +25,10 @@ describe('M01–M08 published curriculum transfer contract', () => {
       expect(markdown).toMatch(/^## 来源$/m)
 
       const headings = markdown.match(/^## 实践迁移：.+$/gm) ?? []
-      expect(headings, `${path}: expected one real transfer challenge`).toHaveLength(1)
+      expect(
+        headings,
+        `${path}: expected one real transfer challenge`,
+      ).toHaveLength(1)
       const body = markdown.replace(/^# [^\n]+\n/, '')
       const sections = organizeLessonMarkdown(body)
       const practice = sections.filter((section) =>
