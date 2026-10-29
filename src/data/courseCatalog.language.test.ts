@@ -6,13 +6,21 @@ import {
   resolveCourseAsset,
 } from './courseCatalog'
 
-it('falls back to source Markdown when a translation is not published', async () => {
+it('loads genuine English content and exercises for the translated M01 module', async () => {
   const chinese = await loadCourseLesson('M01', 'L01', 'zh')
   const english = await loadCourseLesson('M01', 'L01', 'en')
   expect(chinese?.content).toMatch(/^# M01-L01：/)
+  expect(english?.content).toMatch(/^# M01-L01: Why Rust/)
+  expect(english?.translationComplete).toBe(true)
+  expect(english?.exercises[0]).toContain('## Reference answers')
+  expect(english?.content).not.toBe(chinese?.content)
+})
+
+it('falls back to Chinese only where English translation is not yet published', async () => {
+  const chinese = await loadCourseLesson('M09', 'L01', 'zh')
+  const english = await loadCourseLesson('M09', 'L01', 'en')
   expect(english?.content).toBe(chinese?.content)
   expect(english?.translationComplete).toBe(false)
-  expect(english?.exercises).toEqual(chinese?.exercises)
 })
 
 it('keeps download links valid when no translated archive exists', () => {
