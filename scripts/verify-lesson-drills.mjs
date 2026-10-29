@@ -39,6 +39,12 @@ const cases = [
   ['m05_borrow_after_push.rs', 'E0502'],
   ['m06_ambiguous_result.rs', 'E0106'],
   ['m07_wrong_associated_output.rs', 'E0053'],
+  ['m01_diagnostic_type.rs', 'E0308'],
+  ['m04_partial_move.rs', 'E0382'],
+  ['m06_nonstatic_borrow.rs', 'E0597'],
+  ['m07_mixed_newtypes.rs', 'E0308'],
+  ['m08_after_into_iter.rs', 'E0382'],
+  ['m09_incompatible_question.rs', 'E0277'],
 ]
 
 const outputDir = mkdtempSync(join(tmpdir(), 'rust-path-compile-fail-'))
