@@ -20,6 +20,12 @@ Extend first_token(&str) checks for ASCII, Chinese, U+3000, leading/trailing whi
 
 **Acceptance evidence:** Supply exact token and byte-length assertions with an explanation of valid boundaries.
 
+## Exercise 4: Verified boundary challenge — UTF-8 byte boundaries and runtime panic
+
+Predict first tokens with ASCII and U+3000 separators, run three tests, compare `get(..3)` with `get(..1)` and then deliberately slice directly at byte 1. Explain safe `None` versus panic and why byte offsets are not character positions.
+
+**Acceptance:** Execute `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m05_utf8::`, record both the passing and failing evidence, and justify the repair without suppressing the diagnostic.
+
 ## Progressive hints
 
 1. Write down whether each access uses &T, &mut T, owned T or a borrowed &str.

@@ -20,6 +20,12 @@ Implement a read, in-place update and owned transfer using iter, iter_mut and in
 
 **Acceptance evidence:** Show each iterator Item type, output and whether the original collection remains usable.
 
+## Exercise 4: Verified boundary challenge — Ownership evidence for all three iterator forms
+
+Label the three iterator item types, run all tests, then reproduce E0382. Repair by borrowing for read-only work or extracting required information before consumption; explain when owned iteration remains the correct choice.
+
+**Acceptance:** Execute `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m08_iteration::`, provide expected and observed results and the intentional diagnostic, and explain how the repair preserves the API contract.
+
 ## Progressive hints
 
 1. State which data is borrowed and which is owned.

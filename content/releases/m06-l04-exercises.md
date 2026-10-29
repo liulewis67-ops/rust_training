@@ -48,6 +48,12 @@ fn pass_static_type<T: 'static>(value: T) -> T {
 
 **评审契约**：分别选择 `&'static str`、借用视图、拥有型结果；指出借用 view 零复制但调用方要保留输入，拥有结果有复制/分配成本但可进入队列。不可把 `T: 'static` 解释为值不会释放，也不可用 `'static` 隐藏局部引用。
 
+## 4. 边界迁移：`T: 'static` 并不禁止及时析构
+
+先预测字面量引用、拥有型 String、局部 String 的借用能否满足 `T: 'static`；验证两项测试和 E0597。用 `DropSignal` 说明 `'static` 类型界限并非内存泄漏或进程级全局持有，最后将不必要的静态引用参数改为普通 `&str`。
+
+**验收：** 执行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m06_static::`、记录正例与反例的具体观察，并说明采用这个修复而非隐藏错误的原因。
+
 ## 参考答案
 
 1. 把签名改为 `fn log_label(label: &str)`。它只在调用期间借用标签，不保存引用，因此局部 `String` 可传入；输出 `request-17`，调用方继续拥有字符串。

@@ -31,6 +31,24 @@ cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-dri
 | M08-L04 | src/m08.rs | Behavioral mutation (no compile fail) | Lazy adapter is not evaluated until consumed |
 | M09-L02 | src/m09.rs | Behavioral mutation (no compile fail) | Missing source breaks structured error assertions |
 
+## Second verification wave / 第二轮边界测试
+
+这组测试额外覆盖 M01–M09 的九节不同课时，不重复上一轮的代表性课程。所有失败样例是**明确标为预期失败的学习素材**，不要与运行时边界测试混淆。
+
+| Lesson | Positive Rust module | Negative demonstration | Evidence |
+| --- | --- | --- | --- |
+| M01-L03 | src/m01_diagnostics.rs | compile_fail/m01_diagnostic_type.rs | E0308 vs Err vs expected runtime panic |
+| M02-L04 | src/m02_shapes.rs | Runtime bounds panic | get returns None at index==len |
+| M03-L03 | src/m03_missing.rs | Incorrect absent-as-empty model | Some(\"\") is not None |
+| M04-L04 | src/m04_partial.rs | compile_fail/m04_partial_move.rs | E0382 after moving a field |
+| M05-L03 | src/m05_utf8.rs | Runtime invalid UTF-8 slice panic | byte 1 is not a char boundary |
+| M06-L04 | src/m06_static.rs | compile_fail/m06_nonstatic_borrow.rs | E0597 vs owned type with immediate Drop |
+| M07-L04 | src/m07_conversion.rs | compile_fail/m07_mixed_newtypes.rs | E0308, plus TryFrom checked range |
+| M08-L03 | src/m08_iteration.rs | compile_fail/m08_after_into_iter.rs | E0382 after consuming an owned Vec |
+| M09-L01 | src/m09_propagation.rs | compile_fail/m09_incompatible_question.rs | E0277 when ? cannot convert error |
+
+Run the same commands from the repository root; the CI verifier now checks **both waves** of passing examples and expected compilation diagnostics. For a single second-wave lesson, use a module filter, such as `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m05_utf8::`.
+
 ## Teaching protocol / 教学要求
 
 1. **Predict** the return value, error category, or compiler diagnostic before execution.

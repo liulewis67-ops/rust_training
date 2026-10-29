@@ -26,7 +26,7 @@ fn main() {
 
 ## 2. 实现：解构固定读数并分类
 
-实现 `summarize_readings`：输入是三个 `i32`，输出元组为“首项、末项、总和”；再用 `match` 把总和分类。总和在 `0..=10` 时返回 `small`，`11..=30` 返回 `medium`，其他值返回 `outside`。
+实现 `summarize_readings`：输入是三个 `u8`，输出元组为“首项、末项、总和”；再用 `match` 把总和分类。总和在 `0..=10` 时返回 `small`，`11..=30` 返回 `medium`，其他值返回 `outside`。
 
 ```rust
 /// Returns the endpoints and total of exactly three readings.
@@ -68,6 +68,12 @@ fn reading_at(readings: [i32; 3], position: usize) -> i32 {
 **契约：** 必须区分合法的首项、合法的末项与等于数组长度的非法位置；需要指出当前函数没有主动检查契约，位置 3 会在索引时 panic。测试建议至少覆盖 0、2、3。
 
 **分层提示：** ① 三元素数组的有效位置区间是什么？② Rust 数组索引如何处理越界？③ 文档约定如何落实为参数检查或调用方约束？
+
+## 4. 边界迁移：数组的安全访问与运行时越界
+
+先预测索引 `0`、`2`、`3`，运行三项测试后，让函数使用 `0..=values.len()`，观察它在哪里 panic；修复为 `0..values.len()`。最后改用 `get` 编写不会 panic 的读取函数，覆盖空数组切片和边界索引。
+
+**验收：** 运行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m02_shapes::`，写出每种输入的预期与实际证据，并独立解释错误根因；不要通过删除断言或弱化函数签名让测试“通过”。
 
 ## 参考答案
 

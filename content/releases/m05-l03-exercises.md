@@ -70,6 +70,12 @@ fn main() {
 
 **分层提示：** ① 输入类型已经是字符串切片。② 通过迭代器处理 Unicode 空白并读取第一个结果。③ 无结果时使用空字符串切片。
 
+## 4. 边界迁移：UTF-8 字节边界与运行时 panic
+
+预测 ASCII、中文及 U+3000 分隔输入的首 token，运行三个测试。分别通过 `get(..3)` 与 `get(..1)` 访问中文文本，再在独立副本中直接切片到字节 1，解释何者是 `None`、何者 panic；不要把字节数当字符数。
+
+**验收：** 执行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m05_utf8::`、记录正例与反例的具体观察，并说明采用这个修复而非隐藏错误的原因。
+
 ## 参考答案
 
 1. 输出依次为 `""`、`中文`、`alpha`。中文 token 是原输入的切片，两个汉字占 6 个 UTF-8 字节。U+3000 和 U+2009 都是 Unicode 空白。

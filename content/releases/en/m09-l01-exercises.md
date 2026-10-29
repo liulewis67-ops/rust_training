@@ -85,6 +85,12 @@ fn main() {
 
 Use real tests and diagnostics, not only a zero process exit code.
 
+## Exercise 4: Verified boundary challenge — Error compatibility of the question-mark operator
+
+Predict results for `"0"`, `"61"`, and `"nan"`, run tests, then reproduce the incompatible-`?` error. Repair a copy once by changing the return error type and once by explicit `map_err`; explain why `unwrap()` is not a valid substitute for error propagation.
+
+**Acceptance:** Execute `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m09_propagation::`, provide expected and observed results and the intentional diagnostic, and explain how the repair preserves the API contract.
+
 ## Reference answers
 
 1. `triple("4")` is `Ok(12)`; `triple("four")` is `Err(ParseIntError)`. `triple` returns early, but `main` receives a result to examine.

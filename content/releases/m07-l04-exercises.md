@@ -40,6 +40,12 @@ impl From<u32> for RetryCount {
 
 **验证契约**：评审认定 1 可用 From；2 违反 From 的 infallible 约定，应改 TryFrom；3 合理，但要说明规范化和保留原始输入之间的产品选择。newtype 字段保持私有，使绕过验证的构造不可用。
 
+## 4. 边界迁移：先验证再缩窄的 TryFrom
+
+先预测 `0, 1, 65535, 65536` 的转换结果，运行两项测试；在副本中把 `as u16` 放在边界验证之前，看 65536 如何变成 0。然后编译两种 newtype 混用的反例，解释类型不匹配与数值超范围是两个独立的错误。
+
+**验收：** 执行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m07_conversion::`，分别提交测试结果与反例诊断，并说明为何此方案保留了函数与调用方的原始契约。
+
 ## 参考答案
 
 1. 移除 `From<u32> for RetryCount`，因为它承诺所有 `u32` 都能无失败转换，且会截断。改用错误类型保留原值：

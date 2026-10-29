@@ -20,6 +20,12 @@ Write one function that takes T: 'static by value and another that requires &'st
 
 **Acceptance evidence:** A valid/invalid call matrix and a real compiler diagnostic demonstrating the distinction.
 
+## Exercise 4: Verified boundary challenge — The 'static type bound does not prevent Drop
+
+Predict whether a literal reference, owned String, and local borrowed str satisfy `T: 'static`. Run two tests and reproduce E0597; use `DropSignal` to show the value can be dropped immediately. Replace an unnecessarily strict static-reference API with `&str`.
+
+**Acceptance:** Execute `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m06_static::`, record both the passing and failing evidence, and justify the repair without suppressing the diagnostic.
+
 ## Progressive hints
 
 1. Identify which binding owns the buffer and which reference borrows it.
