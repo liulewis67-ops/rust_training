@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-const zhLessons = import.meta.glob<string>('../../content/releases/m0?-l0?.md', {
-  query: '?raw', import: 'default', eager: true,
-})
-const enLessons = import.meta.glob<string>('../../content/releases/en/m0?-l0?.md', {
-  query: '?raw', import: 'default', eager: true,
-})
+const zhLessons = import.meta.glob<string>(
+  '../../content/releases/m0?-l0?.md',
+  { query: '?raw', import: 'default', eager: true },
+)
+const enLessons = import.meta.glob<string>(
+  '../../content/releases/en/m0?-l0?.md',
+  { query: '?raw', import: 'default', eager: true },
+)
 
 const lessonIds = Array.from({ length: 54 }, (_, index) => {
   const module = String(Math.floor(index / 6) + 1).padStart(2, '0')
@@ -15,17 +17,24 @@ const lessonIds = Array.from({ length: 54 }, (_, index) => {
 
 function reasoningSection(markdown: string, heading: string): string {
   const start = markdown.indexOf(heading)
-  expect(start, `Missing reasoning section: ${heading}`).toBeGreaterThanOrEqual(0)
+  expect(start, `Missing reasoning section: ${heading}`).toBeGreaterThanOrEqual(
+    0,
+  )
   const remainder = markdown.slice(start + heading.length)
   const next = remainder.search(/^## /m)
   return next === -1 ? remainder : remainder.slice(0, next)
 }
 
 function field(section: string, marker: string): string {
-  const line = section.split('\n').find((value) => value.startsWith(`**${marker}**`))
+  const line = section
+    .split('\n')
+    .find((value) => value.startsWith(`**${marker}**`))
   expect(line, `Missing closure phase ${marker}`).toBeDefined()
   const body = line?.slice(marker.length + 4).trim() ?? ''
-  expect(body.length, `${marker} must explain a lesson-specific decision`).toBeGreaterThan(24)
+  expect(
+    body.length,
+    `${marker} must explain a lesson-specific decision`,
+  ).toBeGreaterThan(24)
   return body
 }
 
@@ -46,12 +55,29 @@ describe('M01–M09 lesson-specific reasoning and verification', () => {
       expect(en, `Missing English ${id}`).toBeDefined()
 
       const zhSection = reasoningSection(zh, '## 原理推导与反例辨析：')
-      const enSection = reasoningSection(en, '## Reason through a counterexample:')
+      const enSection = reasoningSection(
+        en,
+        '## Reason through a counterexample:',
+      )
 
-      for (const marker of ['问题：', '原理与推导：', '示例与证据：', '反例：', '独立练习：', '复盘：']) {
+      for (const marker of [
+        '问题：',
+        '原理与推导：',
+        '示例与证据：',
+        '反例：',
+        '独立练习：',
+        '复盘：',
+      ]) {
         field(zhSection, marker)
       }
-      for (const marker of ['Problem:', 'Principle and deduction:', 'Example and evidence:', 'Counterexample:', 'Independent exercise:', 'Review:']) {
+      for (const marker of [
+        'Problem:',
+        'Principle and deduction:',
+        'Example and evidence:',
+        'Counterexample:',
+        'Independent exercise:',
+        'Review:',
+      ]) {
         field(enSection, marker)
       }
       zhPrinciples.add(field(zhSection, '原理与推导：'))
