@@ -85,6 +85,12 @@ fn main() {
 
 以上检查请以实际代码和行为断言为准，而不是仅凭工具链返回退出码为 0。
 
+## 4. 边界迁移：`?` 的错误类型兼容性
+
+预测 `"0"`、`"61"`、`"nan"` 三种输入返回的 `Result`，运行测试，再编译 `?` 类型不兼容的反例。分别通过修改返回错误类型与显式 `map_err` 修复副本；解释为何不能靠 `unwrap()` 将 `Err` 改成 panic。
+
+**验收：** 执行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m09_propagation::`，分别提交测试结果与反例诊断，并说明为何此方案保留了函数与调用方的原始契约。
+
 ## 参考答案
 
 1. `triple("4")` 返回 `Ok(12)`，`triple("four")` 返回 `Err(ParseIntError)`。错误从 `triple` 提前返回，但由 `main` 继续观察；不会自动 panic 或变成 0。

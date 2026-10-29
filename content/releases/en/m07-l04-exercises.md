@@ -20,6 +20,12 @@ Create distinct newtypes, with From where guaranteed and TryFrom for bounded or 
 
 **Acceptance evidence:** Show compile-time non-interchangeability and a typed error assertion for invalid values.
 
+## Exercise 4: Verified boundary challenge — Validate before narrowing in TryFrom
+
+Predict conversion of 0, 1, 65535 and 65536. Run two tests; deliberately narrow before validation to observe corruption. Compile the mixed-newtype failure and explain why domain-type mismatch and numeric range rejection are distinct errors.
+
+**Acceptance:** Execute `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m07_conversion::`, provide expected and observed results and the intentional diagnostic, and explain how the repair preserves the API contract.
+
 ## Progressive hints
 
 1. Identify whether the caller needs one concrete type or many types at runtime.

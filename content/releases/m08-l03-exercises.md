@@ -85,6 +85,12 @@ fn main() {
 
 **验证契约**：补全后以 Rust 1.95.0、Edition 2024 编译运行通过；output 顺序为 alpha、beta；Label 无 Clone 实现，验证路径确实采用所有权移动。
 
+## 4. 边界迁移：三种迭代中的所有权证据
+
+先标出三种迭代项分别是 `&String`、`&mut String`、`String`，运行三个测试，再编译反例记录 E0382。分别用借用迭代和提前提取所需信息修复；解释在何种需求下仍应使用 `into_iter()` 而非一律避免消费。
+
+**验收：** 执行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m08_iteration::`，分别提交测试结果与反例诊断，并说明为何此方案保留了函数与调用方的原始契约。
+
 ## 参考答案
 
 1. `for color in &borrowed` 得到 `&String`，原集合仍有效；`for side in owned` 得到拥有的 `String`，消耗 `owned`，移动到 `moved` 不需克隆。
