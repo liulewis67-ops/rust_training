@@ -49,10 +49,10 @@ const ids = Array.from(
     `m${String(Math.floor(i / 6) + 1).padStart(2, '0')}-l${String((i % 6) + 1).padStart(2, '0')}`,
 )
 
-describe('M01–M08 bilingual course parity', () => {
-  it('has 48 English lesson files and 32 matching English practice sheets', () => {
-    expect(Object.keys(english)).toHaveLength(48)
-    expect(Object.keys(englishExercises)).toHaveLength(32)
+describe('M01–M09 bilingual published course parity', () => {
+  it('has 54 English lesson files and 36 matching English practice sheets', () => {
+    expect(Object.keys(english)).toHaveLength(54)
+    expect(Object.keys(englishExercises)).toHaveLength(36)
   })
 
   it.each(ids)(
