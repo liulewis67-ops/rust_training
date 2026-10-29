@@ -20,6 +20,12 @@ Extract body text, inspect untouched fields and construct a new complete ticket.
 
 **Acceptance:** Compile and test the reconstructed fields without cloning the entire ticket.
 
+## Exercise 4: Verified boundary challenge — What survives a partial move
+
+Trace ownership of the three fields, predict `split_ticket` and `update_body`, run both tests and reproduce E0382. Reassemble a modified ticket while preserving priority without solving the design by cloning the entire object.
+
+**Acceptance:** Execute `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m04_partial::`, record both the passing and failing evidence, and justify the repair without suppressing the diagnostic.
+
 ## Progressive hints
 
 1. Trace bindings and owned values separately.

@@ -100,6 +100,12 @@ fn revise(record: Record, prefix: String) -> Record {
 
 **分层提示：** ① 按值传参后，原调用绑定是否仍是 owner？② 按字段画箭头，尤其关注 `body`。③ 新 `Record` 返回前，逐项核对 `id`、`title`、`body`。
 
+## 4. 边界迁移：部分移动后还能使用什么
+
+画出三个字段的所有权变化，预测 `split_ticket` 与 `update_body` 的返回值；验证两项测试，再编译反例观察 E0382。尝试保留 `priority` 并修改正文后重组 `Ticket`，不允许通过全对象 `clone` 掩盖设计问题。
+
+**验收：** 执行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m04_partial::`、记录正例与反例的具体观察，并说明采用这个修复而非隐藏错误的原因。
+
 ## 参考答案
 
 1. 修复版先移动并打印 `subject`，再将仍有效的 `note.body` 移入局部绑定并返回。删除对 `note.subject` 的再次读取。调用方不能再使用原 `note`，因为它已作为参数移入函数，且其两个 `String` 字段分别被移动。
