@@ -20,6 +20,12 @@ Reproduce the mismatched-return diagnostic, then repair the function using both 
 
 **Acceptance evidence:** Keep red/green cargo check output and a functional order-total assertion.
 
+## Exercise 4: Verified challenge — tail expressions and E0308
+
+Predict the passing case, a trailing semicolon, and an `if` arm that yields unit. Run the `m02::` tests, compile the counterexample, and repair a copy using both a tail expression and explicit `return`. Explain each resulting type.
+
+From the repository root, run `node scripts/verify-lesson-drills.mjs` for all passing tests and expected compiler diagnostics.
+
 ## Progressive hints
 
 1. Start from types, ownership and explicit input contracts rather than the surface syntax.
