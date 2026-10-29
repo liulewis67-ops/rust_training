@@ -37,6 +37,10 @@ A concise, six-step clickable map shows the current lesson in the module's progr
 - Preserve all fenced code examples byte-for-byte, keep heading anchors in existing sections, and never rewrite published starter/reference contracts.
 - Lesson-level tests enforce story completeness; existing contract and code parity tests remain in effect.
 
-## Publication plan
+## Published structural improvements
 
-First release the 54-step data model, reader UX and an M01 bilingual pilot. Then update M02–M09 module-by-module with the same continuity rule and full CI review. Avoid unrelated visual redesign or additional dependencies.
+The 54-step dependency model, six-step module navigation, and the M01 pilot were merged first. M02–M09 were then updated as independent Chinese/English curriculum PRs and merged after Quality checks. Each chapter has a real forward/backward handoff in its authored Markdown, including the public L05 lab and L06 independent assessment.
+
+The reading page now organizes its in-lesson index into **context → reasoning → practice and verification**, rather than a flat topic list. The full-curriculum regression checks each bilingual Markdown handoff, previous and next artifacts, and the reading-structure classification. The existing Rust sample, course manifest, source-link and English-code parity checks remain active.
+
+**Limits:** This is a substantive coherence and learning-path upgrade, not a claim that each example was converted into a single runnable repository project. A future editorial pass can deepen specific concept explanations and independently test new practice variants, without inflating every section with repetitive templates.
