@@ -20,6 +20,12 @@ Run cargo check, cargo test and cargo run separately, capturing the first releva
 
 **Acceptance:** A short reproduction log with each stage, before/after evidence and the exact fix applied.
 
+## Exercise 4: Verified boundary challenge — Diagnose three distinct failure stages
+
+First reproduce the E0308 compile-time error, then run the three tests. Explain why one **passing** test intentionally panics. Rewrite the invalid-input path to preserve `Err` without `unwrap()`. Compare compiler rejection, a failing assertion, and a runtime panic.
+
+**Acceptance:** Run `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m01_diagnostics::`, record predictions and observed results, and explain the actual failure cause without deleting assertions or weakening the API.
+
 ## Progressive hints
 
 1. Identify the values, their Rust types and the owner or lifetime of each.

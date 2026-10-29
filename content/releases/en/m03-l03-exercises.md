@@ -20,6 +20,12 @@ Return Option<&str> and test a normal name, an existing empty name and a missing
 
 **Acceptance:** Three result assertions and an explicit caller-side branch for absence.
 
+## Exercise 4: Verified boundary challenge — Distinguish absent data from an empty value
+
+Predict the Option variant and display for tickets 10, 20 and 99; change the missing case to `Some("")` and show the behavioral regression. Explain why the wrong implementation compiles and which assertions distinguish missing, blank and present values.
+
+**Acceptance:** Run `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m03_missing::`, record predictions and observed results, and explain the actual failure cause without deleting assertions or weakening the API.
+
 ## Progressive hints
 
 1. Identify the distinct states, values and module boundaries.

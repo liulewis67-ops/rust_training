@@ -69,6 +69,12 @@ fn reading_at(readings: [i32; 3], position: usize) -> i32 {
 
 **分层提示：** ① 三元素数组的有效位置区间是什么？② Rust 数组索引如何处理越界？③ 文档约定如何落实为参数检查或调用方约束？
 
+## 4. 边界迁移：数组的安全访问与运行时越界
+
+先预测索引 `0`、`2`、`3`，运行三项测试后，让函数使用 `0..=values.len()`，观察它在哪里 panic；修复为 `0..values.len()`。最后改用 `get` 编写不会 panic 的读取函数，覆盖空数组切片和边界索引。
+
+**验收：** 运行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m02_shapes::`，写出每种输入的预期与实际证据，并独立解释错误根因；不要通过删除断言或弱化函数签名让测试“通过”。
+
 ## 参考答案
 
 1. 改为 `for index in 0..values.len()`。三次访问的下标是 0、1、2，总和为 13；排除上界的范围不会访问长度位置 3。

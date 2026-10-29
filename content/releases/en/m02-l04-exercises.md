@@ -20,6 +20,12 @@ Use a three-element array for readings, a tuple for metadata and match for expli
 
 **Acceptance evidence:** Supply an input/type/classification table and one safe bounds-check assertion.
 
+## Exercise 4: Verified boundary challenge — Safe indexing and runtime array bounds
+
+Predict indices `0`, `2`, `3`, run the three tests, then deliberately use `0..=values.len()` and locate the panic. Repair to `0..values.len()`; finally use `get` for a non-panicking lookup including empty slices and boundary indices.
+
+**Acceptance:** Run `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m02_shapes::`, record predictions and observed results, and explain the actual failure cause without deleting assertions or weakening the API.
+
 ## Progressive hints
 
 1. Start from types, ownership and explicit input contracts rather than the surface syntax.

@@ -84,6 +84,12 @@ fn show_rate(code: u8) -> &'static str {
 
 **分层提示：** ① `rate_for` 用 match 返回 `Some` 或 `None`。② 在 `show_rate` 再对返回值 match。③ `Some(_)` 可表示某个费率已找到，不必在标签中显示具体数字。
 
+## 4. 边界迁移：把缺失与合法空值分开
+
+先预测 `ticket_title(10/20/99)` 的 `Option` 变体及展示文字，再测试把未命中编码成 `Some("")` 的错误实现。解释为什么它虽能编译、测试却应该失败；用断言同时覆盖存在、空名称、不存在。
+
+**验收：** 运行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m03_missing::`，写出每种输入的预期与实际证据，并独立解释错误根因；不要通过删除断言或弱化函数签名让测试“通过”。
+
 ## 参考答案
 
 ### 1. 预测
