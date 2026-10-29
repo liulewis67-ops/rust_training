@@ -20,6 +20,12 @@ Mark exactly where two independent owned strings are required, and replace unnec
 
 **Acceptance:** Report binding usability after Copy/Clone/move and which costs still require measurement.
 
+## Exercise 4: Verified challenge — Copy and Clone are different ownership contracts
+
+Draw ownership for `u32` copies, String moves, and String clones. Run the passing tests and locate E0382 in the compile-fail file. Repair a copy via clone and via borrowing; explain when independent ownership is genuinely required.
+
+From the repository root, run `node scripts/verify-lesson-drills.mjs` to check both the passing tests and expected compiler diagnostics.
+
 ## Progressive hints
 
 1. Trace bindings and owned values separately.

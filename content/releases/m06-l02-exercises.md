@@ -51,6 +51,12 @@ fn find_fragment(text: &str, query: &str) -> Option<&str> {
 
 解释单一输入为何允许省略、多个来源何时需要显式标注、函数实现不决定输入 owner 的寿命这三者之间的关系。
 
+## 4. 可复现实验：引用来源与 E0106
+
+运行查询字符串先销毁而文本仍有效的测试，解释为何输出没有悬垂。编译两个引用来源的错误签名并记录 E0106；对比只允许返回 left 与确实可能返回任一输入的两种修复，说明生命周期参数是约束关系而非延长资源。
+
+从仓库根目录运行 `node scripts/verify-lesson-drills.mjs`，统一核对正例与预期编译失败的诊断。
+
 ## 参考答案
 
 1. 输出 `job ready / 9`。签名展开为 `fn echo<'text>(text: &'text str) -> &'text str`；返回值借自 `message`，owner 仍属于调用方。
