@@ -1109,3 +1109,90 @@
     transition: none;
   }
 }
+
+/* Navigate each module as six connected engineering decisions. */
+.course-module-journey {
+  margin-top: 30px;
+  padding: 20px 22px;
+  border: 1px solid var(--reader-rule, var(--line));
+  border-radius: 10px;
+  background: var(--reader-subtle, var(--panel));
+}
+.course-module-journey-kicker {
+  display: block;
+  color: var(--orange);
+  font: 11px var(--mono);
+  letter-spacing: 0.06em;
+}
+.course-module-journey-header h2 {
+  margin: 8px 0;
+  font-size: clamp(17px, 2vw, 21px);
+  line-height: 1.4;
+}
+.course-module-journey-header p,
+.course-module-journey-current {
+  margin: 0;
+  color: var(--soft);
+  font-size: 13px;
+  line-height: 1.75;
+}
+.course-module-journey-steps {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin: 19px 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.course-module-journey-steps li { min-width: 0; }
+.course-module-journey-steps button {
+  width: 100%;
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--reader-rule, var(--line));
+  border-radius: 7px;
+  background: transparent;
+  color: var(--soft);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+.course-module-journey-steps button:hover {
+  border-color: var(--orange);
+  background: var(--panel2);
+}
+.course-module-journey-steps button:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
+.course-module-journey-steps button.is-current {
+  border-color: var(--orange);
+  background: var(--panel2);
+  color: var(--text);
+}
+.course-module-journey-number { color: var(--orange); font: 11px var(--mono); }
+.course-module-journey-label { font-size: 12px; font-weight: 600; line-height: 1.5; }
+.course-module-journey-current {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding-top: 13px;
+  border-top: 1px solid var(--reader-rule, var(--line));
+}
+.course-module-journey-current strong { flex-shrink: 0; color: var(--text); }
+@media (max-width: 1080px) {
+  .course-module-journey-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .course-module-journey { padding: 16px; }
+  .course-module-journey-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .course-module-journey-steps button { min-height: 70px; }
+  .course-module-journey-current { flex-direction: column; gap: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .course-module-journey-steps button { transition: none; }
+}
