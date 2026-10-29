@@ -1,0 +1,1332 @@
+{
+  "version": 2,
+  "thread": {
+    "zh": "从可验证的 Rust 工具，到具备数据、资源与错误边界的可靠服务核心",
+    "en": "From a verified Rust utility to a reliable service core with explicit data, resource, and error boundaries"
+  },
+  "modules": [
+    {
+      "id": "M01",
+      "goal": {
+        "zh": "建立可复现的开发循环",
+        "en": "Build a reproducible development loop"
+      },
+      "steps": [
+        {
+          "id": "M01-L01",
+          "label": {
+            "zh": "明确技术约束",
+            "en": "Define constraints"
+          },
+          "problem": {
+            "zh": "先决定为何使用 Rust，而不是先选语言。",
+            "en": "Choose a language based on constraints rather than fashion."
+          },
+          "decision": {
+            "zh": "为日志工具写出可证伪的 Rust 试点假设。",
+            "en": "Document a falsifiable Rust prototype hypothesis."
+          },
+          "artifact": {
+            "zh": "技术决策记录及停止条件",
+            "en": "Decision record with stop criteria"
+          },
+          "evidence": {
+            "zh": "基线与试点指标可以对照。",
+            "en": "Baseline and pilot measurements can be compared."
+          }
+        },
+        {
+          "id": "M01-L02",
+          "label": {
+            "zh": "构建可复现环境",
+            "en": "Reproduce the toolchain"
+          },
+          "problem": {
+            "zh": "试点结论需要在另一台机器复现。",
+            "en": "A pilot cannot be reviewed if its toolchain is unknown."
+          },
+          "decision": {
+            "zh": "明确 rustup、Cargo、Edition 与项目入口。",
+            "en": "Identify rustup, Cargo, the edition, and entry points."
+          },
+          "artifact": {
+            "zh": "固定的构建说明及 Cargo 工程",
+            "en": "Pinned setup notes and Cargo package"
+          },
+          "evidence": {
+            "zh": "新环境能运行 cargo check。",
+            "en": "cargo check works in a clean environment."
+          }
+        },
+        {
+          "id": "M01-L03",
+          "label": {
+            "zh": "拆解失败阶段",
+            "en": "Separate failure stages"
+          },
+          "problem": {
+            "zh": "有了工程，构建、测试和运行失败却会被混淆。",
+            "en": "Build, test, and runtime failures are easy to conflate."
+          },
+          "decision": {
+            "zh": "按 check、test、run 分别定位第一处失败。",
+            "en": "Distinguish check, test, and run failures."
+          },
+          "artifact": {
+            "zh": "可复现的诊断记录",
+            "en": "Reproducible diagnostic log"
+          },
+          "evidence": {
+            "zh": "每类失败均有独立命令和证据。",
+            "en": "Each failure has its own command and evidence."
+          }
+        },
+        {
+          "id": "M01-L04",
+          "label": {
+            "zh": "形成最小变更",
+            "en": "Make reviewable changes"
+          },
+          "problem": {
+            "zh": "修复若夹带无关修改，就无法可靠审查。",
+            "en": "Unrelated edits obscure whether a fix works."
+          },
+          "decision": {
+            "zh": "把格式、Lint、行为断言与 Git 暂存分开。",
+            "en": "Separate format, lint, behavior tests, and staging."
+          },
+          "artifact": {
+            "zh": "可审查的最小修复提交",
+            "en": "Minimal reviewable fix"
+          },
+          "evidence": {
+            "zh": "失败测试先红后绿，暂存差异可解释。",
+            "en": "A failing assertion turns green and the staged diff is focused."
+          }
+        },
+        {
+          "id": "M01-L05",
+          "label": {
+            "zh": "修复两层故障",
+            "en": "Repair two failure layers"
+          },
+          "problem": {
+            "zh": "一个编译通过的程序仍可能给出错误折扣结果。",
+            "en": "A compiling program may still calculate an incorrect discount."
+          },
+          "decision": {
+            "zh": "先修类型错误，再以契约测试修业务逻辑。",
+            "en": "Repair the type error, then the business behavior."
+          },
+          "artifact": {
+            "zh": "通过测试的修复项目",
+            "en": "Repaired project with passing tests"
+          },
+          "evidence": {
+            "zh": "编译和行为测试均独立通过。",
+            "en": "Compilation and behavior tests pass independently."
+          }
+        },
+        {
+          "id": "M01-L06",
+          "label": {
+            "zh": "独立交付工具",
+            "en": "Deliver a tool"
+          },
+          "problem": {
+            "zh": "离开脚手架后仍要能自行交付。",
+            "en": "The workflow must work without a prepared scaffold."
+          },
+          "decision": {
+            "zh": "从空目录交付整数分格式化 CLI 与库函数。",
+            "en": "Build an integer-cents formatting CLI and library from scratch."
+          },
+          "artifact": {
+            "zh": "可复现的最小 CLI 与验证报告",
+            "en": "Reproducible CLI and verification report"
+          },
+          "evidence": {
+            "zh": "零值、边界格式和本地检查全部记录。",
+            "en": "Zero/boundary formatting and local checks are recorded."
+          }
+        }
+      ]
+    },
+    {
+      "id": "M02",
+      "goal": {
+        "zh": "把输入约束变成可靠计算",
+        "en": "Turn input constraints into reliable calculations"
+      },
+      "steps": [
+        {
+          "id": "M02-L01",
+          "label": {
+            "zh": "定义数值契约",
+            "en": "Define numeric contracts"
+          },
+          "problem": {
+            "zh": "CLI 的数值输入需要稳定类型和可变状态。",
+            "en": "The CLI needs explicit numeric types and mutable counters."
+          },
+          "decision": {
+            "zh": "选择整数类型、绑定可变性和转换边界。",
+            "en": "Choose integer types, binding mutability, and conversions."
+          },
+          "artifact": {
+            "zh": "类型明确的计数器",
+            "en": "Typed counter"
+          },
+          "evidence": {
+            "zh": "零值、u8 上界与非法混合运算可验证。",
+            "en": "Zero, u8 bounds, and invalid mixed arithmetic are checked."
+          }
+        },
+        {
+          "id": "M02-L02",
+          "label": {
+            "zh": "拆出纯函数",
+            "en": "Extract pure functions"
+          },
+          "problem": {
+            "zh": "有了正确类型，计算还需要可测试的返回值。",
+            "en": "Typed data still needs a testable function result."
+          },
+          "decision": {
+            "zh": "以尾表达式组织函数和条件分支。",
+            "en": "Use tail expressions for return and conditional branches."
+          },
+          "artifact": {
+            "zh": "可测试的纯计算函数",
+            "en": "Testable pure calculation function"
+          },
+          "evidence": {
+            "zh": "分号或分支类型错误被编译器检出。",
+            "en": "Semicolon and branch type errors are detected."
+          }
+        },
+        {
+          "id": "M02-L03",
+          "label": {
+            "zh": "明确执行边界",
+            "en": "Make control flow explicit"
+          },
+          "problem": {
+            "zh": "计算需要遍历输入，范围端点必须准确。",
+            "en": "Calculations need iterations with precise bounds."
+          },
+          "decision": {
+            "zh": "按条件选 if、for、while 并验证区间。",
+            "en": "Choose if, for, and while with verified bounds."
+          },
+          "artifact": {
+            "zh": "带边界的累计逻辑",
+            "en": "Bounded accumulation logic"
+          },
+          "evidence": {
+            "zh": "0、1、一般值的迭代次数正确。",
+            "en": "Iteration counts hold for zero, one, and general inputs."
+          }
+        },
+        {
+          "id": "M02-L04",
+          "label": {
+            "zh": "表达数据形状",
+            "en": "Model data shapes"
+          },
+          "problem": {
+            "zh": "一组样本和一条记录不是同一数据形状。",
+            "en": "A sample set and a heterogeneous record need different types."
+          },
+          "decision": {
+            "zh": "区分数组、元组、索引与 match 分类。",
+            "en": "Distinguish arrays, tuples, indexing, and match."
+          },
+          "artifact": {
+            "zh": "有类型约束的采样分类",
+            "en": "Typed sample classification"
+          },
+          "evidence": {
+            "zh": "越界不会被错误视为有效读数。",
+            "en": "An invalid index is not mistaken for valid data."
+          }
+        },
+        {
+          "id": "M02-L05",
+          "label": {
+            "zh": "处理单位与溢出",
+            "en": "Handle units and overflow"
+          },
+          "problem": {
+            "zh": "单位换算可能越过整数表示范围。",
+            "en": "Unit conversion can overflow a numeric type."
+          },
+          "decision": {
+            "zh": "在起始工程中使用 checked_mul 明确失败分支。",
+            "en": "Use checked_mul in the starter for explicit failure."
+          },
+          "artifact": {
+            "zh": "可恢复的分钟转秒函数",
+            "en": "Recoverable minutes-to-seconds converter"
+          },
+          "evidence": {
+            "zh": "最大安全值及溢出值有测试。",
+            "en": "Maximum safe and overflowing inputs have tests."
+          }
+        },
+        {
+          "id": "M02-L06",
+          "label": {
+            "zh": "锁定合计契约",
+            "en": "Lock aggregate behavior"
+          },
+          "problem": {
+            "zh": "多次合计需要可重复的溢出策略。",
+            "en": "Repeated totals require explicit overflow semantics."
+          },
+          "decision": {
+            "zh": "用 checked_add 交付带错误结果的合计函数。",
+            "en": "Deliver checked_add-based totals with a failure path."
+          },
+          "artifact": {
+            "zh": "经过边界验证的累计接口",
+            "en": "Boundary-tested aggregation interface"
+          },
+          "evidence": {
+            "zh": "MAX+0 与 MAX+1 被区分。",
+            "en": "MAX+0 and MAX+1 produce distinct outcomes."
+          }
+        }
+      ]
+    },
+    {
+      "id": "M03",
+      "goal": {
+        "zh": "从散落字段到可维护业务模型",
+        "en": "Turn scattered fields into a domain model"
+      },
+      "steps": [
+        {
+          "id": "M03-L01",
+          "label": {
+            "zh": "封装实体",
+            "en": "Encapsulate an entity"
+          },
+          "problem": {
+            "zh": "累计数据需要带含义的字段与约束。",
+            "en": "Typed values need named fields and invariants."
+          },
+          "decision": {
+            "zh": "用 struct 与方法约束状态修改。",
+            "en": "Use structs and methods for controlled updates."
+          },
+          "artifact": {
+            "zh": "带不变量的领域结构体",
+            "en": "Domain struct with invariants"
+          },
+          "evidence": {
+            "zh": "非法更新不会破坏已有状态。",
+            "en": "Rejected updates preserve valid state."
+          }
+        },
+        {
+          "id": "M03-L02",
+          "label": {
+            "zh": "枚举生命周期",
+            "en": "Enumerate lifecycle"
+          },
+          "problem": {
+            "zh": "单靠布尔字段无法表达互斥任务阶段。",
+            "en": "Independent booleans cannot express mutually exclusive task states."
+          },
+          "decision": {
+            "zh": "用 enum/match 建立穷尽的状态分支。",
+            "en": "Model exhaustive states with enums and match."
+          },
+          "artifact": {
+            "zh": "类型安全的任务状态",
+            "en": "Type-safe task state"
+          },
+          "evidence": {
+            "zh": "新增状态会要求显式审核分支。",
+            "en": "Adding a state forces branch review."
+          }
+        },
+        {
+          "id": "M03-L03",
+          "label": {
+            "zh": "处理缺失查询",
+            "en": "Handle missing lookups"
+          },
+          "problem": {
+            "zh": "任务 ID 可能不存在，空字符串也可能是有效名称。",
+            "en": "A task may be absent even when an empty name is valid."
+          },
+          "decision": {
+            "zh": "以 Option 区分存在与缺失。",
+            "en": "Use Option to distinguish present and missing data."
+          },
+          "artifact": {
+            "zh": "明确缺失语义的查询 API",
+            "en": "Lookup API with explicit absence"
+          },
+          "evidence": {
+            "zh": "None 与 Some(空值) 可区分。",
+            "en": "None differs from Some(empty data)."
+          }
+        },
+        {
+          "id": "M03-L04",
+          "label": {
+            "zh": "建立模块边界",
+            "en": "Define module boundaries"
+          },
+          "problem": {
+            "zh": "上层不能直接修改所有内部字段。",
+            "en": "Callers must not mutate arbitrary internal fields."
+          },
+          "decision": {
+            "zh": "通过 pub 方法暴露稳定行为而非表示。",
+            "en": "Expose stable methods, not internal representation."
+          },
+          "artifact": {
+            "zh": "最小公共业务接口",
+            "en": "Minimal public domain interface"
+          },
+          "evidence": {
+            "zh": "跨模块直接写私有字段会被拒绝。",
+            "en": "Direct writes to private fields are rejected."
+          }
+        },
+        {
+          "id": "M03-L05",
+          "label": {
+            "zh": "整合内存清单",
+            "en": "Integrate a task list"
+          },
+          "problem": {
+            "zh": "实体和状态定义好后，增删查仍可能失效。",
+            "en": "Correct types do not guarantee correct task-list behavior."
+          },
+          "decision": {
+            "zh": "整合 Vec、状态解析与查询修复。",
+            "en": "Integrate Vec storage, status parsing, and lookup repair."
+          },
+          "artifact": {
+            "zh": "可运行的任务清单实验",
+            "en": "Working task-list lab"
+          },
+          "evidence": {
+            "zh": "新增任务可查回，错误更新不改状态。",
+            "en": "Added tasks are retrievable; failed updates preserve state."
+          }
+        },
+        {
+          "id": "M03-L06",
+          "label": {
+            "zh": "交付提醒状态",
+            "en": "Deliver reminder state"
+          },
+          "problem": {
+            "zh": "查询缺失和业务状态需要组合决策。",
+            "en": "Missing lookup and lifecycle state are separate decisions."
+          },
+          "decision": {
+            "zh": "组合 Option 与枚举制定提醒动作。",
+            "en": "Combine Option and an enum to decide reminder actions."
+          },
+          "artifact": {
+            "zh": "完整的提醒决策表",
+            "en": "Complete reminder decision table"
+          },
+          "evidence": {
+            "zh": "None 与每个状态均有独立断言。",
+            "en": "None and each lifecycle state have distinct assertions."
+          }
+        }
+      ]
+    },
+    {
+      "id": "M04",
+      "goal": {
+        "zh": "解释数据在调用链中的归属",
+        "en": "Trace data ownership across calls"
+      },
+      "steps": [
+        {
+          "id": "M04-L01",
+          "label": {
+            "zh": "追踪资源生命周期",
+            "en": "Trace resource lifetime"
+          },
+          "problem": {
+            "zh": "任务结构进入处理流程后，必须知道何时释放。",
+            "en": "A task pipeline needs clear resource cleanup."
+          },
+          "decision": {
+            "zh": "标记 owner、scope 和 Drop 次序。",
+            "en": "Trace owners, scopes, and Drop order."
+          },
+          "artifact": {
+            "zh": "资源归属图",
+            "en": "Resource ownership diagram"
+          },
+          "evidence": {
+            "zh": "移动后的资源仅被释放一次。",
+            "en": "Moved resources are dropped exactly once."
+          }
+        },
+        {
+          "id": "M04-L02",
+          "label": {
+            "zh": "识别所有权移动",
+            "en": "Recognize transfers"
+          },
+          "problem": {
+            "zh": "日志文本被函数消费后不能再从原绑定读取。",
+            "en": "A consumed log message is no longer accessible through its old binding."
+          },
+          "decision": {
+            "zh": "区分参数移动、借用与返回所有权。",
+            "en": "Distinguish argument moves, borrows, and returned ownership."
+          },
+          "artifact": {
+            "zh": "调用链所有权轨迹",
+            "en": "Ownership trace across calls"
+          },
+          "evidence": {
+            "zh": "E0382 的起点可定位。",
+            "en": "The E0382 source is understood."
+          }
+        },
+        {
+          "id": "M04-L03",
+          "label": {
+            "zh": "控制复制成本",
+            "en": "Control copying"
+          },
+          "problem": {
+            "zh": "多个消费者需要数据时不能无脑 clone。",
+            "en": "Multiple readers do not always justify cloning."
+          },
+          "decision": {
+            "zh": "辨别 Copy、Clone、move 的语义与成本。",
+            "en": "Distinguish Copy, Clone, and move costs."
+          },
+          "artifact": {
+            "zh": "有理由的复制决策",
+            "en": "Justified duplication decision"
+          },
+          "evidence": {
+            "zh": "复制后绑定可用性及必要成本有说明。",
+            "en": "Binding availability and copy costs are documented."
+          }
+        },
+        {
+          "id": "M04-L04",
+          "label": {
+            "zh": "安全拆装实体",
+            "en": "Extract and rebuild entities"
+          },
+          "problem": {
+            "zh": "搬走结构体字段会改变剩余值的可用性。",
+            "en": "Extracting a struct field changes which parts remain usable."
+          },
+          "decision": {
+            "zh": "利用部分移动与重新组装设计返回值。",
+            "en": "Use partial moves and explicit reconstruction."
+          },
+          "artifact": {
+            "zh": "无额外全量克隆的传输接口",
+            "en": "Transfer API without blanket cloning"
+          },
+          "evidence": {
+            "zh": "移动字段后仍正确保留其它字段。",
+            "en": "Remaining fields are preserved after a move."
+          }
+        },
+        {
+          "id": "M04-L05",
+          "label": {
+            "zh": "修复文本流水线",
+            "en": "Repair the text pipeline"
+          },
+          "problem": {
+            "zh": "真实文本管线可能先消费又重用旧值。",
+            "en": "A text pipeline can accidentally reuse moved data."
+          },
+          "decision": {
+            "zh": "从 E0382 诊断修复 starter，保留两份输出契约。",
+            "en": "Fix the E0382 starter while preserving both outputs."
+          },
+          "artifact": {
+            "zh": "通过所有权检查的文本流水线",
+            "en": "Ownership-safe text pipeline"
+          },
+          "evidence": {
+            "zh": "原文与变换结果均正确交付。",
+            "en": "Original and transformed text are both delivered."
+          }
+        },
+        {
+          "id": "M04-L06",
+          "label": {
+            "zh": "提交工单审计",
+            "en": "Audit ticket handling"
+          },
+          "problem": {
+            "zh": "消费工单前还需要读取其 UTF-8 字节信息。",
+            "en": "Ticket metadata must be read before text is consumed."
+          },
+          "decision": {
+            "zh": "先借用读取，再转移 String。",
+            "en": "Read through a borrow before moving the String."
+          },
+          "artifact": {
+            "zh": "工单审计与移交结果",
+            "en": "Ticket audit and hand-off result"
+          },
+          "evidence": {
+            "zh": "UTF-8 字节数和 move 断言正确。",
+            "en": "UTF-8 byte lengths and move tests agree."
+          }
+        }
+      ]
+    },
+    {
+      "id": "M05",
+      "goal": {
+        "zh": "以最小借用完成安全读取",
+        "en": "Read data safely with narrow borrows"
+      },
+      "steps": [
+        {
+          "id": "M05-L01",
+          "label": {
+            "zh": "区分读写权限",
+            "en": "Separate read and write access"
+          },
+          "problem": {
+            "zh": "有了 owner 后，多处访问仍可能相互冲突。",
+            "en": "Knowing the owner does not resolve conflicting accesses."
+          },
+          "decision": {
+            "zh": "安排 &T 与 &mut T 的互斥边界。",
+            "en": "Schedule shared &T and exclusive &mut T borrows."
+          },
+          "artifact": {
+            "zh": "安全的配置读写流程",
+            "en": "Safe config read/update flow"
+          },
+          "evidence": {
+            "zh": "读写冲突被拒绝且结果保留。",
+            "en": "Conflicting access is rejected without losing outcomes."
+          }
+        },
+        {
+          "id": "M05-L02",
+          "label": {
+            "zh": "收窄借用范围",
+            "en": "Shorten borrow ranges"
+          },
+          "problem": {
+            "zh": "引用名在作用域内，不等于借用始终活跃。",
+            "en": "A reference binding can outlive its active borrow."
+          },
+          "decision": {
+            "zh": "利用最后一次使用安排 Vec 修改。",
+            "en": "Use non-lexical lifetimes to schedule Vec mutation."
+          },
+          "artifact": {
+            "zh": "无冲突的列表更新顺序",
+            "en": "Conflict-free list update sequence"
+          },
+          "evidence": {
+            "zh": "交换读写顺序会复现或修复错误。",
+            "en": "Reordering read and write reproduces or fixes conflict."
+          }
+        },
+        {
+          "id": "M05-L03",
+          "label": {
+            "zh": "正确读取 UTF-8",
+            "en": "Read UTF-8 safely"
+          },
+          "problem": {
+            "zh": "日志文本不是可按字符序号任意切片的字节数组。",
+            "en": "UTF-8 text cannot be sliced at arbitrary byte positions."
+          },
+          "decision": {
+            "zh": "用 &str、分隔符及合法字节边界返回视图。",
+            "en": "Return &str views at valid byte boundaries."
+          },
+          "artifact": {
+            "zh": "零复制的词条视图",
+            "en": "Zero-copy token view"
+          },
+          "evidence": {
+            "zh": "中文、空白和空串处理正确。",
+            "en": "Chinese text, whitespace, and empty input are correct."
+          }
+        },
+        {
+          "id": "M05-L04",
+          "label": {
+            "zh": "设计窄接口",
+            "en": "Design narrow APIs"
+          },
+          "problem": {
+            "zh": "同时持有元素引用与容器可变借用使调用方受阻。",
+            "en": "Borrowing an element and its container mutably blocks the caller."
+          },
+          "decision": {
+            "zh": "把先读后写或摘要传递写进接口。",
+            "en": "Build read-then-write or summary passing into the API."
+          },
+          "artifact": {
+            "zh": "可调用的受控修改接口",
+            "en": "Callable constrained mutation API"
+          },
+          "evidence": {
+            "zh": "E0502 反例和正确替代均有测试。",
+            "en": "Both the E0502 failure and valid alternatives are tested."
+          }
+        },
+        {
+          "id": "M05-L05",
+          "label": {
+            "zh": "交付零复制查询",
+            "en": "Deliver zero-copy lookup"
+          },
+          "problem": {
+            "zh": "借用接口还需证明结果源于输入而非临时数据。",
+            "en": "Borrowed returns must point into valid caller-owned input."
+          },
+          "decision": {
+            "zh": "修复输出生命周期关系并验证来源。",
+            "en": "Fix output-lifetime relationships and verify provenance."
+          },
+          "artifact": {
+            "zh": "可借用的文本查询函数",
+            "en": "Borrowed text query function"
+          },
+          "evidence": {
+            "zh": "Unicode 与短生命周期的反例成立。",
+            "en": "Unicode and short-lived counterexamples behave as required."
+          }
+        },
+        {
+          "id": "M05-L06",
+          "label": {
+            "zh": "完成安全分割",
+            "en": "Split Unicode safely"
+          },
+          "problem": {
+            "zh": "分隔位置与后续修改会同时考验 UTF-8 和借用。",
+            "en": "Delimiter positions and mutation test both UTF-8 and borrows."
+          },
+          "decision": {
+            "zh": "用合法边界拆切片，结束读取后再修改。",
+            "en": "Split on valid boundaries and mutate after reads end."
+          },
+          "artifact": {
+            "zh": "安全的 UTF-8 分割接口",
+            "en": "Safe UTF-8 splitting API"
+          },
+          "evidence": {
+            "zh": "首尾/缺失分隔符都可预测。",
+            "en": "Leading/trailing/missing delimiters are covered."
+          }
+        }
+      ]
+    },
+    {
+      "id": "M06",
+      "goal": {
+        "zh": "让结果的生命周期符合业务持有需求",
+        "en": "Match result lifetime to retention needs"
+      },
+      "steps": [
+        {
+          "id": "M06-L01",
+          "label": {
+            "zh": "拒绝悬垂引用",
+            "en": "Reject dangling references"
+          },
+          "problem": {
+            "zh": "零复制视图不能在 owner 销毁后仍被使用。",
+            "en": "A zero-copy view cannot outlive its owner."
+          },
+          "decision": {
+            "zh": "选择让调用方持有源数据或返回 owned 值。",
+            "en": "Keep caller-owned data alive or return an owned value."
+          },
+          "artifact": {
+            "zh": "不悬垂的返回契约",
+            "en": "Non-dangling return contract"
+          },
+          "evidence": {
+            "zh": "局部引用逃逸被编译器拒绝。",
+            "en": "Escaping a local reference is rejected."
+          }
+        },
+        {
+          "id": "M06-L02",
+          "label": {
+            "zh": "标明借用关系",
+            "en": "Express borrow relationships"
+          },
+          "problem": {
+            "zh": "两个输入引用使输出来源不明确。",
+            "en": "Two borrowed inputs make return provenance ambiguous."
+          },
+          "decision": {
+            "zh": "写出必要的命名生命周期参数。",
+            "en": "Specify necessary named lifetime relationships."
+          },
+          "artifact": {
+            "zh": "可检查的双输入引用函数",
+            "en": "Checkable two-input borrow function"
+          },
+          "evidence": {
+            "zh": "越界使用结果不会通过编译。",
+            "en": "An escaping output does not compile."
+          }
+        },
+        {
+          "id": "M06-L03",
+          "label": {
+            "zh": "区分视图与拥有型",
+            "en": "Choose borrowed or owned results"
+          },
+          "problem": {
+            "zh": "即时预览和后台队列要求不同持有时间。",
+            "en": "Immediate preview and queued work need different lifetimes."
+          },
+          "decision": {
+            "zh": "分别设计 AlertView 与 Alert 风格接口。",
+            "en": "Design view-style and owned-style results separately."
+          },
+          "artifact": {
+            "zh": "视图与队列 DTO 双接口",
+            "en": "View and queue DTO interfaces"
+          },
+          "evidence": {
+            "zh": "队列结果在原输入释放后仍有效。",
+            "en": "Queued results survive input release."
+          }
+        },
+        {
+          "id": "M06-L04",
+          "label": {
+            "zh": "澄清 static 限制",
+            "en": "Clarify static bounds"
+          },
+          "problem": {
+            "zh": "长期存放不代表每个 String 都拥有静态引用。",
+            "en": "Long-term ownership does not imply a static reference."
+          },
+          "decision": {
+            "zh": "区分 T: 'static 与 &'static str。",
+            "en": "Distinguish T: 'static from &'static str."
+          },
+          "artifact": {
+            "zh": "不会滥用泄漏的持有策略",
+            "en": "Retention strategy without leaks"
+          },
+          "evidence": {
+            "zh": "owned String 可按普通作用域释放。",
+            "en": "Owned String can still be dropped normally."
+          }
+        },
+        {
+          "id": "M06-L05",
+          "label": {
+            "zh": "修复配置视图",
+            "en": "Repair config views"
+          },
+          "problem": {
+            "zh": "解析结果需要同时支持借用读取和独立入队。",
+            "en": "Parsed configuration must serve both views and queues."
+          },
+          "decision": {
+            "zh": "共享解析规则，分离 borrowed/owned 返回。",
+            "en": "Share parsing rules but separate borrowed/owned outputs."
+          },
+          "artifact": {
+            "zh": "两种配置解析结果",
+            "en": "Two config result shapes"
+          },
+          "evidence": {
+            "zh": "两个接口均通过独立生命周期测试。",
+            "en": "Both interfaces pass lifetime-specific tests."
+          }
+        },
+        {
+          "id": "M06-L06",
+          "label": {
+            "zh": "按需分配",
+            "en": "Allocate only when necessary"
+          },
+          "problem": {
+            "zh": "复制所有字符串会让短暂读取无谓分配。",
+            "en": "Cloning every string wastes allocation on borrowed paths."
+          },
+          "decision": {
+            "zh": "用 Cow 在原样与修改路径间作选择。",
+            "en": "Use Cow to choose between borrowed and transformed data."
+          },
+          "artifact": {
+            "zh": "按需拥有的标准化器",
+            "en": "Conditional-allocation normalizer"
+          },
+          "evidence": {
+            "zh": "Borrowed 与 Owned 两条路径可断言。",
+            "en": "Borrowed and Owned variants have assertions."
+          }
+        }
+      ]
+    },
+    {
+      "id": "M07",
+      "goal": {
+        "zh": "让业务能力成为可替换策略",
+        "en": "Make domain behavior replaceable"
+      },
+      "steps": [
+        {
+          "id": "M07-L01",
+          "label": {
+            "zh": "抽取共享约束",
+            "en": "Extract shared bounds"
+          },
+          "problem": {
+            "zh": "不同数据类型需要共享算法而非复制实现。",
+            "en": "Different domain types need shared algorithms."
+          },
+          "decision": {
+            "zh": "用最小泛型 trait bound 表达能力。",
+            "en": "Express the capability with minimal generic bounds."
+          },
+          "artifact": {
+            "zh": "类型受约束的选择算法",
+            "en": "Bounded generic selection algorithm"
+          },
+          "evidence": {
+            "zh": "不满足约束的类型编译失败。",
+            "en": "Types without required traits fail compilation."
+          }
+        },
+        {
+          "id": "M07-L02",
+          "label": {
+            "zh": "定义行为接口",
+            "en": "Define a behavior contract"
+          },
+          "problem": {
+            "zh": "同名固有方法并不等于稳定共享契约。",
+            "en": "Similarly named methods do not form a shared interface."
+          },
+          "decision": {
+            "zh": "用 trait 和 impl 明确统一摘要行为。",
+            "en": "Use trait and impl for consistent summary behavior."
+          },
+          "artifact": {
+            "zh": "统一的领域 Trait",
+            "en": "Shared domain trait"
+          },
+          "evidence": {
+            "zh": "多个具体类型行为可独立断言。",
+            "en": "Distinct types satisfy the same contract."
+          }
+        },
+        {
+          "id": "M07-L03",
+          "label": {
+            "zh": "选定分发方式",
+            "en": "Choose dispatch strategy"
+          },
+          "problem": {
+            "zh": "运行时策略列表需要容纳异构实现。",
+            "en": "Runtime strategy lists may contain heterogeneous types."
+          },
+          "decision": {
+            "zh": "对比泛型静态分发与 dyn Trait。",
+            "en": "Compare static generic dispatch with dyn Trait."
+          },
+          "artifact": {
+            "zh": "可异构的格式化器列表",
+            "en": "Heterogeneous formatter collection"
+          },
+          "evidence": {
+            "zh": "对象兼容性反例能复现。",
+            "en": "Dyn-compatibility counterexamples are reproducible."
+          }
+        },
+        {
+          "id": "M07-L04",
+          "label": {
+            "zh": "保护转换不变量",
+            "en": "Protect conversion invariants"
+          },
+          "problem": {
+            "zh": "同为 u64 的字段却拥有不同业务意义。",
+            "en": "Two u64 values can represent incompatible domain meanings."
+          },
+          "decision": {
+            "zh": "用 newtype 与 TryFrom 拒绝非法转换。",
+            "en": "Use newtypes and TryFrom to reject invalid conversions."
+          },
+          "artifact": {
+            "zh": "有验证规则的领域 ID",
+            "en": "Validated domain identifiers"
+          },
+          "evidence": {
+            "zh": "非法值产生明确错误。",
+            "en": "Invalid values produce explicit errors."
+          }
+        },
+        {
+          "id": "M07-L05",
+          "label": {
+            "zh": "替换解析实现",
+            "en": "Swap parser implementations"
+          },
+          "problem": {
+            "zh": "接口统一仍不能保证冒号与等号解析正确。",
+            "en": "Shared traits do not guarantee correct delimiter behavior."
+          },
+          "decision": {
+            "zh": "修复不同解析器并保持 trait API。",
+            "en": "Repair parser behavior under an unchanged trait."
+          },
+          "artifact": {
+            "zh": "可替换的配置解析器",
+            "en": "Replaceable configuration parsers"
+          },
+          "evidence": {
+            "zh": "多分隔符与空键值通过测试。",
+            "en": "Repeated delimiters and empty fields are tested."
+          }
+        },
+        {
+          "id": "M07-L06",
+          "label": {
+            "zh": "执行策略链",
+            "en": "Execute gate chain"
+          },
+          "problem": {
+            "zh": "多个策略必须按运行时顺序执行并短路。",
+            "en": "Multiple strategies must execute in order and short-circuit."
+          },
+          "decision": {
+            "zh": "以 dyn Trait 组合 Gate 并返回首个拒绝。",
+            "en": "Compose dyn Trait gates and return the first rejection."
+          },
+          "artifact": {
+            "zh": "顺序稳定的策略流水线",
+            "en": "Ordered gate pipeline"
+          },
+          "evidence": {
+            "zh": "交换 Gate 次序改变首个错误。",
+            "en": "Changing gate order changes the first rejection."
+          }
+        }
+      ]
+    },
+    {
+      "id": "M08",
+      "goal": {
+        "zh": "从事件集合得到确定性报告",
+        "en": "Build deterministic reports from events"
+      },
+      "steps": [
+        {
+          "id": "M08-L01",
+          "label": {
+            "zh": "选择集合容器",
+            "en": "Choose storage representation"
+          },
+          "problem": {
+            "zh": "策略执行产生多条事件，既要索引也要有序展示。",
+            "en": "Events need both keyed lookup and ordered display."
+          },
+          "decision": {
+            "zh": "按需求区分 Vec 与 HashMap。",
+            "en": "Choose Vec or HashMap from access requirements."
+          },
+          "artifact": {
+            "zh": "有确定展示顺序的事件容器",
+            "en": "Event storage with stable output order"
+          },
+          "evidence": {
+            "zh": "重复键与无序迭代不会混淆。",
+            "en": "Duplicate keys and unordered iteration are distinguished."
+          }
+        },
+        {
+          "id": "M08-L02",
+          "label": {
+            "zh": "控制回调状态",
+            "en": "Control callback captures"
+          },
+          "problem": {
+            "zh": "处理事件时的回调可能读取、修改或消费状态。",
+            "en": "Event callbacks may read, mutate, or consume state."
+          },
+          "decision": {
+            "zh": "匹配 Fn、FnMut、FnOnce 与捕获方式。",
+            "en": "Match Fn, FnMut, FnOnce to capture semantics."
+          },
+          "artifact": {
+            "zh": "有明确调用约束的回调接口",
+            "en": "Callback interface with explicit call bounds"
+          },
+          "evidence": {
+            "zh": "消费型闭包和可重复闭包被区分。",
+            "en": "Consuming and reusable closures are distinguished."
+          }
+        },
+        {
+          "id": "M08-L03",
+          "label": {
+            "zh": "决定迭代归属",
+            "en": "Choose iteration ownership"
+          },
+          "problem": {
+            "zh": "事件可能只读、原地修改或整个交付下游。",
+            "en": "Events may be read, edited in place, or consumed downstream."
+          },
+          "decision": {
+            "zh": "区分 iter、iter_mut、into_iter。",
+            "en": "Distinguish iter, iter_mut, and into_iter."
+          },
+          "artifact": {
+            "zh": "所有权明确的事件转换",
+            "en": "Ownership-aware event conversion"
+          },
+          "evidence": {
+            "zh": "消费后旧容器不可用。",
+            "en": "Consumed collections cannot be reused."
+          }
+        },
+        {
+          "id": "M08-L04",
+          "label": {
+            "zh": "建立惰性管线",
+            "en": "Compose lazy transforms"
+          },
+          "problem": {
+            "zh": "map/filter 的操作不会自动执行。",
+            "en": "map/filter adaptors do not execute on their own."
+          },
+          "decision": {
+            "zh": "以 collect/fold 驱动实际转换与聚合。",
+            "en": "Use collect/fold to drive real transformation and aggregation."
+          },
+          "artifact": {
+            "zh": "可验证的迭代汇总逻辑",
+            "en": "Testable iterator aggregation logic"
+          },
+          "evidence": {
+            "zh": "空输入及消费前后调用次数明确。",
+            "en": "Empty cases and closure calls are verified."
+          }
+        },
+        {
+          "id": "M08-L05",
+          "label": {
+            "zh": "修复日志聚合",
+            "en": "Repair service aggregation"
+          },
+          "problem": {
+            "zh": "重复服务名会被 insert 覆盖且 HashMap 输出无序。",
+            "en": "Duplicate service names overwrite totals and map order is unstable."
+          },
+          "decision": {
+            "zh": "借助 entry 累加，再按服务排序。",
+            "en": "Aggregate with entry then sort by service."
+          },
+          "artifact": {
+            "zh": "确定顺序的服务统计",
+            "en": "Deterministic service summary"
+          },
+          "evidence": {
+            "zh": "重复 api 的字节数与计数准确。",
+            "en": "Repeated api totals and counts are correct."
+          }
+        },
+        {
+          "id": "M08-L06",
+          "label": {
+            "zh": "处理传感器缺失",
+            "en": "Handle sensor absence"
+          },
+          "problem": {
+            "zh": "拒绝记录、无值、有效零值必须区分。",
+            "en": "Rejected, absent, and valid zero readings differ."
+          },
+          "decision": {
+            "zh": "组合 Option、过滤与汇总逻辑。",
+            "en": "Combine Option, filtering, and aggregation."
+          },
+          "artifact": {
+            "zh": "保留完整行的传感器报告",
+            "en": "Sensor report preserving all rows"
+          },
+          "evidence": {
+            "zh": "Some(0) 计数且拒绝设备仍留行。",
+            "en": "Some(0) counts; rejected-only sensors retain rows."
+          }
+        }
+      ]
+    },
+    {
+      "id": "M09",
+      "goal": {
+        "zh": "从失败原因到安全对外协议",
+        "en": "Translate failures into safe public contracts"
+      },
+      "steps": [
+        {
+          "id": "M09-L01",
+          "label": {
+            "zh": "传播错误值",
+            "en": "Propagate typed failures"
+          },
+          "problem": {
+            "zh": "报告和配置输入可能失败，不能把失败当成功。",
+            "en": "Reports and config input can fail and must not become success."
+          },
+          "decision": {
+            "zh": "区分 match 本地处理与 ? 提前返回。",
+            "en": "Choose local match handling or ? propagation."
+          },
+          "artifact": {
+            "zh": "有类型的失败传播路径",
+            "en": "Typed error propagation path"
+          },
+          "evidence": {
+            "zh": "非法整数仍是 Err 而非 panic。",
+            "en": "Invalid numbers remain Err, not panics."
+          }
+        },
+        {
+          "id": "M09-L02",
+          "label": {
+            "zh": "保留错误根因",
+            "en": "Preserve original causes"
+          },
+          "problem": {
+            "zh": "调用方需要字段和行号，同时诊断要能找到底层异常。",
+            "en": "Callers need field/line context while diagnostics need the cause."
+          },
+          "decision": {
+            "zh": "为自定义错误实现 Display 与 Error::source。",
+            "en": "Implement Display and Error::source for structured errors."
+          },
+          "artifact": {
+            "zh": "带位置与 source 的错误类型",
+            "en": "Located error type with source"
+          },
+          "evidence": {
+            "zh": "缺失字段与解析失败来源链不同。",
+            "en": "Missing fields and parse errors have distinct causes."
+          }
+        },
+        {
+          "id": "M09-L03",
+          "label": {
+            "zh": "隔离协议层",
+            "en": "Separate presentation boundaries"
+          },
+          "problem": {
+            "zh": "同一领域失败在 CLI 和 API 中有不同映射。",
+            "en": "The same domain failure maps differently for CLI and HTTP."
+          },
+          "decision": {
+            "zh": "业务库返回 CoreError，边界决定退出码或 HTTP 状态。",
+            "en": "Keep CoreError in the library; map at CLI/HTTP edges."
+          },
+          "artifact": {
+            "zh": "独立 CLI/API 错误适配器",
+            "en": "Separate CLI/API error adapters"
+          },
+          "evidence": {
+            "zh": "400/404/500 与受控诊断符合契约。",
+            "en": "400/404/500 and controlled diagnostics meet the contract."
+          }
+        },
+        {
+          "id": "M09-L04",
+          "label": {
+            "zh": "限制 panic 用途",
+            "en": "Constrain panic recovery"
+          },
+          "problem": {
+            "zh": "普通用户错误不应导致 panic 或泄漏内部内容。",
+            "en": "Expected input failure must not panic or expose secrets."
+          },
+          "decision": {
+            "zh": "以 Result 处理业务失败，隔离公开消息和诊断。",
+            "en": "Use Result for normal failure and separate public diagnostics."
+          },
+          "artifact": {
+            "zh": "安全的失败呈现策略",
+            "en": "Safe error presentation strategy"
+          },
+          "evidence": {
+            "zh": "abort/unwind 边界与敏感信息均验证。",
+            "en": "Abort/unwind rules and redaction are checked."
+          }
+        },
+        {
+          "id": "M09-L05",
+          "label": {
+            "zh": "交付严格配置解析",
+            "en": "Deliver strict config parser"
+          },
+          "problem": {
+            "zh": "配置重复键与 UTF-8 字符列会破坏错误准确性。",
+            "en": "Duplicate keys and UTF-8 column counting break diagnostics."
+          },
+          "decision": {
+            "zh": "修复 ConfigError 分类、位置和重复字段逻辑。",
+            "en": "Repair ConfigError categories, positions, and duplicates."
+          },
+          "artifact": {
+            "zh": "带精确定位的配置解析器",
+            "en": "Config parser with precise locations"
+          },
+          "evidence": {
+            "zh": "L05 起始失败测试转绿且不回显输入。",
+            "en": "L05 failing test turns green without leaking input."
+          }
+        },
+        {
+          "id": "M09-L06",
+          "label": {
+            "zh": "交付 CLI/API 契约",
+            "en": "Deliver CLI/API contracts"
+          },
+          "problem": {
+            "zh": "暂时存储故障需要标记重试但不能暴露原因。",
+            "en": "Transient storage errors need retry guidance without leaking causes."
+          },
+          "decision": {
+            "zh": "映射 HistoryError 的退出码、状态、retryable 与 request_id。",
+            "en": "Map HistoryError to exit codes, statuses, retryable, and request_id."
+          },
+          "artifact": {
+            "zh": "可验证的安全对外错误接口",
+            "en": "Verifiable safe external error contract"
+          },
+          "evidence": {
+            "zh": "L06 的 503、retryable 与 request_id 测试通过。",
+            "en": "L06 tests assert 503, retryable, and request_id."
+          }
+        }
+      ]
+    }
+  ]
+}
