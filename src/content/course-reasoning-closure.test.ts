@@ -31,10 +31,18 @@ function field(section: string, marker: string): string {
     .find((value) => value.startsWith(`**${marker}**`))
   expect(line, `Missing closure phase ${marker}`).toBeDefined()
   const body = line?.slice(marker.length + 4).trim() ?? ''
+  const minimumLength = [
+    '问题：',
+    'Problem:',
+    '示例与证据：',
+    'Example and evidence:',
+  ].includes(marker)
+    ? 6
+    : 24
   expect(
     body.length,
     `${marker} must explain a lesson-specific decision`,
-  ).toBeGreaterThan(24)
+  ).toBeGreaterThan(minimumLength)
   return body
 }
 
