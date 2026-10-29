@@ -31,3 +31,25 @@ pub mod m06_views;
 pub mod m07_dispatch;
 pub mod m08_closures;
 pub mod m09_boundaries;
+
+// Capstone wave: nine independent module-level L05/L06 contract pairs.
+pub mod m01_capstone;
+pub mod m02_capstone;
+pub mod m03_capstone;
+pub mod m04_capstone;
+pub mod m05_capstone;
+pub mod m06_capstone;
+pub mod m07_capstone;
+pub mod m08_capstone;
+pub mod m09_capstone;
+
+// Final concept pass: previously unverified lessons (one per module).
+pub mod m01_decision;
+pub mod m02_bindings;
+pub mod m03_structs;
+pub mod m04_moves;
+pub mod m05_borrows;
+pub mod m06_validity;
+pub mod m07_generics;
+pub mod m08_collections;
+pub mod m09_recovery;

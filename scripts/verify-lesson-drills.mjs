@@ -75,6 +75,10 @@ const cases = [
   ['m06_view_of_local.rs', 'E0515'],
   ['m07_nondyn_trait.rs', 'E0038'],
   ['m08_fnmut_not_fn.rs', 'E0525'],
+  ['m02_immutable_binding.rs', 'E0384'],
+  ['m04_original_after_move.rs', 'E0382'],
+  ['m05_reader_and_writer.rs', 'E0502'],
+  ['m07_missing_bound.rs', 'E0369'],
 ]
 
 const outputDir = mkdtempSync(join(tmpdir(), 'rust-path-compile-fail-'))
