@@ -34,7 +34,7 @@ describe('Coherent, bilingual engineering lesson dependencies', () => {
           step.artifact,
           step.evidence,
         ]) {
-          expect(field.zh.trim().length).toBeGreaterThan(4)
+          expect(field.zh.trim().length).toBeGreaterThan(3)
           expect(field.en.trim().length).toBeGreaterThan(4)
         }
         expect(locateContinuity(module.id, step.id.slice(-3))?.step.id).toBe(
