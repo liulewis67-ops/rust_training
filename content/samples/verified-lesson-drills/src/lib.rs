@@ -31,3 +31,14 @@ pub mod m06_views;
 pub mod m07_dispatch;
 pub mod m08_closures;
 pub mod m09_boundaries;
+
+// Capstone wave: nine independent module-level L05/L06 contract pairs.
+pub mod m01_capstone;
+pub mod m02_capstone;
+pub mod m03_capstone;
+pub mod m04_capstone;
+pub mod m05_capstone;
+pub mod m06_capstone;
+pub mod m07_capstone;
+pub mod m08_capstone;
+pub mod m09_capstone;
