@@ -1144,7 +1144,9 @@
   padding: 0;
   list-style: none;
 }
-.course-module-journey-steps li { min-width: 0; }
+.course-module-journey-steps li {
+  min-width: 0;
+}
 .course-module-journey-steps button {
   width: 100%;
   min-height: 84px;
@@ -1159,7 +1161,9 @@
   color: var(--soft);
   text-align: left;
   cursor: pointer;
-  transition: border-color 140ms ease, background-color 140ms ease;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
 }
 .course-module-journey-steps button:hover {
   border-color: var(--orange);
@@ -1174,8 +1178,15 @@
   background: var(--panel2);
   color: var(--text);
 }
-.course-module-journey-number { color: var(--orange); font: 11px var(--mono); }
-.course-module-journey-label { font-size: 12px; font-weight: 600; line-height: 1.5; }
+.course-module-journey-number {
+  color: var(--orange);
+  font: 11px var(--mono);
+}
+.course-module-journey-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
 .course-module-journey-current {
   display: flex;
   gap: 12px;
@@ -1183,16 +1194,32 @@
   padding-top: 13px;
   border-top: 1px solid var(--reader-rule, var(--line));
 }
-.course-module-journey-current strong { flex-shrink: 0; color: var(--text); }
+.course-module-journey-current strong {
+  flex-shrink: 0;
+  color: var(--text);
+}
 @media (max-width: 1080px) {
-  .course-module-journey-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .course-module-journey-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 @media (max-width: 600px) {
-  .course-module-journey { padding: 16px; }
-  .course-module-journey-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .course-module-journey-steps button { min-height: 70px; }
-  .course-module-journey-current { flex-direction: column; gap: 3px; }
+  .course-module-journey {
+    padding: 16px;
+  }
+  .course-module-journey-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .course-module-journey-steps button {
+    min-height: 70px;
+  }
+  .course-module-journey-current {
+    flex-direction: column;
+    gap: 3px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .course-module-journey-steps button { transition: none; }
+  .course-module-journey-steps button {
+    transition: none;
+  }
 }
