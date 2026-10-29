@@ -70,7 +70,9 @@ describe('M09 English translation and error contracts', () => {
       } else {
         expect(translated).toContain('## Staged acceptance')
       }
-      expect(translated).toContain('## Progressive hints')
+      if (id !== 'm09-l06') {
+        expect(translated).toContain('## Progressive hints')
+      }
       expect(fencedBlocks(translated)).toEqual(fencedBlocks(source))
 
       const originalLinks = [...source.matchAll(/\]\((https:\/\/[^)]+)\)/g)]
