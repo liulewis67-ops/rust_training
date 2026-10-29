@@ -20,6 +20,12 @@ Write for- and while-based totals with documented loop bounds and exit condition
 
 **Acceptance evidence:** List iteration counts and totals; include an assertion that catches the wrong upper bound.
 
+## Exercise 4: Verified transfer — Inclusive ranges, termination and branch types
+
+Predict results for inclusive/exclusive ranges and zero/nonzero countdown. Run the tests, distinguish the intentional assertion at `sum_inclusive(1001)` from compile-time E0308, and repair the `if` example without changing its return contract. Add a passing test for `n=1000`.
+
+**Acceptance:** Run `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m02_control::` and the full verifier, and report predictions, observed results and the reason for your repair. Do not remove failing assertions to make a check green.
+
 ## Progressive hints
 
 1. Start from types, ownership and explicit input contracts rather than the surface syntax.

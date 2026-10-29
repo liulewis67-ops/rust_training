@@ -20,6 +20,12 @@ In a clean folder record rustc --version, cargo --version, rustup show active-to
 
 **Acceptance:** Actual command outputs and a reproducible cargo check result, not a claim that the environment is correct.
 
+## Exercise 4: Verified transfer — Toolchain, Edition and Cargo metadata have different roles
+
+Run `rustc +1.95.0 --version` and Cargo metadata for this sample package. Identify the toolchain, package version, and Edition separately; change the package version in a private copy and predict what metadata changes. Document a reproducible environment without deleting the lockfile to hide a problem.
+
+**Acceptance:** Run `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m01_toolchain::` and the full verifier, and report predictions, observed results and the reason for your repair. Do not remove failing assertions to make a check green.
+
 ## Progressive hints
 
 1. Identify the values, their Rust types and the owner or lifetime of each.
