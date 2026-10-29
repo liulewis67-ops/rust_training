@@ -26,7 +26,7 @@ fn main() {
 
 ## 2. 实现：解构固定读数并分类
 
-实现 `summarize_readings`：输入是三个 `i32`，输出元组为“首项、末项、总和”；再用 `match` 把总和分类。总和在 `0..=10` 时返回 `small`，`11..=30` 返回 `medium`，其他值返回 `outside`。
+实现 `summarize_readings`：输入是三个 `u8`，输出元组为“首项、末项、总和”；再用 `match` 把总和分类。总和在 `0..=10` 时返回 `small`，`11..=30` 返回 `medium`，其他值返回 `outside`。
 
 ```rust
 /// Returns the endpoints and total of exactly three readings.
