@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { loadCourseLesson } from '../data/courseCatalog'
 import { organizeLessonMarkdown } from '../features/reading/lessonStructure'
 
-const chinese = import.meta.glob<string>(
-  '../../content/releases/m09-l0?.md',
-  { query: '?raw', import: 'default', eager: true },
-)
+const chinese = import.meta.glob<string>('../../content/releases/m09-l0?.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
 const english = import.meta.glob<string>(
   '../../content/releases/en/m09-l0?.md',
   { query: '?raw', import: 'default', eager: true },
@@ -92,13 +93,13 @@ describe('M09 English translation and error contracts', () => {
   it.each(['m09-l01', 'm09-l02', 'm09-l03', 'm09-l04'])(
     '%s translates the original practice and reference answers',
     (id) => {
-      const source = chineseExercises[
-        `../../content/releases/${id}-exercises.md`
-      ]
-      const translated = englishExercises[
-        `../../content/releases/en/${id}-exercises.md`
-      ]
-      expect(translated).toMatch(new RegExp(`^# ${id.toUpperCase()} Exercises:`))
+      const source =
+        chineseExercises[`../../content/releases/${id}-exercises.md`]
+      const translated =
+        englishExercises[`../../content/releases/en/${id}-exercises.md`]
+      expect(translated).toMatch(
+        new RegExp(`^# ${id.toUpperCase()} Exercises:`),
+      )
       expect(translated).toContain('## Reference answers')
       expect(translated).toContain('## Self-check list')
       expect(translated).toContain('## Sources')
