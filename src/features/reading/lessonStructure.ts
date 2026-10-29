@@ -16,7 +16,7 @@ export interface ReadingSection {
 function sectionKind(title: string | null): LessonSectionKind {
   if (
     !title ||
-    /^(先修|学习目标|学完后|学习前|实验目标|prerequisites|learning objectives|after this lesson)/i.test(
+    /^(先修|学习目标|学完后|学习前|实验目标|prerequisites|learning objectives|learning goals|after this lesson|get the starter|get and run locally|lab objectives)/i.test(
       title,
     )
   ) {
@@ -28,7 +28,7 @@ function sectionKind(title: string | null): LessonSectionKind {
     return 'reference'
   }
   if (
-    /^(本地练习|练习|检验理解|检验|实践|实验|检查|自查|分阶段验收|先预测|代码验证|本地操作|公开检查|公开参考|参考实现|起点与观察|完成与重置|提交说明|重置与验收|任务|独立任务|公开行为契约|行为契约|分层提示|提示|复盘|自测|本节小结|任务拆解|分阶段|训练|分层|设计检查|local practice|practice|exercise|lab|check|review|summary|hints)/i.test(
+    /^(本地练习|练习|检验理解|检验|实践|实验|检查|自查|分阶段验收|先预测|代码验证|本地操作|公开检查|公开参考|参考实现|起点与观察|完成与重置|提交说明|重置与验收|任务|独立任务|公开行为契约|行为契约|分层提示|提示|复盘|自测|本节小结|任务拆解|分阶段|训练|分层|设计检查|local practice|practice|exercise|lab|check|review|summary|hints|progressive hints|staged acceptance|self-check|work through the lab|predict before implementing|predict unicode|fixed presentation contract|input and output contract|design notes to submit|publication and environment|reset and publication boundary|assessment instructions)/i.test(
       title,
     )
   ) {

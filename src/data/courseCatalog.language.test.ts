@@ -16,11 +16,18 @@ it('loads genuine English content and exercises for the translated M01 module', 
   expect(english?.content).not.toBe(chinese?.content)
 })
 
-it('falls back to Chinese only where English translation is not yet published', async () => {
+it('loads translated M09 text and the matching English exercises', async () => {
   const chinese = await loadCourseLesson('M09', 'L01', 'zh')
   const english = await loadCourseLesson('M09', 'L01', 'en')
-  expect(english?.content).toBe(chinese?.content)
-  expect(english?.translationComplete).toBe(false)
+  expect(chinese?.content).toMatch(/^# M09-L01：/)
+  expect(english?.content).toMatch(/^# M09-L01: Result/)
+  expect(english?.content).not.toBe(chinese?.content)
+  expect(english?.exercises[0]).toContain('## Reference answers')
+  expect(english?.translationComplete).toBe(true)
+
+  const lab = await loadCourseLesson('M09', 'L05', 'en')
+  expect(lab?.content).toContain('content/samples/m09-starter')
+  expect(lab?.translationComplete).toBe(true)
 })
 
 it('keeps download links valid when no translated archive exists', () => {
@@ -30,13 +37,11 @@ it('keeps download links valid when no translated archive exists', () => {
   expect(english).toBe(chinese)
 })
 
-it('loads exactly the published lessons in English mode with explicit fallbacks', async () => {
+it('loads all 54 published lessons in English with complete translation coverage', async () => {
   const lessons = await loadAllPublishedCourseLessons('en')
   expect(lessons).toHaveLength(publicManifest.markdown_lessons.length)
   expect(lessons.every((lesson) => lesson.content.trim().length > 0)).toBe(
     true,
   )
-  expect(lessons.some((lesson) => lesson.translationComplete === false)).toBe(
-    true,
-  )
+  expect(lessons.every((lesson) => lesson.translationComplete)).toBe(true)
 })

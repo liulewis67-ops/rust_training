@@ -20,7 +20,7 @@ Each English page keeps the original Chinese source's Rust fenced-code samples a
 | M08 | Collections, closures, iterators, aggregations | #39 |
 
 - The bilingual parity test checks 48 matching lesson IDs, 32 exercise sheets, preserved original code fences, ZIP download references, English learning sections and correct practice grouping in the reading UI.
-- M09's six currently published lessons still have no English lesson Markdown and intentionally fall back to Chinese. The total number of public courses stays **54**, not 48.
+- M09's six published lessons and four exercises have since received their own English Markdown (see `docs/curriculum-english-m09.md`). English now covers **54 lesson pages** and **36 independent exercise sheets**; the original M01–M08 review scope remains 48/32.
 - The tests cannot claim exhaustive translation equivalence or that every new optional learner task has been run against its own Cargo fixture. Do not advertise a hosted grader or translated binary ZIPs.
 
 ## Next editorial pass
