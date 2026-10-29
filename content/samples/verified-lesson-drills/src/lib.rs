@@ -21,3 +21,13 @@ pub mod m06_static;
 pub mod m07_conversion;
 pub mod m08_iteration;
 pub mod m09_propagation;
+// Third wave: new verified explanations for another lesson in every module.
+pub mod m01_toolchain;
+pub mod m02_control;
+pub mod m03_visibility;
+pub mod m04_scope;
+pub mod m05_api;
+pub mod m06_views;
+pub mod m07_dispatch;
+pub mod m08_closures;
+pub mod m09_boundaries;
