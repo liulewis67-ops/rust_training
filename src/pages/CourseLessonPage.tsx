@@ -238,12 +238,10 @@ export function CourseLessonPage({
                       href={`#${section.id}`}
                       onClick={(event) => {
                         event.preventDefault()
-                        document
-                          .getElementById(section.id!)
-                          ?.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start',
-                          })
+                        document.getElementById(section.id!)?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        })
                       }}
                     >
                       {section.step !== null && (
