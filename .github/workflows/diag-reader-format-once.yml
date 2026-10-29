@@ -1,0 +1,35 @@
+name: Diagnose and normalize reader Prettier once
+on:
+  push:
+    branches: [curriculum/reader-phase-navigation-and-coverage-20261029]
+permissions:
+  contents: write
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.19.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check, fix and diagnose
+        run: |
+          pnpm exec prettier --check src/pages/CourseLessonPage.tsx || true
+          pnpm exec prettier --write src/pages/CourseLessonPage.tsx
+          git diff -- src/pages/CourseLessonPage.tsx
+          pnpm exec prettier --check src/pages/CourseLessonPage.tsx
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/CourseLessonPage.tsx
+          if ! git diff --cached --quiet; then
+            git commit -m "style(curriculum): normalize phased lesson TOC"
+            git push
+          fi
