@@ -20,6 +20,12 @@ Combine filter, map and collect, then write a fold whose empty input result is e
 
 **Acceptance evidence:** Test empty, all-negative and mixed collections and compare closure call counts before/after consumption.
 
+## Exercise 4: Verified challenge — lazy iterators and measured calls
+
+Predict the callback count before consumption, after collect, and on empty input. Run the tests, remove the consumer and observe the violated output contract. Repair with map+collect and with a for loop; compare their intent. Do not treat absence of panic as success.
+
+From the repository root, run `node scripts/verify-lesson-drills.mjs` for the full positive and negative verification suite.
+
 ## Progressive hints
 
 1. State which data is borrowed and which is owned.

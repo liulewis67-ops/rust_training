@@ -137,6 +137,12 @@ fn main() {
 
 Verify through actual assertions.
 
+## Exercise 4: Verified challenge — error category, location and source chains
+
+Predict the Display, category, and source for `parse_port(12, Some("wide"))` and `parse_port(13, None)`. Run the tests, deliberately make `Error::source` always return None, and identify the failing assertion. Restore the cause chain without changing the stable public message.
+
+From the repository root, run `node scripts/verify-lesson-drills.mjs` for the full positive and negative verification suite.
+
 ## Reference answers
 
 1. Malformed port on line 12 displays `line 12: invalid port value` and wraps a `ParseIntError`. Missing data has no parser source.

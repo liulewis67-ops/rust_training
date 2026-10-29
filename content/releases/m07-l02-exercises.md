@@ -41,6 +41,12 @@ impl Label for RetryCount {
 
 **验证契约**：`render_summary(&ImportedBatch { accepted: 11 }) == "11"`；`QueueItem` 结果保持原摘要字符串。用一份正确实现和一份故意缺少 `summarize` 方法的错误变体验证；正确版本运行通过，错误版本编译失败。
 
+## 4. 可复现实验：关联类型契约与 E0053
+
+预测两个具体实现的关联输出类型和显示字符串。运行正例，再编译 E0053 反例并修复关联类型/方法签名不匹配；最后自行实现第三个 Summary 类型，保持泛型函数不变。解释静态 trait 契约为何不等于运行时动态类型。
+
+从仓库根目录执行 `node scripts/verify-lesson-drills.mjs`，可运行所有正例并检查预期失败的诊断。
+
 ## 参考答案
 
 1. `QueueItem::Output` 是 `String`，`ImportBatch::Output` 是 `u32`；结果分别为 `Q17 (retries: 2)` 和 `8`。`render_summary<T: Summary>` 只调用 trait 声明的行为，并通过 `Self::Output: Display` 格式化结果。
