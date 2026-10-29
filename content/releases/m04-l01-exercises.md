@@ -100,6 +100,12 @@ fn main() {
 
 **分层提示：** ① `Drop::drop` 需要可变借用 `self`。② 读取 `self.name` 形成事件文字。③ 用一条 `println!` 记录释放，再由作用域决定何时执行。
 
+## 4. 进阶实证：作用域退出、逆序析构与显式 drop
+
+绘制外层 owner 与两个内层 owner 的创建/销毁顺序，运行两项正例并复现 E0040。让一个拥有型资源在内层作用域结束前通过 `std::mem::drop` 提前释放，验证日志不重复，并说明为什么直接调用 trait 方法非法。
+
+**验收：** 提交 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m04_scope::` 的测试结果、故意失败反例的诊断和独立修复方案，并解释为什么不能靠克隆、删断言或延长标注伪造正确性。
+
 ## 参考答案
 
 1. 输出依次为 `finish inner`、`drop last`、`drop first`、`finish main`、`drop outer`。`first` 和 `last` 属于内层作用域，离开该作用域时按创建顺序的反序销毁；`outer` 属于 `main` 作用域，留到 `main` 结束。
