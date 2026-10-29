@@ -49,6 +49,24 @@ cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-dri
 
 Run the same commands from the repository root; the CI verifier now checks **both waves** of passing examples and expected compilation diagnostics. For a single second-wave lesson, use a module filter, such as `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m05_utf8::`.
 
+## Third verification wave / 第三轮深入验证
+
+第三批覆盖另外九节课程，使用独立的 Rust 测试和预期编译错误验证工具链、控制流、类型封装、资源析构、借用接口、引用与拥有型结果、动态分发、闭包和错误边界。
+
+| Lesson | Executable source | Counterexample | Expected evidence |
+| --- | --- | --- | --- |
+| M01-L02 | src/m01_toolchain.rs | Confusing toolchain, package version and Edition | Two tests; Cargo metadata confirms Edition 2024 and version 0.1.0 |
+| M02-L03 | src/m02_control.rs | compile_fail/m02_if_branch_type.rs | E0308; separate runtime bound assertions |
+| M03-L04 | src/m03_visibility.rs | compile_fail/m03_private_state.rs | E0616 when a sibling reads a private field |
+| M04-L01 | src/m04_scope.rs | compile_fail/m04_direct_drop.rs | E0040; reverse drop order and one explicit drop |
+| M05-L04 | src/m05_api.rs | compile_fail/m05_view_across_push.rs | E0502; empty input remains unchanged |
+| M06-L03 | src/m06_views.rs | compile_fail/m06_view_of_local.rs | E0515; owned result outlives temporary source |
+| M07-L03 | src/m07_dispatch.rs | compile_fail/m07_nondyn_trait.rs | E0038 for non-dyn-compatible trait |
+| M08-L02 | src/m08_closures.rs | compile_fail/m08_fnmut_not_fn.rs | E0525; Fn vs FnMut vs FnOnce |
+| M09-L03 | src/m09_boundaries.rs | Wrong mapping or leaking storage details | Correct 400/404/500 and no private cause in response |
+
+**Run:** `node scripts/verify-lesson-drills.mjs` from the repository root. The verification script reads Cargo metadata and checks all runnable tests and deliberately rejected files. You can isolate one lesson with `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m07_dispatch::`. Expected runtime panic tests are identified with `#[should_panic]`, so they are not mistaken for unhandled failures.
+
 ## Teaching protocol / 教学要求
 
 1. **Predict** the return value, error category, or compiler diagnostic before execution.
@@ -61,5 +79,5 @@ Run the same commands from the repository root; the CI verifier now checks **bot
 ## Verification boundaries
 
 - The test harness verifies **actual behavior** and the presence of expected compiler error codes; it does not claim a full rustc diagnostic is byte-for-byte stable.
-- Syntax examples for the nine selected lessons are deliberately small; more advanced Rust behavior continues to be taught in their original lessons and project exercises.
+- The verified examples for the selected lessons are deliberately small; more advanced Rust behavior continues to be taught in their original lessons and project exercises.
 - Do not translate or independently change Rust source in one language edition of the course. Chinese and English lesson pages link to the exact same tested code.

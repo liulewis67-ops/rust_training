@@ -82,7 +82,7 @@ fn library_errors_map_to_cli_and_api_contracts() {
 
 预测 InvalidPort、ProfileNotFound 和 Storage 的 CLI/API 映射，运行两项测试。把 `map_api` 暂时改为对所有错误返回 500，观察哪项断言失败；再改为在公开信息中拼接底层 `source`，验证泄漏断言为什么必要，最后恢复严格边界。
 
-**验收：** 提供 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m09_boundaries::` 的通过结果、错误示例或行为回归的证据，并解释最小修复不如何改变原有接口契约。
+**验收：** 提供 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m09_boundaries::` 的通过结果、错误示例或行为回归的证据，并解释为什么最小修复不改变原有接口契约。
 
 ## 参考答案
 

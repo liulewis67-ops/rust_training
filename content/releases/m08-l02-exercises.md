@@ -88,7 +88,7 @@ fn main() {
 
 预测三种闭包分别最多能满足什么调用约束，运行正例并复现 E0525。将错误函数改为 `F: FnMut()` 并给形参加 `mut`，保持两次调用得到 1、2；再尝试把 `FnOnce` 消费闭包调用两次，说明与 `FnMut` 的差异。
 
-**验收：** 提供 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m08_closures::` 的通过结果、错误示例或行为回归的证据，并解释最小修复不如何改变原有接口契约。
+**验收：** 提供 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m08_closures::` 的通过结果、错误示例或行为回归的证据，并解释为什么最小修复不改变原有接口契约。
 
 ## 参考答案
 

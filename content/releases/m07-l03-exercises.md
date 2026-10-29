@@ -42,7 +42,7 @@ fn render_both(value: &dyn Renderer) -> String {
 
 预测静态和动态调用是否改变同一个对象的返回值，再运行三项测试。复现 E0038 后将泛型方法改为接收 `&dyn Display` 的固定类型接口，验证可以通过 `&dyn Renderer` 调用；另比较用 `where Self: Sized` 保留方法却不允许经 trait object 调用的方案。
 
-**验收：** 提供 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m07_dispatch::` 的通过结果、错误示例或行为回归的证据，并解释最小修复不如何改变原有接口契约。
+**验收：** 提供 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m07_dispatch::` 的通过结果、错误示例或行为回归的证据，并解释为什么最小修复不改变原有接口契约。
 
 ## 参考答案
 
