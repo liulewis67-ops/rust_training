@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-const chinese = import.meta.glob<string>(
-  '../../content/releases/m0?-l0?.md',
-  { query: '?raw', import: 'default', eager: true },
-)
+const chinese = import.meta.glob<string>('../../content/releases/m0?-l0?.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
 const english = import.meta.glob<string>(
   '../../content/releases/en/m0?-l0?.md',
   { query: '?raw', import: 'default', eager: true },
@@ -40,8 +41,7 @@ describe('all published Rust lessons have bilingual executable evidence', () => 
         const lessonId = String(lessonIndex + 1).padStart(2, '0')
         const id = `m${moduleId}-l${lessonId}`
         const module = sources[moduleIndex][lessonIndex]
-        const sourcePath =
-          `../../content/samples/verified-lesson-drills/src/${module}.rs`
+        const sourcePath = `../../content/samples/verified-lesson-drills/src/${module}.rs`
         const sourceLink = `verified-lesson-drills/src/${module}.rs`
 
         expect(rust[sourcePath], `Missing source for ${id}`).toBeDefined()
