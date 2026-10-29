@@ -105,7 +105,7 @@ describe('M01–M08 bilingual course parity', () => {
     },
   )
 
-  it('loads all 48 translated courses and keeps M09 explicitly untranslated', async () => {
+  it('loads all 48 M01–M08 courses and all six M09 courses in English', async () => {
     const lessons = await loadAllPublishedCourseLessons('en')
     expect(
       lessons.filter(
@@ -113,7 +113,7 @@ describe('M01–M08 bilingual course parity', () => {
       ),
     ).toHaveLength(48)
     expect(
-      lessons.filter((l) => l.moduleId === 'M09' && !l.translationComplete),
+      lessons.filter((l) => l.moduleId === 'M09' && l.translationComplete),
     ).toHaveLength(6)
   })
 })
