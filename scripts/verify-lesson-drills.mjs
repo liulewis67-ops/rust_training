@@ -1,25 +1,24 @@
-// Verify executable lesson examples and deliberate compiler-error examples.
-// No extra dependencies, network access, or changed project manifests needed.
+// Check passing Rust lessons and deliberately rejected source files.
 import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const manifest = fileURLToPath(
-  new URL('../content/samples/verified-lesson-drills/Cargo.toml', import.meta.url),
+const samples = new URL(
+  '../content/samples/verified-lesson-drills/',
+  import.meta.url,
 )
-const failures = fileURLToPath(
-  new URL('../content/samples/verified-lesson-drills/compile_fail/', import.meta.url),
-)
+const manifest = fileURLToPath(new URL('Cargo.toml', samples))
+const failedDir = fileURLToPath(new URL('compile_fail/', samples))
 
-function execute(program, args) {
+function run(program, args) {
   const result = spawnSync(program, args, { encoding: 'utf8' })
   if (result.error) throw result.error
   return result
 }
 
-const tested = execute('cargo', [
+const tested = run('cargo', [
   'test',
   '--offline',
   '--manifest-path',
@@ -27,7 +26,9 @@ const tested = execute('cargo', [
   '--lib',
 ])
 if (tested.status !== 0) {
-  throw new Error(`Executable drills failed:\n${tested.stdout}\n${tested.stderr}`)
+  process.stderr.write(tested.stdout)
+  process.stderr.write(tested.stderr)
+  throw new Error('The executable Rust lesson tests did not pass')
 }
 process.stdout.write(tested.stdout)
 
@@ -39,23 +40,22 @@ const cases = [
   ['m06_ambiguous_result.rs', 'E0106'],
   ['m07_wrong_associated_output.rs', 'E0053'],
 ]
+
 const outputDir = mkdtempSync(join(tmpdir(), 'rust-path-compile-fail-'))
 try {
-  for (const [file, expected] of cases) {
-    const filePath = join(failures, file)
-    const result = execute('rustc', [
+  for (const [file, code] of cases) {
+    const result = run('rustc', [
       '--edition=2024',
       '--emit=metadata',
       '--out-dir',
       outputDir,
-      filePath,
+      join(failedDir, file),
     ])
-    if (result.status === 0 || !result.stderr.includes(`error[${expected}]`)) {
-      throw new Error(
-        `Unexpected compiler outcome for ${file}. Expected ${expected} and nonzero status.\n${result.stdout}\n${result.stderr}`,
-      )
+    if (result.status === 0 || !result.stderr.includes(`error[${code}]`)) {
+      process.stderr.write(result.stderr)
+      throw new Error(`Expected compiler error ${code} in ${file}`)
     }
-    process.stdout.write(`Verified expected ${expected} in ${file}\n`)
+    process.stdout.write(`Verified expected ${code} in ${file}\n`)
   }
 } finally {
   rmSync(outputDir, { recursive: true, force: true })
