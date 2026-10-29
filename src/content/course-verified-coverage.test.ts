@@ -16,79 +16,16 @@ const rust = import.meta.glob<string>(
 // Every row corresponds to one published module; columns are L01 through L06.
 // L05 and L06 deliberately have distinct test functions in one capstone module.
 const sources = [
-  [
-  "m01_decision",
-  "m01_toolchain",
-  "m01_diagnostics",
-  "m01",
-  "m01_capstone",
-  "m01_capstone"
-  ],
-  [
-  "m02_bindings",
-  "m02",
-  "m02_control",
-  "m02_shapes",
-  "m02_capstone",
-  "m02_capstone"
-  ],
-  [
-  "m03_structs",
-  "m03",
-  "m03_missing",
-  "m03_visibility",
-  "m03_capstone",
-  "m03_capstone"
-  ],
-  [
-  "m04_scope",
-  "m04_moves",
-  "m04",
-  "m04_partial",
-  "m04_capstone",
-  "m04_capstone"
-  ],
-  [
-  "m05_borrows",
-  "m05",
-  "m05_utf8",
-  "m05_api",
-  "m05_capstone",
-  "m05_capstone"
-  ],
-  [
-  "m06_validity",
-  "m06",
-  "m06_views",
-  "m06_static",
-  "m06_capstone",
-  "m06_capstone"
-  ],
-  [
-  "m07_generics",
-  "m07",
-  "m07_dispatch",
-  "m07_conversion",
-  "m07_capstone",
-  "m07_capstone"
-  ],
-  [
-  "m08_collections",
-  "m08_closures",
-  "m08_iteration",
-  "m08",
-  "m08_capstone",
-  "m08_capstone"
-  ],
-  [
-  "m09_propagation",
-  "m09",
-  "m09_boundaries",
-  "m09_recovery",
-  "m09_capstone",
-  "m09_capstone"
-  ]
-]
+  'm01_decision m01_toolchain m01_diagnostics m01 m01_capstone m01_capstone',
+  'm02_bindings m02 m02_control m02_shapes m02_capstone m02_capstone',
+  'm03_structs m03 m03_missing m03_visibility m03_capstone m03_capstone',
+  'm04_scope m04_moves m04 m04_partial m04_capstone m04_capstone',
+  'm05_borrows m05 m05_utf8 m05_api m05_capstone m05_capstone',
+  'm06_validity m06 m06_views m06_static m06_capstone m06_capstone',
+  'm07_generics m07 m07_dispatch m07_conversion m07_capstone m07_capstone',
+  'm08_collections m08_closures m08_iteration m08 m08_capstone m08_capstone',
+  'm09_propagation m09 m09_boundaries m09_recovery m09_capstone m09_capstone',
+].map((line) => line.split(' '))
 
 describe('all published Rust lessons have bilingual executable evidence', () => {
   it('covers exactly 54 lessons in each language', () => {
