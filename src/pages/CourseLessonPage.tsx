@@ -109,6 +109,11 @@ export function CourseLessonPage({
   const navigationSections = sections.filter(
     (section) => section.title && section.id && section.kind !== 'reference',
   )
+  const readingPhases = [
+    { kind: 'prepare', title: t('01 · 建立上下文', '01 · Establish the context') },
+    { kind: 'concept', title: t('02 · 推导与决策', '02 · Reason and decide') },
+    { kind: 'apply', title: t('03 · 实践与验收', '03 · Practice and verify') },
+  ]
 
   return (
     <article className="course-reader">
@@ -213,40 +218,53 @@ export function CourseLessonPage({
         </div>
         <nav
           aria-label={t('本节目录', 'On this page')}
-          className="course-reading-toc"
+          className="course-reading-toc course-reading-toc--grouped"
         >
-          {navigationSections.map((section) => (
-            <a
-              key={section.id}
-              href={`#${section.id}`}
-              onClick={(event) => {
-                event.preventDefault()
-                document
-                  .getElementById(section.id!)
-                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }}
-            >
-              {section.step !== null && (
-                <span aria-hidden="true">
-                  {String(section.step).padStart(2, '0')}
-                </span>
-              )}
-              {section.title}
-            </a>
-          ))}
-          {lesson.exercises.length > 0 && (
-            <a
-              href="#lesson-practice"
-              onClick={(event) => {
-                event.preventDefault()
-                document
-                  .getElementById('lesson-practice')
-                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }}
-            >
-              {t('练习与实验', 'Exercises and labs')}
-            </a>
-          )}
+          {readingPhases.map((phase) => {
+            const items = navigationSections.filter(
+              (section) => section.kind === phase.kind,
+            )
+            if (!items.length && phase.kind !== 'apply') return null
+            return (
+              <div className="course-reading-toc-group" key={phase.kind}>
+                <h3>{phase.title}</h3>
+                <div className="course-reading-toc-links">
+                  {items.map((section) => (
+                    <a
+                      key={section.id}
+                      href={`#${section.id}`}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        document
+                          .getElementById(section.id!)
+                          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }}
+                    >
+                      {section.step !== null && (
+                        <span aria-hidden="true">
+                          {String(section.step).padStart(2, '0')}
+                        </span>
+                      )}
+                      {section.title}
+                    </a>
+                  ))}
+                  {phase.kind === 'apply' && lesson.exercises.length > 0 && (
+                    <a
+                      href="#lesson-practice"
+                      onClick={(event) => {
+                        event.preventDefault()
+                        document
+                          .getElementById('lesson-practice')
+                          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }}
+                    >
+                      {t('练习与实验', 'Exercises and labs')}
+                    </a>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </nav>
       </div>
       <div

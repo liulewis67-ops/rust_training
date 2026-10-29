@@ -1223,3 +1223,50 @@
     transition: none;
   }
 }
+
+/* Organize the reading index by cognitive phase, not one flat list of topics. */
+.course-reader .course-reading-guide {
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+.course-reader .course-reading-guide-intro {
+  padding-right: 0;
+  padding-bottom: 16px;
+  border-right: 0;
+  border-bottom: 1px solid var(--reader-rule);
+}
+.course-reader .course-reading-toc--grouped {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.course-reading-toc-group {
+  min-width: 0;
+}
+.course-reading-toc-group h3 {
+  margin: 0 0 8px;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.015em;
+}
+.course-reading-toc-links {
+  display: grid;
+  gap: 3px;
+}
+.course-reader .course-reading-toc-links a {
+  min-height: 34px;
+  padding: 7px 9px;
+  font-size: 12px;
+}
+@media (max-width: 900px) {
+  .course-reader .course-reading-toc--grouped {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .course-reader .course-reading-toc--grouped {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
