@@ -39,9 +39,7 @@ if (!course || course.edition !== '2024' || course.version !== '0.1.0') {
     'Cargo package identity or 2024 Edition differs from lesson contract',
   )
 }
-process.stdout.write(
-  'Verified Cargo edition 2024 and package version 0.1.0\n',
-)
+process.stdout.write('Verified Cargo edition 2024 and package version 0.1.0\n')
 
 const tested = run('cargo', [
   'test',
