@@ -64,8 +64,12 @@ describe('M09 English translation and error contracts', () => {
       expect(source).toBeDefined()
       expect(translated).toMatch(new RegExp(`^# ${id.toUpperCase()}:`))
       expect(translated).toContain('## Sources')
-      expect(translated).toContain('## Java / Go comparison')
-      expect(translated).toContain('## Check your understanding')
+      expect(translated).toContain('Java / Go comparison')
+      if (Number(id.slice(-2)) <= 4) {
+        expect(translated).toContain('## Check your understanding')
+      } else {
+        expect(translated).toContain('## Staged acceptance')
+      }
       expect(translated).toContain('## Progressive hints')
       expect(fencedBlocks(translated)).toEqual(fencedBlocks(source))
 
