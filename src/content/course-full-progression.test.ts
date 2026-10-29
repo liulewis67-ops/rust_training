@@ -55,12 +55,8 @@ describe('54 bilingual lessons form a continuous engineering curriculum', () => 
         expect(en).toContain(next.problem.en)
       }
 
-      const zhSections = organizeLessonMarkdown(
-        zh.replace(/^# [^\n]+\n/, ''),
-      )
-      const enSections = organizeLessonMarkdown(
-        en.replace(/^# [^\n]+\n/, ''),
-      )
+      const zhSections = organizeLessonMarkdown(zh.replace(/^# [^\n]+\n/, ''))
+      const enSections = organizeLessonMarkdown(en.replace(/^# [^\n]+\n/, ''))
       const zhThread = zhSections.filter((s) =>
         s.title?.startsWith('工程推进：'),
       )

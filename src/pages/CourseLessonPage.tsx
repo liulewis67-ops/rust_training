@@ -110,7 +110,10 @@ export function CourseLessonPage({
     (section) => section.title && section.id && section.kind !== 'reference',
   )
   const readingPhases = [
-    { kind: 'prepare', title: t('01 · 建立上下文', '01 · Establish the context') },
+    {
+      kind: 'prepare',
+      title: t('01 · 建立上下文', '01 · Establish the context'),
+    },
     { kind: 'concept', title: t('02 · 推导与决策', '02 · Reason and decide') },
     { kind: 'apply', title: t('03 · 实践与验收', '03 · Practice and verify') },
   ]
@@ -237,7 +240,10 @@ export function CourseLessonPage({
                         event.preventDefault()
                         document
                           .getElementById(section.id!)
-                          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          ?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                          })
                       }}
                     >
                       {section.step !== null && (
@@ -255,7 +261,10 @@ export function CourseLessonPage({
                         event.preventDefault()
                         document
                           .getElementById('lesson-practice')
-                          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          ?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                          })
                       }}
                     >
                       {t('练习与实验', 'Exercises and labs')}
