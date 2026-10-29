@@ -20,6 +20,12 @@ Add a discount boundary assertion, run all four checks and stage only the releva
 
 **Acceptance:** Show the red/green assertion result, staged diff and a one-sentence scope explanation.
 
+## Exercise 4: Verified challenge — real assertions versus vacuous checks
+
+Predict which assertions fail when `normalize_name` always returns `"rust"`. Run the three tests, inject the incorrect implementation, and restore the original. Provide the passing, failing, and restored outputs plus a statement of what each assertion proves.
+
+From the repository root, run `node scripts/verify-lesson-drills.mjs` for all passing tests and expected compiler diagnostics.
+
 ## Progressive hints
 
 1. Identify the values, their Rust types and the owner or lifetime of each.

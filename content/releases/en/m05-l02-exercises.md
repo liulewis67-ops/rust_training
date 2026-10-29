@@ -20,6 +20,12 @@ Move only one println call after push, compare compilation with the earlier prog
 
 **Acceptance evidence:** Save before/after diagnostics and identify the exact last read that keeps the shared borrow live.
 
+## Exercise 4: Verified challenge — last borrow use and E0502
+
+Mark the element borrow's last use. Compare passing `m05::` tests with E0502, then repair by reading first, storing an index for a later fresh lookup, or cloning an owned snapshot. Discuss allocations and when saved indices require revalidation.
+
+From the repository root, run `node scripts/verify-lesson-drills.mjs` to check both the passing tests and expected compiler diagnostics.
+
 ## Progressive hints
 
 1. Write down whether each access uses &T, &mut T, owned T or a borrowed &str.

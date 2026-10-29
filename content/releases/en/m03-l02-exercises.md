@@ -20,6 +20,12 @@ Extend the task enum and update all state-display and action matches explicitly.
 
 **Acceptance:** Capture the initial non-exhaustive match diagnostic and passing assertions for all states.
 
+## Exercise 4: Verified challenge — exhaustiveness and the retry boundary
+
+Predict actions for 0, 2, 3, and `u8::MAX` retries and run the passing tests. Compile the missing-arm fixture, repair E0004 with an explicit arm (not `_`), then add `Cancelled` and revisit the full decision table.
+
+From the repository root, run `node scripts/verify-lesson-drills.mjs` for all passing tests and expected compiler diagnostics.
+
 ## Progressive hints
 
 1. Identify the distinct states, values and module boundaries.

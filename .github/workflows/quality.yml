@@ -28,6 +28,8 @@ jobs:
         run: pnpm test
       - name: Course sample validation
         run: pnpm content:check-samples
+      - name: Verified Rust lesson drills and expected compiler errors
+        run: node scripts/verify-lesson-drills.mjs
       - name: M08 local lab behavior contracts
         run: node scripts/verify-m08-labs.mjs
       - name: M09 error modeling lab contracts

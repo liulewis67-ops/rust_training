@@ -57,6 +57,12 @@ fn main() {
 
 **验证契约**：解释 map 是惰性 adapter，closure 只有 consumer 拉取元素才执行；新 Vec 场景用 map 加 collect 并检查结果等于期望 Vec；仅做副作用时选 for_each/for；还应有断言检查值而不只检查“无 panic”。答案不得以编译警告本身代替行为验证。
 
+## 4. 可复现实验：惰性迭代器的调用计数
+
+先预测映射尚未消费、执行 collect、以及空切片三种情况下闭包的调用次数。运行测试，再把 collect 移除并观察返回值契约如何被违反；分别用 map+collect 和 for 循环修复。不要只用“没有 panic”作为通过条件。
+
+从仓库根目录执行 `node scripts/verify-lesson-drills.mjs`，可运行所有正例并检查预期失败的诊断。
+
 ## 参考答案
 
 1. `map` 是惰性适配器。转换结果需要作为迭代器的输出并被 `collect` 消费：

@@ -76,6 +76,12 @@ fn main() {
 
 **分层提示：** ① 两个字段 `i32` 是否都是 `Copy`？② `Copy` 同时要求实现哪个 trait？③ 新坐标使用 `point.x + dx` 与原 `y` 字段构造。
 
+## 4. 可复现实验：Copy 与 Clone 的实际语义
+
+先用所有权图预测 `u32` 复制、String move、String clone 后哪些绑定可用。运行正例，再在单独反例中定位 E0382；对比通过 clone 和通过改变函数为借用两种修复，解释是否需要第二份拥有型数据。
+
+从仓库根目录运行 `node scripts/verify-lesson-drills.mjs`，统一核对正例与预期编译失败的诊断。
+
 ## 参考答案
 
 1. 输出为 `count: 4`、`after: 4`。`u32` 实现 `Copy`，所以按值传入 `show_count` 不会让调用处的 `count` 失效；这个结论不能用于 `String`。

@@ -20,6 +20,12 @@ Implement a shared trait on two business models and call it from a generic funct
 
 **Acceptance evidence:** List concrete implementations and output assertions, plus the initial diagnostic.
 
+## Exercise 4: Verified challenge — associated types and E0053
+
+Predict both associated output types and rendered values. Run the passing test, reproduce E0053, and repair the inconsistent impl. Implement a third Summary type without modifying the generic renderer. Explain why associated output types are not dynamically selected at each call.
+
+From the repository root, run `node scripts/verify-lesson-drills.mjs` for the full positive and negative verification suite.
+
 ## Progressive hints
 
 1. Identify whether the caller needs one concrete type or many types at runtime.

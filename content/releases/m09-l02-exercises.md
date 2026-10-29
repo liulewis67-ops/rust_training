@@ -139,6 +139,12 @@ fn main() {
 
 以上检查请以实际代码和行为断言为准，而不是仅凭工具链返回退出码为 0。
 
+## 4. 可复现实验：错误类别、位置与 source 链
+
+先预测 `parse_port(12, Some("wide"))` 与 `parse_port(13, None)` 的 Display、错误类别及 source。运行正例后，故意让 `Error::source` 总返回 None，观察哪项断言失败；修复时保留稳定的外层消息，避免把内部错误文本硬编码给用户。
+
+从仓库根目录执行 `node scripts/verify-lesson-drills.mjs`，可运行所有正例并检查预期失败的诊断。
+
 ## 参考答案
 
 1. 无效端口应显示稳定摘要 `line 12: invalid port value`，底层来源是 `ParseIntError`；字段缺失时没有该解析器来源。

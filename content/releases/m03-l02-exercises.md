@@ -91,6 +91,12 @@ fn next_action(state: JobState) -> &'static str {
 
 **分层提示：** ① 先列出四个变体。② 用 `Failed { attempts }` 绑定计数。③ 在该 arm 内比较 `attempts < 3`，边界 3 不属于重试。
 
+## 4. 可复现实验：穷尽性与重试上限
+
+预测 `attempts` 为 0、2、3、`u8::MAX` 的动作并运行正例。编译遗漏变体的反例，观察 E0004 后用明确分支修复（不得使用 `_`）；再增加 `Cancelled` 并重新审核处理策略。
+
+从仓库根目录执行 `node scripts/verify-lesson-drills.mjs`，统一检查正例与预期编译错误；也可以只运行本模块的 Cargo 测试。
+
 ## 参考答案
 
 ### 1. 预测

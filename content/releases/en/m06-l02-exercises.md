@@ -20,6 +20,12 @@ Write an explicit named-lifetime signature for the selection policy and test inp
 
 **Acceptance evidence:** Provide two valid calling patterns and one rejected escaping-borrow case.
 
+## Exercise 4: Verified challenge — borrow provenance and E0106
+
+Run the test where the query dies but the source text stays alive. Explain the returned borrow's provenance. Compile the two-input ambiguous signature for E0106; fix once for a left-only return and again for either source. Explain what lifetime names do not change.
+
+From the repository root, run `node scripts/verify-lesson-drills.mjs` to check both the passing tests and expected compiler diagnostics.
+
 ## Progressive hints
 
 1. Identify which binding owns the buffer and which reference borrows it.
