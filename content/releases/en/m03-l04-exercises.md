@@ -20,6 +20,12 @@ Keep state fields private and export a minimal read/update API with its invarian
 
 **Acceptance:** Show valid external behavior and the intentional visibility diagnostic.
 
+## Exercise 4: Verified transfer — Module boundaries and private fields
+
+Predict the visibility outcome of reading `task.state` versus calling `task.is_closed()`. Run the tests and the E0616 fixture. Repair external state mutation by calling `close()` rather than making fields public, then add a test for the initial state and explain the boundary's guarantees.
+
+**Acceptance:** Run `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m03_visibility::` and the full verifier, and report predictions, observed results and the reason for your repair. Do not remove failing assertions to make a check green.
+
 ## Progressive hints
 
 1. Identify the distinct states, values and module boundaries.

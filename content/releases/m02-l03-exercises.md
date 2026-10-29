@@ -77,6 +77,12 @@ fn includes_a_matching_limit() {
 
 **分层提示：** ① 列出不超过 2 的正倍数。② 列出不超过 9 的正倍数。③ 求和并核对 `..=` 的上界规则。
 
+## 4. 进阶实证：闭区间、循环终止与条件类型
+
+先预测 `sum_inclusive(0/1/3)`、`sum_exclusive(3)` 及 `countdown(0/7)`，然后运行 `m02_control::` 测试。分别解释为什么 `sum_inclusive(1001)` 会触发主动断言、`if` 类型错误会在编译时 E0308。修复反例而不改变函数的返回类型，再写一个 `n=1000` 的上边界断言。
+
+**验收：** 执行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m02_control::` 和 `node scripts/verify-lesson-drills.mjs`，交付预测、观察到的行为或错误代码以及修复理由。不要删除失败断言来制造“通过”。
+
 ## 参考答案
 
 1. 原函数输出 `busy`；没有 `else` 时，未命中分支的 `if` 结果是 `()`，不能作为 `&'static str` 返回。

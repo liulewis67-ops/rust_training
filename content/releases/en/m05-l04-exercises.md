@@ -20,6 +20,12 @@ Implement either read-before-push or copy-summary-before-push and test both.
 
 **Acceptance evidence:** Show tests for the alternatives and why they avoid cloning the whole collection.
 
+## Exercise 4: Verified transfer — End a shared read before mutating a collection
+
+Predict nonempty and empty outcomes, run the three tests, and reproduce E0502. Repair with a pre-mutation summary and a post-mutation fresh lookup. Explain when the old borrow ends and when indices must be revalidated; ensure empty input stays unchanged.
+
+**Acceptance:** Record the result of `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m05_api::`, the deliberate compile-fail diagnostic, and your independent fix. Do not hide errors by cloning everything or deleting assertions.
+
 ## Progressive hints
 
 1. Write down whether each access uses &T, &mut T, owned T or a borrowed &str.

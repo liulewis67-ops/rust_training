@@ -113,6 +113,12 @@ entry-check/
 - Edition 与 rustup toolchain 概念正确：1 分。
 - 运行后检查 Cargo.lock 并说明应用锁文件用途：1 分。
 
+## 4. 进阶实证：工具链、Edition 与 Cargo 元数据的职责
+
+执行 `rustc +1.95.0 --version`、`cargo +1.95.0 metadata --offline --no-deps --format-version 1 --manifest-path content/samples/verified-lesson-drills/Cargo.toml`，逐项定位工具链、package version、edition。修改个人副本的 `version`，预测哪些元数据变化；不要为修复版本差异随意删除 `Cargo.lock`。独立记录可复现的环境说明。
+
+**验收：** 执行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m01_toolchain::` 和 `node scripts/verify-lesson-drills.mjs`，交付预测、观察到的行为或错误代码以及修复理由。不要删除失败断言来制造“通过”。
+
 ## 整体校验说明
 
 三题分别检查版本概念预测、修复工具链/依赖配置误区、按需求建立最小 Cargo 项目。对照公开规程自查后，记录仍不代表平台认证的技能成绩。

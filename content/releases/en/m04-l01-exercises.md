@@ -20,6 +20,12 @@ Predict event order by hand and add a third resource to the example before runni
 
 **Acceptance:** Provide scope diagrams and actual output, distinguishing bindings from resource lifetimes.
 
+## Exercise 4: Verified transfer — Scope exit, destruction order and explicit drop
+
+Predict the order of an outer owner and two inner owners, run both tests, and reproduce E0040. Use `std::mem::drop` to release one value early; verify that its cleanup callback is not repeated and explain why a direct trait-method call is prohibited.
+
+**Acceptance:** Record the result of `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m04_scope::`, the deliberate compile-fail diagnostic, and your independent fix. Do not hide errors by cloning everything or deleting assertions.
+
 ## Progressive hints
 
 1. Trace bindings and owned values separately.

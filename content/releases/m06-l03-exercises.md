@@ -70,6 +70,12 @@ fn parse_alert_owned_contract() {
 
 最后简述两种 API 对调用方生命周期和字符串分配成本的不同要求。
 
+## 4. 进阶实证：短期借用视图与可独立保留的拥有型结果
+
+先预测短期 `AlertView` 和拥有型 `Alert` 在原输入结束后分别能否访问，运行三项正例、复现 E0515。为队列设计返回 `Alert` 的构造接口，为同步展示保留 `AlertView`；检查 `"R20|text"`、`"|"` 和无分隔符的契约。
+
+**验收：** 提交 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m06_views::` 的测试结果、故意失败反例的诊断和独立修复方案，并解释为什么不能靠克隆、删断言或延长标注伪造正确性。
+
 ## 参考答案
 
 1. 输出依次为 `region:west` 和 `11`。`view` 持有 `raw` 的两个切片，调用方仍持有 `raw`；`11` 是输入的 UTF-8 字节数。

@@ -20,6 +20,12 @@ Implement read-only, counter-mutating and String-consuming callbacks using appro
 
 **Acceptance evidence:** Provide a capture/action/call-count table and successful and failing compiler evidence.
 
+## Exercise 4: Verified transfer — How closure capture behavior determines Fn traits
+
+Predict the trait capabilities of all three captures, run the tests, and reproduce E0525. Fix the callback bound to `FnMut` with a mutable parameter; assert calls return 1 and 2. Try invoking a consuming `FnOnce` callback twice and explain why that differs from mutation.
+
+**Acceptance:** Supply the result of `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m08_closures::`, an observed error or behavioral regression, and a minimal repair that preserves the contract.
+
 ## Progressive hints
 
 1. State which data is borrowed and which is owned.

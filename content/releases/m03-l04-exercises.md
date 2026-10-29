@@ -105,6 +105,12 @@ pub mod tickets {
 
 **分层提示：** ① 哪些字段允许调用方任意改写？② 内部计数是否属于调用方需求？③ 把关闭设计为受控方法，并提供查询状态的方法。
 
+## 4. 进阶实证：模块封装与私有字段诊断
+
+先写出直接访问 `task.state` 与调用 `task.is_closed()` 的可见性差异，再运行 `m03_visibility::` 和预期失败文件。将错误的外部直接赋值修复为 `close()` 调用；新增一个状态查询测试，并解释封装防止了什么、又没有自动保证什么业务不变量。
+
+**验收：** 执行 `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m03_visibility::` 和 `node scripts/verify-lesson-drills.mjs`，交付预测、观察到的行为或错误代码以及修复理由。不要删除失败断言来制造“通过”。
+
 ## 参考答案
 
 ### 1. 修复
