@@ -67,6 +67,10 @@ Run the same commands from the repository root; the CI verifier now checks **bot
 
 **Run:** `node scripts/verify-lesson-drills.mjs` from the repository root. The verification script reads Cargo metadata and checks all runnable tests and deliberately rejected files. You can isolate one lesson with `cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m07_dispatch::`. Expected runtime panic tests are identified with `#[should_panic]`, so they are not mistaken for unhandled failures.
 
+## Full 54-lesson bilingual evidence coverage / 全部课程验证范围
+
+**54/54 published lesson IDs** now link to executable Rust evidence in both languages; L05/L06 have separately testable functions and graduation criteria. The detailed [coverage matrix](../../../docs/verified-curriculum-coverage.md) distinguishes runnable companion contract tests, original defective starter projects and independent delivery evidence. **Companion tests are not substitutes for unpacking and verifying every original ZIP asset.**
+
 ## Teaching protocol / 教学要求
 
 1. **Predict** the return value, error category, or compiler diagnostic before execution.
