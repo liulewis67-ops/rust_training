@@ -11,6 +11,7 @@ import { SafeMarkdown } from '../features/content/SafeMarkdown'
 import { markdownHeadingSlug } from '../lib/markdownAnchor'
 import { organizeLessonMarkdown } from '../features/reading/lessonStructure'
 import { lessonTitle, moduleText } from '../data/courseText'
+import { locateContinuity, continuityLabel } from '../data/learningContinuity'
 import { useLanguage } from '../features/preferences'
 
 /** Read one complete authored lesson and move through the route in order. */
@@ -101,6 +102,7 @@ export function CourseLessonPage({
     )
   }
 
+  const progress = locateContinuity(moduleId, lessonId)
   const body = lesson.content.replace(/^#\s+[^\r\n]*(?:\r?\n|$)\s*/, '')
   const sourceHeading = /^#\s+([^\r\n]+)/.exec(lesson.content)?.[1]
   const sections = organizeLessonMarkdown(body)
@@ -150,6 +152,54 @@ export function CourseLessonPage({
         <p className="translation-note">
           Some lesson text and exercises are still available only in Chinese.
         </p>
+      )}
+      {progress && (
+        <section
+          className="course-module-journey"
+          aria-label={t('本模块工程推进路线', 'Module engineering progression')}
+        >
+          <div className="course-module-journey-header">
+            <span className="course-module-journey-kicker">
+              {t('连续工程任务', 'Connected engineering steps')}
+            </span>
+            <h2>{continuityLabel(progress.module.goal, language)}</h2>
+            <p>
+              {t(
+                '每一步解决上一步留下的限制，并交付下一步需要的结果。',
+                'Each step removes a prior limitation and produces evidence for the next.',
+              )}
+            </p>
+          </div>
+          <ol className="course-module-journey-steps">
+            {progress.module.steps.map((step, index) => (
+              <li key={step.id}>
+                <button
+                  type="button"
+                  className={index === progress.index ? 'is-current' : ''}
+                  aria-current={index === progress.index ? 'step' : undefined}
+                  onClick={() =>
+                    onNavigate({
+                      page: 'course-lesson',
+                      moduleId: progress.module.id,
+                      lessonId: step.id.slice(-3),
+                    })
+                  }
+                >
+                  <span className="course-module-journey-number">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span className="course-module-journey-label">
+                    {continuityLabel(step.label, language)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+          <p className="course-module-journey-current">
+            <strong>{t('当前要解决', 'Current problem')}</strong>
+            {continuityLabel(progress.step.problem, language)}
+          </p>
+        </section>
       )}
       <div className="course-reading-guide">
         <div className="course-reading-guide-intro">
