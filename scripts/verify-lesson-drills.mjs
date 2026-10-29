@@ -31,11 +31,17 @@ if (metadata.status !== 0) {
   throw new Error('Cargo could not read the verified lesson manifest')
 }
 const packages = JSON.parse(metadata.stdout).packages
-const course = packages.find((pkg) => pkg.name === 'rust-path-verified-lesson-drills')
+const course = packages.find(
+  (pkg) => pkg.name === 'rust-path-verified-lesson-drills',
+)
 if (!course || course.edition !== '2024' || course.version !== '0.1.0') {
-  throw new Error('Cargo package identity or 2024 Edition differs from lesson contract')
+  throw new Error(
+    'Cargo package identity or 2024 Edition differs from lesson contract',
+  )
 }
-process.stdout.write('Verified Cargo edition 2024 and package version 0.1.0\\n')
+process.stdout.write(
+  'Verified Cargo edition 2024 and package version 0.1.0\n',
+)
 
 const tested = run('cargo', [
   'test',
