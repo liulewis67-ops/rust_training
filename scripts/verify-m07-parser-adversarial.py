@@ -115,6 +115,46 @@ mod adversarial_contracts {
             (*seed % limit as u64) as usize
         }
 
+        // Unicode-scalar delta debugging; returns a single-deletion-minimal
+        // witness for the *same* parser or label discrepancy.
+        fn shrink_input(source: &str, delimiter: char, label: bool) -> String {
+            fn diverges(source: &str, delimiter: char, label: bool) -> bool {
+                let expected = oracle(source, delimiter);
+                let parsed = match delimiter {
+                    ':' => ColonParser.parse(source),
+                    '=' => EqualsParser.parse(source),
+                    _ => unreachable!(),
+                };
+                if !label {
+                    return parsed != expected;
+                }
+                let wanted = expected.map(|entry| format!("{}={}", entry.key, entry.value));
+                let rendered = match delimiter {
+                    ':' => render_label(&ColonParser, source),
+                    '=' => render_label(&EqualsParser, source),
+                    _ => unreachable!(),
+                };
+                rendered != wanted
+            }
+            assert!(diverges(source, delimiter, label));
+            let mut chars: Vec<char> = source.chars().collect();
+            let mut index = 0;
+            while index < chars.len() {
+                let mut candidate = chars.clone();
+                candidate.remove(index);
+                let text: String = candidate.iter().collect();
+                if diverges(&text, delimiter, label) {
+                    chars = candidate;
+                    index = 0;
+                } else {
+                    index += 1;
+                }
+            }
+            let minimal: String = chars.iter().collect();
+            assert!(diverges(&minimal, delimiter, label));
+            minimal
+        }
+
         for case in 0..448 {
             let left = keys[draw(&mut seed, keys.len())];
             let right = values[draw(&mut seed, values.len())];
@@ -129,20 +169,24 @@ mod adversarial_contracts {
                     '=' => EqualsParser.parse(&input),
                     _ => unreachable!(),
                 };
-                assert_eq!(
-                    actual, expected,
-                    "seed=0x7AB1202610300007 case={case}, delimiter={delimiter}, input={input:?}"
-                );
+                if actual != expected {
+                    let minimal = shrink_input(&input, delimiter, false);
+                    panic!(
+                        "MINIMIZED_COUNTEREXAMPLE m07/parser seed=0x7AB1202610300007 case={case} delimiter={delimiter} original={input:?} minimal={minimal:?}"
+                    );
+                }
                 let expected_label = expected.map(|entry| format!("{}={}", entry.key, entry.value));
                 let actual_label = match delimiter {
                     ':' => render_label(&ColonParser, &input),
                     '=' => render_label(&EqualsParser, &input),
                     _ => unreachable!(),
                 };
-                assert_eq!(
-                    actual_label, expected_label,
-                    "label seed=0x7AB1202610300007 case={case}, delimiter={delimiter}, input={input:?}"
-                );
+                if actual_label != expected_label {
+                    let minimal = shrink_input(&input, delimiter, true);
+                    panic!(
+                        "MINIMIZED_COUNTEREXAMPLE m07/label seed=0x7AB1202610300007 case={case} delimiter={delimiter} original={input:?} minimal={minimal:?}"
+                    );
+                }
             }
         }
     }
