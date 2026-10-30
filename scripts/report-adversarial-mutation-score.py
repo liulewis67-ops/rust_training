@@ -69,6 +69,47 @@ EXPECTED_MUTANTS = {
 }
 
 
+EXPECTED_TARGETS = {
+    "m07": {
+        "wrong_colon_separator": "incompatible_delimiters_reject_even_with_other_punctuation",
+        "split_at_last_delimiter": "colon_first_delimiter_unicode_and_trimmed_fields",
+        "drop_value_trimming": "value_with_only_unicode_whitespace_is_not_present",
+        "trim_only_key_start": "key_trailing_whitespace_is_trimmed_not_preserved",
+        "erase_missing_delimiter_identity": "incompatible_delimiters_reject_even_with_other_punctuation",
+        "misclassify_empty_key_as_value": "empty_key_has_priority_over_empty_value",
+        "replace_canonical_equals_with_colon": "equals_first_delimiter_not_last_and_canonical_label",
+        "trim_only_value_end": "generated_inputs_match_oracle_for_both_parsers",
+        "trim_only_key_end": "generated_inputs_match_oracle_for_both_parsers",
+        "swap_stored_key_and_value": "generated_inputs_match_oracle_for_both_parsers",
+    },
+    "m08": {
+        "overwrite_aggregate_count": "adversarial_contracts::l05_all_permutations_preserve_counts_totals_and_sorted_case_sensitive_keys",
+        "overwrite_aggregate_bytes": "adversarial_contracts::l05_all_permutations_preserve_counts_totals_and_sorted_case_sensitive_keys",
+        "reverse_public_sort": "adversarial_contracts::l05_empty_and_blank_are_distinct_borrowed_keys_not_missing_events",
+        "treat_rejected_as_present": "adversarial_contracts::l06_never_converts_none_or_rejected_zero_into_an_accepted_reading",
+        "convert_none_to_accepted_zero": "adversarial_contracts::l06_never_converts_none_or_rejected_zero_into_an_accepted_reading",
+        "overwrite_sensor_total": "adversarial_contracts::l06_permutations_preserve_zero_missing_rejected_and_signed_cancellation",
+        "skip_zero_byte_events": "model_properties::model_differential_generated_aggregation_and_reordering",
+        "discard_blank_service_keys": "model_properties::model_differential_generated_aggregation_and_reordering",
+        "merge_service_case_variants": "model_properties::model_differential_generated_aggregation_and_reordering",
+        "drop_rejected_only_sensors": "model_properties::model_differential_generated_sensor_rules_and_reordering",
+    },
+    "m09": {
+        "misclassify_missing_delimiter": "adversarial_contracts::l05_first_error_stays_first_across_crlf_unicode_and_malformed_followups",
+        "allow_duplicate_with_invalid_value": "adversarial_contracts::l05_first_error_stays_first_across_crlf_unicode_and_malformed_followups",
+        "off_by_one_error_column": "adversarial_contracts::l05_exact_numeric_bounds_missing_fields_and_extra_delimiters",
+        "lose_internal_source_chain": "adversarial_contracts::l06_nested_error_chain_survives_multiple_public_presentations",
+        "leak_storage_error_in_display": "adversarial_contracts::l06_nested_error_chain_survives_multiple_public_presentations",
+        "rewrite_request_id": "adversarial_contracts::l06_nested_error_chain_survives_multiple_public_presentations",
+        "change_api_public_code": "adversarial_contracts::l06_all_domain_variants_have_stable_exact_cli_and_http_contracts",
+        "skip_whitespace_only_lines": "model_properties::model_differential_generated_config_grammar_and_first_failure",
+        "accept_ascii_plus_prefix": "model_properties::model_differential_generated_config_grammar_and_first_failure",
+        "duplicate_empty_is_reported_as_invalid": "model_properties::model_differential_generated_config_grammar_and_first_failure",
+        "lose_large_timeout_support": "model_properties::model_metamorphic_valid_field_order_blank_lines_and_limits",
+    },
+}
+
+
 def validate(directory: Path) -> dict:
     reports = {}
     evidence = []
@@ -116,6 +157,11 @@ def validate(directory: Path) -> dict:
                     or not hit or len(hit) != len(set(hit))
                     or target not in hit or any(test not in tests for test in hit)):
                 raise AssertionError(f"{module}: false, missing, or unmapped mutation evidence {row}")
+            expected_target = EXPECTED_TARGETS[module][name]
+            if module == "m07":
+                expected_target = "adversarial_contracts::" + expected_target
+            if target != expected_target:
+                raise AssertionError(f"{module}: changed designated assertion for {name}")
             names.add(name)
             covered.update(hit)
             witness = row.get("counterexample")
