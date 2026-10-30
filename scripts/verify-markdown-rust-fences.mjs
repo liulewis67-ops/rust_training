@@ -50,10 +50,12 @@ const stdoutContracts = {
   'm02-l04:5': 'meets target / outside scale\n',
   'm03-l04:1': '17 false\n17 true\n',
   'm03-l04:2': '5\n',
-  'm04-l01:1': 'inner scope ends\ndrop second\ndrop first\nouter scope continues\nmain scope ends\ndrop room\n',
+  'm04-l01:1':
+    'inner scope ends\ndrop second\ndrop first\nouter scope continues\nmain scope ends\ndrop room\n',
   'm04-l03:1': 'original: 12, assigned: 12\n',
   'm04-l03:2': 'level: 3\nstill available: 3\n',
-  'm04-l03:3': 'first: GridPoint { x: 2, y: 5 }; second: GridPoint { x: 2, y: 5 }\n',
+  'm04-l03:3':
+    'first: GridPoint { x: 2, y: 5 }; second: GridPoint { x: 2, y: 5 }\n',
   'm04-l03:4': 'original: draft one\nduplicate: draft two\n',
   'm04-l04:1': 'received: build\nreturned: ready\n',
   'm04-l04:3': 'CI: compile / ready\n',
@@ -61,7 +63,8 @@ const stdoutContracts = {
   'm05-l02:3': 'first: Ada\ncount: 2\n',
   'm06-l02:1': 'queue ready\n',
   'm06-l04:3': 'owned text\n42\nembedded text\n',
-  'm06-l04:5': 'accepted type; value is dropped when this function ends\nthe String owner was consumed\n',
+  'm06-l04:5':
+    'accepted type; value is dropped when this function ends\nthe String owner was consumed\n',
 }
 function extractRust(source) {
   const tick = String.fromCharCode(96).repeat(3)
