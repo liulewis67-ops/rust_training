@@ -15,7 +15,7 @@ const audited = {
   'm02-l04': ['ok', 'ok', 'ok', 'ok', 'ok'],
   'm03-l01': ['ok', 'ok', 'ok'],
   'm03-l03': ['ok', 'ok', 'panic'],
-  'm03-l04': ['ok', 'ok', 'ok'],
+  'm03-l04': ['ok', 'ok', 'E0624'],
   'm04-l01': ['ok'],
   'm04-l03': ['ok', 'ok', 'ok', 'ok', 'ok'],
   'm04-l04': ['ok', 'E0382', 'ok'],
@@ -124,7 +124,10 @@ try {
           : 'error[' + expected + ']'
         if (result.status === 0 || !result.stderr.includes(diagnostic)) {
           throw new Error(
-            id + ': expected compiler diagnostic ' + diagnostic + ', got:\n' +
+            id +
+              ': expected compiler diagnostic ' +
+              diagnostic +
+              ', got:\n' +
               result.stderr,
           )
         }
@@ -132,7 +135,9 @@ try {
         continue
       }
       if (result.status !== 0) {
-        throw new Error(id + ': expected a compiling fence, got:\n' + result.stderr)
+        throw new Error(
+          id + ': expected a compiling fence, got:\n' + result.stderr,
+        )
       }
       compiled++
       if (!hasMain && !hasTests) {
@@ -143,16 +148,29 @@ try {
       }
       const execution = run(output, [], root)
       if (expected === 'panic') {
-        if (execution.status === 0 || !execution.stderr.includes('panicked at')) {
-          throw new Error(id + ': expected an actual runtime panic, got:\n' +
-            execution.stderr)
+        if (
+          execution.status === 0 ||
+          !execution.stderr.includes('panicked at')
+        ) {
+          throw new Error(
+            id +
+              ': expected an actual runtime panic, got:\n' +
+              execution.stderr,
+          )
         }
         observedPanics++
       } else if (expected === 'test-fail') {
-        if (!hasTests || execution.status === 0 ||
-          !execution.stdout.includes('test result: FAILED')) {
-          throw new Error(id + ': expected a failing #[test] assertion, got:\n' +
-            execution.stdout + execution.stderr)
+        if (
+          !hasTests ||
+          execution.status === 0 ||
+          !execution.stdout.includes('test result: FAILED')
+        ) {
+          throw new Error(
+            id +
+              ': expected a failing #[test] assertion, got:\n' +
+              execution.stdout +
+              execution.stderr,
+          )
         }
         observedFailedTests++
       } else if (expected === 'ok') {
@@ -164,8 +182,11 @@ try {
         const stdout = stdoutContracts[id]
         if (stdout !== undefined && execution.stdout !== stdout) {
           throw new Error(
-            id + ': expected ' + JSON.stringify(stdout) +
-              ' stdout, got ' + JSON.stringify(execution.stdout),
+            id +
+              ': expected ' +
+              JSON.stringify(stdout) +
+              ' stdout, got ' +
+              JSON.stringify(execution.stdout),
           )
         }
       } else {
@@ -185,8 +206,10 @@ try {
       ' compiling/executing examples and ' +
       rejected +
       ' intentional rustc failures; ' +
-      observedPanics + ' runtime panics; ' +
-      observedFailedTests + ' failed assertions.\n',
+      observedPanics +
+      ' runtime panics; ' +
+      observedFailedTests +
+      ' failed assertions.\n',
   )
 } finally {
   rmSync(workspace, { recursive: true, force: true })

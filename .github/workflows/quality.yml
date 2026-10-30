@@ -18,10 +18,6 @@ jobs:
           cache: pnpm
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
-      - name: Inspect rust-fence audit formatting (temporary)
-        run: |
-          pnpm exec prettier --write scripts/verify-markdown-rust-fences.mjs
-          git diff -- scripts/verify-markdown-rust-fences.mjs
       - name: Formatting
         run: pnpm format:check
       - name: Lint and React hooks
