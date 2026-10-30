@@ -354,7 +354,7 @@ def export(directory: Path, summary: dict) -> str:
         )
         weak = score["weak_association_tests"]
         if weak:
-            markdown.extend(f"- \`{test}\`: {score['per_test_hits'][test]} selected mutation hit(s)"
+            markdown.extend(f"- `{test}`: {score['per_test_hits'][test]} selected mutation hit(s)"
                             for test in weak)
         else:
             markdown.append("- None within this selected mutation set.")
