@@ -18,6 +18,57 @@ EXPECTED = {
 }
 
 
+EXPECTED_CATALOG = {
+    "m07": [
+        "adversarial_contracts::colon_first_delimiter_unicode_and_trimmed_fields",
+        "adversarial_contracts::empty_key_has_priority_over_empty_value",
+        "adversarial_contracts::equals_first_delimiter_not_last_and_canonical_label",
+        "adversarial_contracts::generated_inputs_match_oracle_for_both_parsers",
+        "adversarial_contracts::incompatible_delimiters_reject_even_with_other_punctuation",
+        "adversarial_contracts::key_trailing_whitespace_is_trimmed_not_preserved",
+        "adversarial_contracts::value_with_only_unicode_whitespace_is_not_present",
+    ],
+    "m08": [
+        "adversarial_contracts::l05_all_permutations_preserve_counts_totals_and_sorted_case_sensitive_keys",
+        "adversarial_contracts::l05_empty_and_blank_are_distinct_borrowed_keys_not_missing_events",
+        "adversarial_contracts::l06_never_converts_none_or_rejected_zero_into_an_accepted_reading",
+        "adversarial_contracts::l06_permutations_preserve_zero_missing_rejected_and_signed_cancellation",
+        "model_properties::model_differential_generated_aggregation_and_reordering",
+        "model_properties::model_differential_generated_sensor_rules_and_reordering",
+    ],
+    "m09": [
+        "adversarial_contracts::l05_exact_numeric_bounds_missing_fields_and_extra_delimiters",
+        "adversarial_contracts::l05_first_error_stays_first_across_crlf_unicode_and_malformed_followups",
+        "adversarial_contracts::l06_all_domain_variants_have_stable_exact_cli_and_http_contracts",
+        "adversarial_contracts::l06_nested_error_chain_survives_multiple_public_presentations",
+        "model_properties::model_differential_error_boundary_preserves_cause_without_public_leaks",
+        "model_properties::model_differential_generated_config_grammar_and_first_failure",
+        "model_properties::model_metamorphic_valid_field_order_blank_lines_and_limits",
+    ],
+}
+EXPECTED_MUTANTS = {
+    "m07": {
+        "wrong_colon_separator", "split_at_last_delimiter", "drop_value_trimming",
+        "trim_only_key_start", "erase_missing_delimiter_identity",
+        "misclassify_empty_key_as_value", "replace_canonical_equals_with_colon",
+        "trim_only_value_end", "trim_only_key_end", "swap_stored_key_and_value",
+    },
+    "m08": {
+        "overwrite_aggregate_count", "overwrite_aggregate_bytes", "reverse_public_sort",
+        "treat_rejected_as_present", "convert_none_to_accepted_zero", "overwrite_sensor_total",
+        "skip_zero_byte_events", "discard_blank_service_keys",
+        "merge_service_case_variants", "drop_rejected_only_sensors",
+    },
+    "m09": {
+        "misclassify_missing_delimiter", "allow_duplicate_with_invalid_value",
+        "off_by_one_error_column", "lose_internal_source_chain",
+        "leak_storage_error_in_display", "rewrite_request_id", "change_api_public_code",
+        "skip_whitespace_only_lines", "accept_ascii_plus_prefix",
+        "duplicate_empty_is_reported_as_invalid", "lose_large_timeout_support",
+    },
+}
+
+
 def validate(directory: Path) -> dict:
     reports = {}
     evidence = []
@@ -45,6 +96,8 @@ def validate(directory: Path) -> dict:
                 or any(not isinstance(t, str) or "::" not in t for t in tests)):
             raise AssertionError(f"{module}: missing, duplicated or malformed test catalog")
         tests = sorted(tests)
+        if tests != EXPECTED_CATALOG[module]:
+            raise AssertionError(f"{module}: pinned independent test identities changed")
         all_tests.extend(module + "::" + test for test in tests)
 
         mutants = report.get("mutants")
@@ -76,6 +129,8 @@ def validate(directory: Path) -> dict:
                     "model_differential_generated_" in target) and witness is None:
                 raise AssertionError(f"{module}: seeded failure lacks reduced counterexample: {name}")
             evidence.append({"module": module, **row})
+        if names != EXPECTED_MUTANTS[module]:
+            raise AssertionError(f"{module}: missing or substituted selected mutations")
         module_scores.append({
             "module": module, "killed": len(mutants), "selected": len(mutants),
             "seed": report["seed"], "generated_cases": report["generated_cases"],
