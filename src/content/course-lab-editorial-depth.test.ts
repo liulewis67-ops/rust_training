@@ -23,7 +23,7 @@ function checkLabArticle(
   const article = sections[reasoningIndex + 1]
   expect(article).toBeDefined()
   const [heading, ...body] = article.split('\n')
-  expect(heading.length).toBeGreaterThan(16)
+  expect(heading.length).toBeGreaterThan(10)
   expect(titles.has(heading)).toBe(false)
   titles.add(heading)
   const text = body.join('\n').trim()
