@@ -5,6 +5,8 @@ permissions:
 jobs:
   frontend:
     runs-on: ubuntu-latest
+    env:
+      MUTATION_REPORT_DIR: artifacts/mutation-report
     steps:
       - uses: actions/checkout@v4
       # Course sample tests compile local Rust examples, even though the site runs in the browser.
@@ -48,6 +50,15 @@ jobs:
         run: node scripts/verify-m09-labs.mjs
       - name: M08 and M09 adversarial implementation mutations
         run: python3 scripts/verify-m08-m09-adversarial-mutations.py
+      - name: Selected mutation sensitivity report
+        run: python3 scripts/report-adversarial-mutation-score.py
+      - name: Upload adversarial mutation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m07-m09-mutation-evidence
+          path: artifacts/mutation-report/
+          if-no-files-found: warn
       - name: Published course manifest validation
         run: pnpm content:validate-public
       - name: Production build
