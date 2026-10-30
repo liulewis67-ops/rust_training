@@ -118,6 +118,52 @@ EXPECTED_TARGETS = {
 }
 
 
+EXPECTED_TRIAGE = {
+    "entry_or_insert_with_pure_tuple": ("m08", "reviewed_equivalent", "passed"),
+    "compound_addition_to_explicit_addition": ("m08", "reviewed_equivalent", "passed"),
+    "explicit_boolean_comparison": ("m08", "reviewed_equivalent", "passed"),
+    "empty_line_length_check": ("m09", "reviewed_equivalent", "passed"),
+    "strict_ascii_bytes_via_slice": ("m09", "reviewed_equivalent", "passed"),
+    "trim_whitespace_lines_is_not_equivalent": ("m09", "killed_non_equivalent", "failed"),
+}
+
+
+def load_triage(directory: Path) -> dict:
+    file = directory / "equivalence-triage.json"
+    if not file.is_file():
+        raise AssertionError("missing equivalence triage evidence")
+    payload = json.loads(file.read_text(encoding="utf8"))
+    if payload.get("schema_version") != 1 or not isinstance(payload.get("candidates"), list):
+        raise AssertionError("invalid equivalence triage document")
+    found = {}
+    for item in payload["candidates"]:
+        name = item.get("name")
+        if name in found or name not in EXPECTED_TRIAGE:
+            raise AssertionError("unexpected or duplicate equivalence candidate")
+        module, classification, outcome = EXPECTED_TRIAGE[name]
+        if (item.get("module") != module or
+                item.get("classification") != classification or
+                item.get("full_suite") != outcome or
+                item.get("compiles") is not True or
+                not isinstance(item.get("reasoning"), str) or
+                len(item["reasoning"]) < 40):
+            raise AssertionError("invalid or unreviewed equivalence evidence for " + name)
+        found[name] = item
+    if found.keys() != EXPECTED_TRIAGE.keys():
+        raise AssertionError("missing pinned equivalence triage candidates")
+    return {
+        "candidates": sorted(found.values(), key=lambda item: item["name"]),
+        "reviewed_equivalent": sum(
+            item["classification"] == "reviewed_equivalent" for item in found.values()),
+        "killed_non_equivalent": sum(
+            item["classification"] == "killed_non_equivalent" for item in found.values()),
+        "excluded_from_selected_mutation_score": sorted(
+            item["name"] for item in found.values()
+            if item["classification"] == "reviewed_equivalent"
+        ),
+    }
+
+
 def validate(directory: Path) -> dict:
     reports = {}
     evidence = []
@@ -196,7 +242,8 @@ def validate(directory: Path) -> dict:
         reports[module] = {"tests": tests, "mutants": mutants, "covered": sorted(covered)}
     selected = sum(v["selected"] for v in module_scores)
     return {
-        "schema_version": 2,
+        "schema_version": 3,
+        "equivalence_triage": load_triage(directory),
         "scope": "enumerated compiling mutants and executed independent tests, not total code coverage",
         "killed": len(evidence),
         "selected": selected,
@@ -250,7 +297,11 @@ def export(directory: Path, summary: dict) -> str:
             f"{score['test_count']} | {score['tests_detecting_selected_mutants']} | "
             f"{score['reduced_witnesses']} |"
         )
+    eq = summary["equivalence_triage"]
     markdown.extend([
+        "",
+        f"**Reviewed-equivalent candidates excluded from denominator: {eq['reviewed_equivalent']}.** "
+        f"Confirmed non-equivalent triage control: {eq['killed_non_equivalent']}.",
         "",
         f"**Selected mutation score: {summary['killed']}/{summary['selected']} "
         f"({summary['score_percent']}%).**",
