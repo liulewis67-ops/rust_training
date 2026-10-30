@@ -1,8 +1,5 @@
 import { expect, it } from 'vitest'
-import {
-  lessonSupplementKind,
-  organizeLessonMarkdown,
-} from './lessonStructure'
+import { lessonSupplementKind, organizeLessonMarkdown } from './lessonStructure'
 
 it('groups preparation, concepts, practice and sources', () => {
   const sections = organizeLessonMarkdown(
@@ -101,7 +98,10 @@ it('moves verification matrices, solutions and sources out of the article flow',
     ['Staged acceptance', 'validation'],
     ['Progressive hints', 'hints'],
     ['Reference implementation', 'answers'],
-    ['Advanced: seeded differential models and mutation sensitivity', 'advanced'],
+    [
+      'Advanced: seeded differential models and mutation sensitivity',
+      'advanced',
+    ],
     ['Sources', 'sources'],
   ] as const
   for (const [heading, expected] of headings) {

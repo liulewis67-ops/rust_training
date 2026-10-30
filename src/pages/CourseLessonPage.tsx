@@ -17,7 +17,6 @@ import { lessonTitle, moduleText } from '../data/courseText'
 import { locateContinuity, continuityLabel } from '../data/learningContinuity'
 import { useLanguage } from '../features/preferences'
 
-
 /**
  * Deep links may target a heading in a collapsed supplementary section.
  * Open all ancestor disclosures before scrolling, including nested details.
@@ -348,7 +347,10 @@ export function CourseLessonPage({
             <summary id="lesson-support">
               <span>
                 <strong>
-                  {t('辅助资料与完整验收', 'Supplementary material and full checks')}
+                  {t(
+                    '辅助资料与完整验收',
+                    'Supplementary material and full checks',
+                  )}
                 </strong>
                 <small>
                   {t(
@@ -364,11 +366,15 @@ export function CourseLessonPage({
             <div className="course-reader-support-groups">
               {supplementGroups.map((group) => {
                 const groupSections = supportSections.filter(
-                  (section) => lessonSupplementKind(section.title) === group.kind,
+                  (section) =>
+                    lessonSupplementKind(section.title) === group.kind,
                 )
                 if (!groupSections.length) return null
                 return (
-                  <section className="course-reader-support-group" key={group.kind}>
+                  <section
+                    className="course-reader-support-group"
+                    key={group.kind}
+                  >
                     <h3>{group.title}</h3>
                     {groupSections.map((section, index) => {
                       const slug = markdownHeadingSlug(section.title ?? '')
