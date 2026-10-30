@@ -30,6 +30,16 @@
 
 本轮对全部 54 节的中英文推导段做了这种连续论述改写，并针对 11 组 Rust 代码补充“阅读代码前先预测 / 运行或编译后观察”。原有分层提示、独立验收和代码围栏保持不变。
 
+## 综合实验与独立检查：把任务书写成完整调试记录
+
+M01–M09 的 L05 与 L06 不应该只有“获取 starter、修改 TODO、运行测试、提交”四个动作。它们是课程中最适合展开真实工程推理的部分，必须同时说明读者如何进入问题、如何区分失败类型、怎样排除看似合理的错误修复，以及最后如何证明自己交付的是完整行为。
+
+**L05 综合实验**建议把原始项目作为案件现场：从第一次编译失败或公开测试失败开始，记录应观察到的现象；给出最小区分性输入；解释编译器和运行期测试能证明的不同事实；最后检查修复是否影响了其他既定行为。要保留发布 ZIP 的完整性、starter 的故意缺陷以及教师独立验收的区分，不把参考源码当成第一步。
+
+**L06 独立检查**则从契约出发：先明确输入类型和允许的返回分支，构造恰好在边界两侧的对照例子，再自行实现并回归。与 L05 的区别是独立设计与交付，而不是再次修复前一节的 starter。写作中不应直接给出完整解答，应该解释为什么某种错误策略会失败以及如何用最小测试识别它。
+
+两类课程都应在原理推导之后提供至少一段独立、连续的“从故障到验收”的文章正文，内容具体到本课的函数、关键输入、错误语义和验证证据，不使用六项标签式短句，也不依赖堆砌“建议多写测试”的通用建议。现有的任务、提示、自查表和可运行命令必须保留，以便读者在读完文章后确实能够实践。
+
 ## 中英文对照原则
 
 - 两种语言都应具备完整的故事，而不只是将中文段落概括成三条英文 bullet。
@@ -61,5 +71,9 @@ Begin with concrete input and an observable failure instead of a list of languag
 Headings should describe meaningful questions or decisions, not “Core concept 1/2/3.” Avoid repeating the same generic story across lessons. Preserve Rust code fences, source links, exercises, and published starter behavior in both languages. Expanded prose must be technically precise: a successful build is not proof of correct business behavior, a lifetime annotation does not extend an owned value's lifetime, and `String::len()` counts bytes.
 
 **Second pass: argument before outline.** After scenario-led introductions, remove six-label worksheets from the reasoning body. The article should explain an actual incorrect implementation, the relevant compiler or domain mechanism, and an executable boundary test in connected paragraphs. Before each worked snippet, ask what the reader predicts; afterward, separate observed behavior from claims that the small example cannot prove. This pass expands all 54 bilingual reasoning sections and annotates eleven key code examples without changing the original Rust snippets or lab contracts.
+
+**Capstone and independent-check articles.** For L05, write like a reproducible investigation of the released starter: capture the first compiler or behavioral failure, identify a discriminating input, repair the smallest actual defect, and verify that the public contract and original archive remain intact. Do not conflate compiler success with business correctness or reveal the reference implementation as the first step.
+
+For L06, begin with an independently stated behavioral contract, reason through boundary cases, reject plausible wrong alternatives, and require a clean-room deliverable. The prose should explain *why* a test identifies a defect without simply giving away a complete solution. Preserve task lists, starter references, commands, progressive hints, and all existing acceptance tests. Each bilingual L05/L06 article now has a four-paragraph debugging narrative guarded by `src/content/course-lab-editorial-depth.test.ts`.
 
 The automated editorial test checks for distinct narrative sections in all 54 Chinese and 54 English lessons. It supplements, never replaces, the existing code, continuity, translation, and build checks.
