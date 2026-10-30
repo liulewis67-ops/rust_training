@@ -10,6 +10,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import tempfile
 import zipfile
@@ -250,6 +251,22 @@ MUTANTS = [
 ]
 
 
+def contract_results(output: str) -> dict[str, str]:
+    matches = re.findall(
+        r"^test adversarial_contracts::(\\w+) \\.\\.\\. (ok|FAILED)$",
+        output, flags=re.MULTILINE,
+    )
+    results = {"adversarial_contracts::" + name: status for name, status in matches}
+    if len(results) != len(matches):
+        raise AssertionError("M07: duplicate public test result names")
+    return results
+
+
+def counterexample_from(output: str) -> str | None:
+    found = re.search(r"MINIMIZED_COUNTEREXAMPLE [^\\r\\n]+", output)
+    return found.group(0) if found else None
+
+
 def main() -> None:
     released = audit.RELEASES / "m07-l05-starter.zip"
     original_digest = hashlib.sha256(released.read_bytes()).hexdigest()
@@ -279,6 +296,9 @@ def main() -> None:
         code, out = audit.run_cargo(project, "test", root)
         if code != 0 or "test result: ok." not in out:
             raise AssertionError("real repaired ZIP fails independent contracts:\n" + out[-4000:])
+        baseline_tests = contract_results(out)
+        if len(baseline_tests) != 7 or set(baseline_tests.values()) != {"ok"}:
+            raise AssertionError("M07: missing or failing independent acceptance tests")
         print("m07: original ZIP repaired; seven external behavioral contracts pass")
 
         killed = []
@@ -290,13 +310,22 @@ def main() -> None:
                 raise AssertionError(name + ": accepted an incorrect implementation:\n" + out[-3000:])
             if "could not compile" in out or "error[" in out:
                 raise AssertionError(name + ": compile failure is not a valid mutation kill:\n" + out[-3000:])
-            if not any(
-                "adversarial_contracts::" + case + " ... FAILED" in line
-                for line in out.splitlines()
-            ):
+            results = contract_results(out)
+            if set(results) != set(baseline_tests):
+                raise AssertionError(name + ": independent test discovery changed during mutation")
+            failed = sorted(test for test, state in results.items() if state == "FAILED")
+            target = "adversarial_contracts::" + case
+            if target not in failed:
                 raise AssertionError(name + ": targeted independent assertion did not fail:\n" + out[-3000:])
-            print("m07: KILLED " + name + " via " + case)
-            killed.append({"name": name, "target": case, "status": "killed"})
+            minimal = counterexample_from(out)
+            if case == "generated_inputs_match_oracle_for_both_parsers" and not minimal:
+                raise AssertionError(name + ": generated-case failure did not provide a minimal witness")
+            print("m07: KILLED " + name + " via " + ", ".join(failed))
+            killed.append({
+                "name": name, "target": target, "status": "killed",
+                "detected_by": failed,
+                **({"counterexample": minimal} if minimal else {}),
+            })
 
         library.write_text(baseline, encoding="utf8")
         code, out = audit.run_cargo(project, "test", root)
@@ -317,6 +346,7 @@ def main() -> None:
             "seed": "0x7AB1202610300007",
             "generated_cases": 448,
             "archive_sha256": original_digest,
+            "tests": sorted(baseline_tests),
             "mutants": killed,
         }, indent=2, ensure_ascii=False) + "\n", encoding="utf8")
     print(f"M07 original ZIP: {len(killed)}/{len(MUTANTS)} compiling mutants killed; archive unchanged.")
