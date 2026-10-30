@@ -119,7 +119,7 @@ def cargo_test(project: Path, suite: str, target: Path) -> tuple[int, str]:
 
 
 def test_outcomes(output: str, suite: str) -> dict[str, str]:
-    rows = re.findall(r"^test (\\S+) \\.\\.\\. (ok|FAILED)$",
+    rows = re.findall(r"^test (\S+) \.\.\. (ok|FAILED)$",
                       output, flags=re.MULTILINE)
     results = {suite + "::" + name: state for name, state in rows}
     if len(results) != len(rows):
