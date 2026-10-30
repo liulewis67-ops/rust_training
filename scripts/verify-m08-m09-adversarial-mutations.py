@@ -63,7 +63,8 @@ MUTANTS = [
      "request_id: request_id.trim().to_owned(),",
      "l06_nested_error_chain_survives_multiple_public_presentations"),
     ("m09", "change_api_public_code",
-     '"history_unavailable",', '"internal_storage_error",',
+     '"history_unavailable",\n            "history service is temporarily unavailable; retry later.",',
+     '"internal_storage_error",\n            "history service is temporarily unavailable; retry later.",',
      "l06_all_domain_variants_have_stable_exact_cli_and_http_contracts"),
 ]
 
