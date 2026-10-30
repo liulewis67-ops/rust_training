@@ -15,28 +15,32 @@ pub fn parse_config(raw: &str) -> Result<Config, ConfigError> {
         let Some((key, value)) = text.split_once('=') else {
             return Err(ConfigError { kind: ParseKind::InvalidLine, line, column: text.chars().count() + 1 });
         };
+        // Classify the field before parsing its value: a repeated key is the
+        // first error on that line even when its replacement value is malformed.
+        let duplicate = match key {
+            "timeout_ms" => timeout.is_some(),
+            "retry_limit" => retries.is_some(),
+            _ => return Err(ConfigError { kind: ParseKind::UnknownField, line, column: 1 }),
+        };
+        if duplicate {
+            return Err(ConfigError { kind: ParseKind::DuplicateField, line, column: 1 });
+        }
         let first_value_column = key.chars().count() + 2; // 1-based; after the '='.
         if value.is_empty() || !value.bytes().all(|b| b.is_ascii_digit()) {
             return Err(ConfigError { kind: ParseKind::InvalidValue, line, column: first_value_column });
         }
         match key {
             "timeout_ms" => {
-                if timeout.is_some() {
-                    return Err(ConfigError { kind: ParseKind::DuplicateField, line, column: 1 });
-                }
                 timeout = Some(value.parse::<u64>().map_err(|_| ConfigError {
                     kind: ParseKind::InvalidValue, line, column: first_value_column
                 })?);
             }
             "retry_limit" => {
-                if retries.is_some() {
-                    return Err(ConfigError { kind: ParseKind::DuplicateField, line, column: 1 });
-                }
                 retries = Some(value.parse::<u8>().map_err(|_| ConfigError {
                     kind: ParseKind::InvalidValue, line, column: first_value_column
                 })?);
             }
-            _ => return Err(ConfigError { kind: ParseKind::UnknownField, line, column: 1 }),
+            _ => unreachable!("field validated above"),
         }
     }
     Ok(Config {
@@ -84,6 +88,21 @@ mod tests {
         let e = parse_config("timeout_ms=12\nretry_limit=密").unwrap_err();
         assert_eq!(e, ConfigError { kind: ParseKind::InvalidValue, line: 2, column: 13 });
         assert!(!format!("{e:?}").contains("密"));
+    }
+    #[test]
+    fn l05_first_structured_error_wins_even_when_later_input_is_malformed() {
+        assert_eq!(
+            parse_config("timeout_ms=1\ntimeout_ms=invalid\n未知=secret").unwrap_err(),
+            ConfigError { kind: ParseKind::DuplicateField, line: 2, column: 1 },
+        );
+        assert_eq!(
+            parse_config("未知=invalid\ntimeout_ms=1\nretry_limit=1").unwrap_err(),
+            ConfigError { kind: ParseKind::UnknownField, line: 1, column: 1 },
+        );
+        assert_eq!(
+            parse_config("timeout_ms=18446744073709551616\nretry_limit=1").unwrap_err(),
+            ConfigError { kind: ParseKind::InvalidValue, line: 1, column: 12 },
+        );
     }
     #[test]
     fn l06_cli_and_api_contracts_remain_separate_and_safe() {
