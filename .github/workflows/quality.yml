@@ -46,6 +46,8 @@ jobs:
         run: node scripts/verify-m08-labs.mjs
       - name: M09 error modeling lab contracts
         run: node scripts/verify-m09-labs.mjs
+      - name: M08 and M09 adversarial implementation mutations
+        run: python3 scripts/verify-m08-m09-adversarial-mutations.py
       - name: Published course manifest validation
         run: pnpm content:validate-public
       - name: Production build
