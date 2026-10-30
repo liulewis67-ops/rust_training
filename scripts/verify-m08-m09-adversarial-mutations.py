@@ -8,6 +8,7 @@ error, test-discovery failure, or unrelated panic.
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import os
 import re
 import shutil
@@ -144,6 +145,7 @@ def main() -> None:
             ):
                 raise AssertionError(module + ": seeded model suite failed:\n" + model_output[-3000:])
 
+        killed = {"m08": [], "m09": []}
         for module, name, original, wrong, test in MUTANTS:
             project = projects[module]
             source_file = project / "src" / "lib.rs"
@@ -161,6 +163,7 @@ def main() -> None:
                 ):
                     raise AssertionError(module + "/" + name + ": named assertion did not fail:\n" + out[-3000:])
                 print(module + ": KILLED " + name + " via " + test)
+                killed[module].append({"name": name, "target": test, "status": "killed"})
             finally:
                 source_file.write_text(unchanged, encoding="utf8")
 
@@ -168,7 +171,22 @@ def main() -> None:
             code, out = cargo_test(project, "", temp / (module + "-target"))
             if code != 0:
                 raise AssertionError(module + ": restored reference failed:\n" + out[-3000:])
-    print(f"M08/M09: {len(MUTANTS)}/{len(MUTANTS)} compiling mutants killed.")
+    report_dir = os.environ.get("MUTATION_REPORT_DIR")
+    if report_dir:
+        output = Path(report_dir)
+        output.mkdir(parents=True, exist_ok=True)
+        for module in ("m08", "m09"):
+            (output / (module + ".json")).write_text(json.dumps({
+                "schema_version": 1,
+                "module": module,
+                "reference": module + "-reference Cargo crate with external integration tests",
+                "baseline": "passed",
+                "seed": "0xC0FF_EE" + module[-1] + "_2026_1030",
+                "generated_cases": 320 if module == "m08" else 384,
+                "mutants": killed[module],
+            }, indent=2, ensure_ascii=False) + "\n", encoding="utf8")
+    total = sum(len(rows) for rows in killed.values())
+    print(f"M08/M09: {total}/{len(MUTANTS)} compiling mutants killed.")
 
 
 if __name__ == "__main__":
