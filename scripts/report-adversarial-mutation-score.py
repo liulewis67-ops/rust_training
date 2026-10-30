@@ -157,6 +157,8 @@ def validate(directory: Path) -> dict:
                     or not hit or len(hit) != len(set(hit))
                     or target not in hit or any(test not in tests for test in hit)):
                 raise AssertionError(f"{module}: false, missing, or unmapped mutation evidence {row}")
+            if name not in EXPECTED_TARGETS[module]:
+                raise AssertionError(f"{module}: unrecognized selected mutation {name}")
             expected_target = EXPECTED_TARGETS[module][name]
             if module == "m07":
                 expected_target = "adversarial_contracts::" + expected_target
