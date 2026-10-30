@@ -50,7 +50,8 @@ const reference = runCargo('m08-reference', 'test')
 if (
   reference.exitCode !== 0 ||
   !reference.output.includes('test result: ok. 10 passed; 0 failed') ||
-  !reference.output.includes('test result: ok. 4 passed; 0 failed')
+  !reference.output.includes('test result: ok. 4 passed; 0 failed') ||
+  !reference.output.includes('test result: ok. 2 passed; 0 failed')
 ) {
   throw new Error(
     `M08 reference must pass all public tests:\n${reference.output}`,
