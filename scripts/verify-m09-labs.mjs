@@ -29,7 +29,9 @@ function cargoTests(project) {
 const starter = cargoTests('m09-starter')
 const intendedFailures = [
   'l05_duplicate_fields_are_not_overwritten',
+  'l05_duplicate_precedes_later_unknown_fields_and_bad_values',
   'l06_api_status_code_retry_and_request_id',
+  'l06_unicode_request_id_and_internal_diagnostics_are_separate',
 ]
 if (
   starter.code === 0 ||
@@ -37,7 +39,7 @@ if (
   !intendedFailures.every((test) =>
     starter.output.includes(`tests::${test} ... FAILED`),
   ) ||
-  !starter.output.includes('6 passed; 2 failed')
+  !starter.output.includes('7 passed; 4 failed')
 ) {
   throw new Error(
     `M09 starter must compile and fail only its two deliberate contract cases:\n${starter.output}`,
@@ -47,7 +49,7 @@ if (
 const reference = cargoTests('m09-reference')
 if (
   reference.code !== 0 ||
-  !reference.output.includes('test result: ok. 8 passed; 0 failed')
+  !reference.output.includes('test result: ok. 11 passed; 0 failed')
 ) {
   throw new Error(`M09 reference tests failed:\n${reference.output}`)
 }
