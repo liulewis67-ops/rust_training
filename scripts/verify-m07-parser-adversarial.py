@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
+import os
 from pathlib import Path
 import tempfile
 import zipfile
@@ -235,6 +237,7 @@ def main() -> None:
             raise AssertionError("real repaired ZIP fails independent contracts:\n" + out[-4000:])
         print("m07: original ZIP repaired; seven external behavioral contracts pass")
 
+        killed = []
         for name, old, wrong, case in MUTANTS:
             mutant = audit.replace_once(baseline, old, wrong, name)
             library.write_text(mutant, encoding="utf8")
@@ -249,6 +252,7 @@ def main() -> None:
             ):
                 raise AssertionError(name + ": targeted independent assertion did not fail:\n" + out[-3000:])
             print("m07: KILLED " + name + " via " + case)
+            killed.append({"name": name, "target": case, "status": "killed"})
 
         library.write_text(baseline, encoding="utf8")
         code, out = audit.run_cargo(project, "test", root)
@@ -257,7 +261,21 @@ def main() -> None:
 
     if hashlib.sha256(released.read_bytes()).hexdigest() != original_digest:
         raise AssertionError("published starter archive was modified")
-    print(f"M07 original ZIP: {len(MUTANTS)}/{len(MUTANTS)} compiling mutants killed; archive unchanged.")
+    report_dir = os.environ.get("MUTATION_REPORT_DIR")
+    if report_dir:
+        output = Path(report_dir)
+        output.mkdir(parents=True, exist_ok=True)
+        (output / "m07.json").write_text(json.dumps({
+            "schema_version": 1,
+            "module": "m07",
+            "reference": "published starter ZIP repaired in a clean temporary directory",
+            "baseline": "passed",
+            "seed": "0x7AB1202610300007",
+            "generated_cases": 448,
+            "archive_sha256": original_digest,
+            "mutants": killed,
+        }, indent=2, ensure_ascii=False) + "\n", encoding="utf8")
+    print(f"M07 original ZIP: {len(killed)}/{len(MUTANTS)} compiling mutants killed; archive unchanged.")
 
 
 if __name__ == "__main__":
