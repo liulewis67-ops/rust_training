@@ -18,6 +18,10 @@ jobs:
           cache: pnpm
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - name: Inspect exact M08 verifier formatting (temporary)
+        run: |
+          pnpm exec prettier --write scripts/verify-m08-labs.mjs
+          git diff -- scripts/verify-m08-labs.mjs
       - name: Formatting
         run: pnpm format:check
       - name: Lint and React hooks
