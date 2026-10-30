@@ -35,7 +35,7 @@ def fixture() -> dict:
             }
             if ("generated_inputs_match_oracle" in target or
                     "model_differential_generated_" in target):
-                mutant["counterexample"] = "MINIMIZED_COUNTEREXAMPLE synthetic minimal=sample
+                mutant["counterexample"] = "MINIMIZED_COUNTEREXAMPLE synthetic minimal=sample"
             mutants.append(mutant)
         payload = {
             "schema_version": 1,
@@ -98,7 +98,7 @@ class StrictEvidenceTests(unittest.TestCase):
         item = self.records["m08"]["mutants"][0]
         item["target"] = "model_properties::model_differential_generated_aggregation_and_reordering"
         item["detected_by"] = [item["target"]]
-        item["counterexample"] = "MINIMIZED_COUNTEREXAMPLE synthetic minimal=sample
+        item["counterexample"] = "MINIMIZED_COUNTEREXAMPLE synthetic minimal=sample"
         with self.assertRaisesRegex(AssertionError, "changed designated assertion"):
             self.validate()
 
