@@ -75,27 +75,88 @@ fn parse_oracle(input: &str) -> Result<Config, ConfigError> {
     Ok(Config { timeout_ms, retry_limit: u8::try_from(retry_limit).unwrap() })
 }
 
-/// Remove Unicode scalar values while preserving the parser-model mismatch.
-/// Result is 1-minimal for single-character deletion; no global optimum claim.
+/// Grammar-aware shrinking happens *before* Unicode scalar deletion:
+/// discard whole lines, normalize CRLF, reduce decimal values, then reach
+/// 1-minimality under single-scalar deletion. Each step must preserve the
+/// original pair of success/error categories and the oracle disagreement.
 fn shrink_config(source: &str) -> String {
-    let mismatch = |input: &str| parse_config(input) != parse_oracle(input);
-    assert!(mismatch(source), "do not shrink a passing configuration");
-    let mut chars: Vec<char> = source.chars().collect();
+    fn fingerprint(input: &str) -> Option<(Option<ConfigErrorKind>, Option<ConfigErrorKind>)> {
+        let actual = parse_config(input);
+        let expected = parse_oracle(input);
+        if actual == expected { return None }
+        Some((actual.err().map(|e| e.kind), expected.err().map(|e| e.kind)))
+    }
+
+    let original = fingerprint(source).expect("do not shrink a passing configuration");
+    let keeps = |text: &str| fingerprint(text) == Some(original);
+    let mut reduced = source.to_owned();
+
+    // Semantic shrinking: remove a complete line including its newline.
+    loop {
+        let lines: Vec<&str> = reduced.split_inclusive('\n').collect();
+        let mut changed = false;
+        for index in 0..lines.len() {
+            let candidate: String = lines.iter().enumerate()
+                .filter(|(i, _)| *i != index)
+                .map(|(_, line)| *line)
+                .collect();
+            if candidate.len() < reduced.len() && keeps(&candidate) {
+                reduced = candidate;
+                changed = true;
+                break;
+            }
+        }
+        if !changed { break }
+    }
+
+    // Keep the exact parser difference while normalizing line terminators.
+    let lf = reduced.replace("\r\n", "\n");
+    if lf.len() < reduced.len() && keeps(&lf) {
+        reduced = lf;
+    }
+
+    // Grammar-specific decimal shrinking (not numeric wrapping). The input
+    // may contain repeated or invalid keys; always re-check the entire oracle.
+    loop {
+        let mut changed = false;
+        let lines: Vec<String> = reduced.split_inclusive('\n').map(str::to_owned).collect();
+        for index in 0..lines.len() {
+            let Some((key, tail)) = lines[index].split_once('=') else { continue };
+            let digits = tail.trim_end_matches(['\r', '\n']);
+            if digits.is_empty() || !digits.bytes().all(|b| b.is_ascii_digit()) { continue }
+            for number in ["0", "1", "2", "9", "255", "256", "4294967295", "4294967296"] {
+                if number.len() >= digits.len() { continue }
+                let mut rebuilt = lines.clone();
+                rebuilt[index] = format!("{key}={number}{}", &tail[digits.len()..]);
+                let candidate = rebuilt.concat();
+                if candidate.len() < reduced.len() && keeps(&candidate) {
+                    reduced = candidate;
+                    changed = true;
+                    break;
+                }
+            }
+            if changed { break }
+        }
+        if !changed { break }
+    }
+
+    // Final scalar reduction guarantees single-character deletion minimality.
+    let mut chars: Vec<char> = reduced.chars().collect();
     let mut index = 0;
     while index < chars.len() {
-        let mut smaller = chars.clone();
-        smaller.remove(index);
-        let candidate: String = smaller.iter().collect();
-        if mismatch(&candidate) {
-            chars = smaller;
+        let mut candidate = chars.clone();
+        candidate.remove(index);
+        let text: String = candidate.iter().collect();
+        if keeps(&text) {
+            chars = candidate;
             index = 0;
         } else {
             index += 1;
         }
     }
-    let minimal: String = chars.iter().collect();
-    assert!(mismatch(&minimal));
-    minimal
+    reduced = chars.iter().collect();
+    assert!(keeps(&reduced));
+    reduced
 }
 
 #[test]
@@ -113,7 +174,7 @@ fn model_differential_generated_config_grammar_and_first_failure() {
         if actual != expected {
             let minimal = shrink_config(&input);
             panic!(
-                "MINIMIZED_COUNTEREXAMPLE m09/config seed={SEED:#x} case={case} original={input:?} minimal={minimal:?} model={:?} implementation={:?}",
+                "MINIMIZED_COUNTEREXAMPLE m09/config grammar-number-reduced seed={SEED:#x} case={case} original={input:?} minimal={minimal:?} model={:?} implementation={:?}",
                 parse_oracle(&minimal), parse_config(&minimal)
             );
         }
