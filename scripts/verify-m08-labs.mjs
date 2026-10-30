@@ -34,7 +34,9 @@ if (
   !starter.output.includes(
     'l06_zero_value_counts_and_rejected_sensor_is_listed',
   ) ||
-  !starter.output.includes('l05_repeated_zero_and_large_events_count_each') ||
+  !starter.output.includes(
+    'l05_repeated_zero_and_large_events_count_each',
+  ) ||
   !starter.output.includes(
     'l06_all_rejected_and_missing_values_still_have_sorted_rows',
   ) ||
@@ -46,7 +48,10 @@ if (
 }
 
 const reference = runCargo('m08-reference', 'test')
-if (reference.exitCode !== 0 || !reference.output.includes('test result: ok. 10 passed; 0 failed')) {
+if (
+  reference.exitCode !== 0 ||
+  !reference.output.includes('test result: ok. 10 passed; 0 failed')
+) {
   throw new Error(
     `M08 reference must pass all public tests:\n${reference.output}`,
   )
