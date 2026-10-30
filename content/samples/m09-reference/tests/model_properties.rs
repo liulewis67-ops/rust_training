@@ -75,6 +75,29 @@ fn parse_oracle(input: &str) -> Result<Config, ConfigError> {
     Ok(Config { timeout_ms, retry_limit: u8::try_from(retry_limit).unwrap() })
 }
 
+/// Remove Unicode scalar values while preserving the parser-model mismatch.
+/// Result is 1-minimal for single-character deletion; no global optimum claim.
+fn shrink_config(source: &str) -> String {
+    let mismatch = |input: &str| parse_config(input) != parse_oracle(input);
+    assert!(mismatch(source), "do not shrink a passing configuration");
+    let mut chars: Vec<char> = source.chars().collect();
+    let mut index = 0;
+    while index < chars.len() {
+        let mut smaller = chars.clone();
+        smaller.remove(index);
+        let candidate: String = smaller.iter().collect();
+        if mismatch(&candidate) {
+            chars = smaller;
+            index = 0;
+        } else {
+            index += 1;
+        }
+    }
+    let minimal: String = chars.iter().collect();
+    assert!(mismatch(&minimal));
+    minimal
+}
+
 #[test]
 fn model_differential_generated_config_grammar_and_first_failure() {
     let mut rng = Generator(SEED);
@@ -87,9 +110,13 @@ fn model_differential_generated_config_grammar_and_first_failure() {
 
         let expected = parse_oracle(&input);
         let actual = parse_config(&input);
-        assert_eq!(
-            actual, expected, "seed={SEED:#x}, case={case}, input={input:?}"
-        );
+        if actual != expected {
+            let minimal = shrink_config(&input);
+            panic!(
+                "MINIMIZED_COUNTEREXAMPLE m09/config seed={SEED:#x} case={case} original={input:?} minimal={minimal:?} model={:?} implementation={:?}",
+                parse_oracle(&minimal), parse_config(&minimal)
+            );
+        }
         if let Err(err) = actual {
             let public = format!("{err:?} {err}");
             for private in ["private", "密钥", "bad🧭", "18446744073709551616"] {
