@@ -9,10 +9,32 @@ import {
 import type { Route } from '../app/router'
 import { SafeMarkdown } from '../features/content/SafeMarkdown'
 import { markdownHeadingSlug } from '../lib/markdownAnchor'
-import { organizeLessonMarkdown } from '../features/reading/lessonStructure'
+import {
+  lessonSupplementKind,
+  organizeLessonMarkdown,
+} from '../features/reading/lessonStructure'
 import { lessonTitle, moduleText } from '../data/courseText'
 import { locateContinuity, continuityLabel } from '../data/learningContinuity'
 import { useLanguage } from '../features/preferences'
+
+
+/**
+ * Deep links may target a heading in a collapsed supplementary section.
+ * Open all ancestor disclosures before scrolling, including nested details.
+ */
+function revealLessonAnchor(
+  sectionId: string,
+  behavior: ScrollBehavior = 'smooth',
+): void {
+  const target = document.getElementById(sectionId)
+  if (!target) return
+  let ancestor = target.parentElement
+  while (ancestor) {
+    if (ancestor instanceof HTMLDetailsElement) ancestor.open = true
+    ancestor = ancestor.parentElement
+  }
+  target.scrollIntoView({ behavior, block: 'start' })
+}
 
 /** Read one complete authored lesson and move through the route in order. */
 export function CourseLessonPage({
@@ -50,8 +72,7 @@ export function CourseLessonPage({
   }, [moduleId, lessonId, language])
   useEffect(() => {
     if (!sectionId || !lesson) return
-    const target = document.getElementById(sectionId)
-    target?.scrollIntoView({ behavior: 'auto', block: 'start' })
+    revealLessonAnchor(sectionId, 'auto')
   }, [lesson, sectionId])
   const orderedLessons = courseModules.flatMap((courseModule) =>
     courseModule.lessons
@@ -106,9 +127,25 @@ export function CourseLessonPage({
   const body = lesson.content.replace(/^#\s+[^\r\n]*(?:\r?\n|$)\s*/, '')
   const sourceHeading = /^#\s+([^\r\n]+)/.exec(lesson.content)?.[1]
   const sections = organizeLessonMarkdown(body)
-  const navigationSections = sections.filter(
+  const mainSections = sections.filter(
+    (section) => !lessonSupplementKind(section.title),
+  )
+  const supportSections = sections.filter((section) =>
+    lessonSupplementKind(section.title),
+  )
+  const navigationSections = mainSections.filter(
     (section) => section.title && section.id && section.kind !== 'reference',
   )
+  const supplementGroups = [
+    {
+      kind: 'validation',
+      title: t('验收与边界证据', 'Acceptance and boundary evidence'),
+    },
+    { kind: 'hints', title: t('分层提示', 'Progressive hints') },
+    { kind: 'answers', title: t('参考答案', 'Reference solutions') },
+    { kind: 'advanced', title: t('进阶验证', 'Advanced verification') },
+    { kind: 'sources', title: t('参考资料', 'Sources and further reading') },
+  ] as const
   const readingPhases = [
     {
       kind: 'prepare',
@@ -214,8 +251,8 @@ export function CourseLessonPage({
           <strong>{t('本节学习路线', 'Learning path')}</strong>
           <p>
             {t(
-              '先确认目标与前置知识，再逐个理解核心概念，最后通过本地练习检验。',
-              'Check the goals and prerequisites, explore each concept, then verify your understanding locally.',
+              '沿着真实问题阅读推理与代码，完成实践后再按需展开验收、提示和参考实现。',
+              'Follow the engineering problem, reasoning and code. Open detailed checks, hints and solutions only when needed.',
             )}
           </p>
         </div>
@@ -232,16 +269,13 @@ export function CourseLessonPage({
               <div className="course-reading-toc-group" key={phase.kind}>
                 <h3>{phase.title}</h3>
                 <div className="course-reading-toc-links">
-                  {items.map((section) => (
+                  {items.slice(0, 5).map((section) => (
                     <a
                       key={section.id}
                       href={`#${section.id}`}
                       onClick={(event) => {
                         event.preventDefault()
-                        document.getElementById(section.id!)?.scrollIntoView({
-                          behavior: 'smooth',
-                          block: 'start',
-                        })
+                        revealLessonAnchor(section.id!)
                       }}
                     >
                       {section.step !== null && (
@@ -273,22 +307,30 @@ export function CourseLessonPage({
             )
           })}
         </nav>
+        {supportSections.length > 0 && (
+          <a
+            className="course-reading-support-link"
+            href="#lesson-support"
+            onClick={(event) => {
+              event.preventDefault()
+              revealLessonAnchor('lesson-support')
+            }}
+          >
+            {t('辅助资料与完整验收', 'Supplementary material and full checks')}
+            <span>{supportSections.length}</span>
+          </a>
+        )}
       </div>
       <div
         className="course-reading-sections"
         aria-label={t('课程正文', 'Lesson content')}
       >
-        {sections.map((section, index) => (
+        {mainSections.map((section, index) => (
           <section
             className={`course-reading-step course-reading-step--${section.kind}`}
             aria-label={section.title ?? t('导读', 'Introduction')}
             key={section.id ?? `intro-${index}`}
           >
-            {section.step !== null && (
-              <span className="course-reading-step-label">
-                {t('知识点', 'Concept')} {String(section.step).padStart(2, '0')}
-              </span>
-            )}
             <SafeMarkdown
               content={section.markdown}
               language={language}
@@ -297,6 +339,71 @@ export function CourseLessonPage({
           </section>
         ))}
       </div>
+      {supportSections.length > 0 && (
+        <aside
+          className="course-reader-support-area"
+          aria-label={t('辅助资料', 'Supplementary material')}
+        >
+          <details className="course-reader-support-master">
+            <summary id="lesson-support">
+              <span>
+                <strong>
+                  {t('辅助资料与完整验收', 'Supplementary material and full checks')}
+                </strong>
+                <small>
+                  {t(
+                    '测试矩阵、分层提示、参考答案和扩展验证，按需展开',
+                    'Full tests, progressive hints, reference answers and advanced evidence',
+                  )}
+                </small>
+              </span>
+              <span className="course-reader-support-count">
+                {supportSections.length}
+              </span>
+            </summary>
+            <div className="course-reader-support-groups">
+              {supplementGroups.map((group) => {
+                const groupSections = supportSections.filter(
+                  (section) => lessonSupplementKind(section.title) === group.kind,
+                )
+                if (!groupSections.length) return null
+                return (
+                  <section className="course-reader-support-group" key={group.kind}>
+                    <h3>{group.title}</h3>
+                    {groupSections.map((section, index) => {
+                      const slug = markdownHeadingSlug(section.title ?? '')
+                      const headingOccurrences = {
+                        ...section.headingOccurrences,
+                        [slug]: (section.headingOccurrences[slug] ?? 0) + 1,
+                      }
+                      const content = section.markdown.replace(
+                        /^## [^\n]+\n?/,
+                        '',
+                      )
+                      return (
+                        <details
+                          className="course-reader-support-item"
+                          key={section.id ?? `${group.kind}-${index}`}
+                        >
+                          <summary id={section.id ?? undefined}>
+                            {section.title}
+                          </summary>
+                          <SafeMarkdown
+                            content={content}
+                            language={language}
+                            initialHeadingOccurrences={headingOccurrences}
+                          />
+                        </details>
+                      )
+                    })}
+                  </section>
+                )
+              })}
+            </div>
+          </details>
+        </aside>
+      )}
+
       <aside className="local-practice-note">
         {t(
           '代码练习在你的本地电脑上完成。复制示例或下载课件中的模板，再按题面给出的命令运行和检查结果。',
