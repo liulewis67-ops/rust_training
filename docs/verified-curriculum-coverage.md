@@ -21,7 +21,7 @@
 ## 检查与证据层次
 
 1. **概念级 L01–L04**：真实 Rust 单测覆盖类型语义、边界行为与借用/泛型等机制；`compile_fail/` 由 `rustc` 验证预期错误码，不能把故意失败的源码编进正常 crate。
-2. **实验级 L05**：必须从对应课程的原始故障 ZIP 或 M08/M09 starter 开始，保存*初始失败 → 最小修复 → 边界回归*三阶段证据；配套 `mXX_capstone` 仅提供额外的可执行**行为契约对照**，没有自动测试所有 ZIP 内的文件。
+2. **实验级 L05**：M01–M07 的**七份真实发行 ZIP**现在通过 `scripts/verify-starter-zips.py` 在隔离临时目录执行安全解包、压缩包 CRC 检查、M02–M07 逐文件 SHA-256 清单检查、原始故障复现、最小修复和压缩包原有公开测试；M01–M03 还单独复现“编译已通过但业务仍失败”的中间阶段。M01-L06 参考 ZIP 另行验证测试和 CLI 运行。M08/M09 原 starter/reference 由既有专用脚本检查；`mXX_capstone` 仍只是额外行为契约对照。
 3. **独立检查 L06**：先按课程签名在干净工作区独立实现，再运行对应 `mXX_capstone::tests::l06_` 进行行为对照。不得直接复制 L05 修复实现。M08、M09 的 L05/L06 同用 starter 包时，应隔离测试、保留独立实现证据，最后运行两个阶段的回归。
 4. **语言与内容完整性**：所有 54 节有中文、英文课文与 Rust 源码链接，且每一对 L05/L06 有不同的教学验收要求。静态检查可以防止遗漏链接，但不能自动证明文字足够准确或学生独立完成。
 5. **原有资产**：不替换旧 ZIP、公开 starter、reference 和相应脚本；CI 继续运行已有的 `scripts/verify-m08-labs.mjs` 与 `scripts/verify-m09-labs.mjs`。
@@ -38,13 +38,19 @@ node scripts/verify-lesson-drills.mjs
 cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m05_capstone::tests::l05_
 cargo +1.95.0 test --offline --manifest-path content/samples/verified-lesson-drills/Cargo.toml m05_capstone::tests::l06_
 
-# 已发布的实际起始/参考工程检查
+# 验证原始 ZIP 的安全性、校验和、故障阶段、修复后测试，以及 M01-L06 参考 ZIP
+python3 scripts/verify-starter-zips.py
+
+# 9 个模块的错误实现变异：必须能编译，但被行为测试拒绝
+python3 scripts/verify-lesson-mutations.py
+
+# 原有 M08/M09 起始/参考工程检查
 node scripts/verify-m08-labs.mjs
 node scripts/verify-m09-labs.mjs
 ```
 
 ## 下一次质量评审重点
 
-即使覆盖率达到 54/54，仍应区分“有配套验证样例”与“每个 Markdown 代码块、每个 ZIP 快照、每套学生独立实现都已实测”。后续重点可以是 ZIP 全量解包重建测试、更多变异测试（证明测试会在错误实现下变红）、代码块逐个编译、教学练习盲测和实际网页阅读审查。
+即使覆盖率达到 54/54，仍应区分“有配套验证样例”与“每个 Markdown 代码块、每个 ZIP 快照、每套学生独立实现都已实测”。现在 ZIP 已能逐一清洁解包、校验清单并在临时目录重演修复，9 个模块各有一个可编译但错误的实现会被合同断言抓住。后续仍需：逐段验证所有 Markdown 代码块、扩充 ZIP 原始公开测试的变异案例、教学练习盲测以及实际网页阅读审查。
 
 课程用例与解释按模块独立设计，跨模块统一项目仅留给未来 M10，不提前发布。
