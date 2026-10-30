@@ -106,7 +106,8 @@ class StrictEvidenceTests(unittest.TestCase):
             self.validate()
 
     def test_changed_designated_target_rejected(self) -> None:
-        item = self.records["m08"]["mutants"][0]
+        item = next(x for x in self.records["m08"]["mutants"]
+                    if x["name"] == "overwrite_aggregate_count")
         item["target"] = "model_properties::model_differential_generated_aggregation_and_reordering"
         item["detected_by"] = [item["target"]]
         item["counterexample"] = "MINIMIZED_COUNTEREXAMPLE synthetic minimal=sample"
