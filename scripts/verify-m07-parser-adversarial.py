@@ -253,7 +253,7 @@ MUTANTS = [
 
 def contract_results(output: str) -> dict[str, str]:
     matches = re.findall(
-        r"^test adversarial_contracts::(\\w+) \\.\\.\\. (ok|FAILED)$",
+        r"^test adversarial_contracts::(\w+) \.\.\. (ok|FAILED)$",
         output, flags=re.MULTILINE,
     )
     results = {"adversarial_contracts::" + name: status for name, status in matches}
@@ -263,7 +263,7 @@ def contract_results(output: str) -> dict[str, str]:
 
 
 def counterexample_from(output: str) -> str | None:
-    found = re.search(r"MINIMIZED_COUNTEREXAMPLE [^\\r\\n]+", output)
+    found = re.search(r"MINIMIZED_COUNTEREXAMPLE [^\r\n]+", output)
     return found.group(0) if found else None
 
 
