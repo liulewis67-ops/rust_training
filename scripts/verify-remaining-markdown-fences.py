@@ -163,7 +163,7 @@ struct SensorSummary<'a> { sensor: &'a str, accepted_count: u32, total: i64 }
             after = " { Vec::new() }\n"
         else:
             before = structs + """
-fn totals(readings: &[Reading<'_>]) -> Vec<(&str, (u32, i64))> {
+fn totals<'a>(readings: &[Reading<'a>]) -> Vec<(&'a str, (u32, i64))> {
     let mut grouped: HashMap<&str, (u32, i64)> = HashMap::new();
     for reading in readings {
 """

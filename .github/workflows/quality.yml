@@ -32,6 +32,8 @@ jobs:
         run: node scripts/verify-lesson-drills.mjs
       - name: Compile published bilingual Markdown Rust code fences
         run: node scripts/verify-markdown-rust-fences.mjs
+      - name: Audit remaining 33 bilingual lesson fences and contextual snippets
+        run: python3 scripts/verify-remaining-markdown-fences.py
       - name: Released ZIP integrity and staged clean-room repair
         run: python3 scripts/verify-starter-zips.py
       - name: Contract mutation sensitivity (9 modules)
