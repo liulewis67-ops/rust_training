@@ -68,7 +68,7 @@ class StrictEvidenceTests(unittest.TestCase):
 
     def test_complete_known_fixture_exports_full_rectangular_matrix(self) -> None:
         summary = self.validate()
-        self.assertEqual(summary["selected"], 31)
+        self.assertEqual(summary["selected"], 36)
         self.assertEqual(len(summary["test_catalog"]), 20)
         self.assertEqual(summary["score_percent"], 100.0)
         reporter.export(self.folder, summary)
