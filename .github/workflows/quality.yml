@@ -30,6 +30,10 @@ jobs:
         run: pnpm content:check-samples
       - name: Verified Rust lesson drills and expected compiler errors
         run: node scripts/verify-lesson-drills.mjs
+      - name: Released ZIP integrity and staged clean-room repair
+        run: python3 scripts/verify-starter-zips.py
+      - name: Contract mutation sensitivity (9 modules)
+        run: python3 scripts/verify-lesson-mutations.py
       - name: M08 local lab behavior contracts
         run: node scripts/verify-m08-labs.mjs
       - name: M09 error modeling lab contracts

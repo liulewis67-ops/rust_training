@@ -71,6 +71,12 @@ Run the same commands from the repository root; the CI verifier now checks **bot
 
 **54/54 published lesson IDs** now link to executable Rust evidence in both languages; L05/L06 have separately testable functions and graduation criteria. The detailed [coverage matrix](../../../docs/verified-curriculum-coverage.md) distinguishes runnable companion contract tests, original defective starter projects and independent delivery evidence. **Companion tests are not substitutes for unpacking and verifying every original ZIP asset.**
 
+## Original release ZIP verification / 真实发行压缩包验证
+
+`python3 scripts/verify-starter-zips.py` 现在检查 M01–M07 的七份 L05 原始起始 ZIP，以及 M01-L06 的参考 ZIP：防路径穿越/重复条目/符号链接、CRC、M02–M07 的逐文件 SHA-256 清单、初始预期失败、最小修复后公开测试，以及参考 CLI 实际运行。M01 起始 ZIP 在早期发布时没有内嵌 `starter-manifest.json`，不能虚称它经过同样的内部哈希清单验证。
+
+`python3 scripts/verify-lesson-mutations.py` 则在系统临时目录复制配套 Cargo 工程，在九个模块分别注入一个**能够编译、却违反行为契约**的错误实现，要求对应 L05 或 L06 测试明确失败；最后恢复源码并复验全部正例。测试过程不修改学生下载的 ZIP、版本库源码或公开验收断言。
+
 ## Teaching protocol / 教学要求
 
 1. **Predict** the return value, error category, or compiler diagnostic before execution.
