@@ -70,13 +70,67 @@ fn shrink_by_deletion<T: Copy>(initial: &[T], differs: impl Fn(&[T]) -> bool) ->
     minimal
 }
 
+// After record-deletion shrinking, simplify u64 quantities. Only accept
+// strictly smaller numeric candidates that preserve the exact oracle mismatch.
+fn shrink_event_numbers<'a>(events: Vec<LogEvent<'a>>) -> Vec<LogEvent<'a>> {
+    let mut reduced = events;
+    loop {
+        let mut changed = false;
+        for index in 0..reduced.len() {
+            let current = reduced[index].bytes;
+            let candidates = [0, 1, 2, current / 2, 1024, 1025];
+            for replacement in candidates {
+                if replacement >= current { continue; }
+                let mut candidate = reduced.clone();
+                candidate[index].bytes = replacement;
+                if aggregate(&candidate) != group_oracle(&candidate) {
+                    reduced = candidate;
+                    changed = true;
+                    break;
+                }
+            }
+            if changed { break; }
+        }
+        if !changed { break; }
+    }
+    reduced
+}
+
+// Signed sensor quantities use monotonic unsigned-magnitude reduction,
+// covering i64::MIN without abs() overflow or an oscillating shrink loop.
+fn shrink_sensor_numbers<'a>(readings: Vec<Reading<'a>>) -> Vec<Reading<'a>> {
+    let mut reduced = readings;
+    loop {
+        let mut changed = false;
+        for index in 0..reduced.len() {
+            let Some(current) = reduced[index].value else { continue };
+            let candidates = [0, current.signum(), current / 2];
+            for replacement in candidates {
+                if replacement.unsigned_abs() >= current.unsigned_abs() { continue }
+                let mut candidate = reduced.clone();
+                candidate[index].value = Some(replacement);
+                if summarize(&candidate) != sensor_oracle(&candidate) {
+                    reduced = candidate;
+                    changed = true;
+                    break;
+                }
+            }
+            if changed { break }
+        }
+        if !changed { break }
+    }
+    reduced
+}
+
 fn check_events(events: &[LogEvent<'_>], case: usize, phase: &str) {
     let expected = group_oracle(events);
     let actual = aggregate(events);
     if actual != expected {
-        let smaller = shrink_by_deletion(events, |candidate| aggregate(candidate) != group_oracle(candidate));
+        let minimal_records = shrink_by_deletion(events, |candidate| aggregate(candidate) != group_oracle(candidate));
+        let simplified = shrink_event_numbers(minimal_records);
+        let smaller = shrink_by_deletion(&simplified, |candidate| aggregate(candidate) != group_oracle(candidate));
         panic!(
-            "MINIMIZED_COUNTEREXAMPLE m08/events seed={SEED:#x} case={case} phase={phase} original={events:?} minimal={smaller:?} expected={:?} actual={:?}",
+            "MINIMIZED_COUNTEREXAMPLE m08/events number-reduced seed={SEED:#x} case={case} phase={phase} original={events:?} minimal={smaller:?} expected={:?} actual={:?}",
             group_oracle(&smaller), aggregate(&smaller)
         );
     }
@@ -86,9 +140,11 @@ fn check_readings(readings: &[Reading<'_>], case: usize, phase: &str) {
     let expected = sensor_oracle(readings);
     let actual = summarize(readings);
     if actual != expected {
-        let smaller = shrink_by_deletion(readings, |candidate| summarize(candidate) != sensor_oracle(candidate));
+        let minimal_records = shrink_by_deletion(readings, |candidate| summarize(candidate) != sensor_oracle(candidate));
+        let simplified = shrink_sensor_numbers(minimal_records);
+        let smaller = shrink_by_deletion(&simplified, |candidate| summarize(candidate) != sensor_oracle(candidate));
         panic!(
-            "MINIMIZED_COUNTEREXAMPLE m08/sensor seed={SEED:#x} case={case} phase={phase} original={readings:?} minimal={smaller:?} expected={:?} actual={:?}",
+            "MINIMIZED_COUNTEREXAMPLE m08/sensor number-reduced seed={SEED:#x} case={case} phase={phase} original={readings:?} minimal={smaller:?} expected={:?} actual={:?}",
             sensor_oracle(&smaller), summarize(&smaller)
         );
     }

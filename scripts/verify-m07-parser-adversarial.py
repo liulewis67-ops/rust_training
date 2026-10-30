@@ -248,6 +248,11 @@ MUTANTS = [
         "key: key.to_owned(),", "key: value.to_owned(),",
         "generated_inputs_match_oracle_for_both_parsers",
     ),
+    (
+        "trim_only_value_start",
+        "let value = value.trim();", "let value = value.trim_start();",
+        "generated_inputs_match_oracle_for_both_parsers",
+    ),
 ]
 
 

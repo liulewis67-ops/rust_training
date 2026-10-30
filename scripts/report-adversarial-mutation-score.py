@@ -12,9 +12,9 @@ import os
 from pathlib import Path
 
 EXPECTED = {
-    "m07": {"count": 10, "cases": 448, "tests": 7, "seed": "0x7AB1202610300007"},
-    "m08": {"count": 10, "cases": 320, "tests": 6, "seed": "0xC0FF_EE08_2026_1030"},
-    "m09": {"count": 11, "cases": 384, "tests": 7, "seed": "0xC0FF_EE09_2026_1030"},
+    "m07": {"count": 11, "cases": 448, "tests": 7, "seed": "0x7AB1202610300007"},
+    "m08": {"count": 12, "cases": 320, "tests": 6, "seed": "0xC0FF_EE08_2026_1030"},
+    "m09": {"count": 13, "cases": 384, "tests": 7, "seed": "0xC0FF_EE09_2026_1030"},
 }
 
 
@@ -52,12 +52,14 @@ EXPECTED_MUTANTS = {
         "trim_only_key_start", "erase_missing_delimiter_identity",
         "misclassify_empty_key_as_value", "replace_canonical_equals_with_colon",
         "trim_only_value_end", "trim_only_key_end", "swap_stored_key_and_value",
+        "trim_only_value_start",
     },
     "m08": {
         "overwrite_aggregate_count", "overwrite_aggregate_bytes", "reverse_public_sort",
         "treat_rejected_as_present", "convert_none_to_accepted_zero", "overwrite_sensor_total",
         "skip_zero_byte_events", "discard_blank_service_keys",
         "merge_service_case_variants", "drop_rejected_only_sensors",
+        "cap_service_bytes_at_1024", "ignore_negative_sensor_values",
     },
     "m09": {
         "misclassify_missing_delimiter", "allow_duplicate_with_invalid_value",
@@ -65,6 +67,7 @@ EXPECTED_MUTANTS = {
         "leak_storage_error_in_display", "rewrite_request_id", "change_api_public_code",
         "skip_whitespace_only_lines", "accept_ascii_plus_prefix",
         "duplicate_empty_is_reported_as_invalid", "lose_large_timeout_support",
+        "off_by_one_eof_line", "wrong_profile_http_status",
     },
 }
 
@@ -81,6 +84,7 @@ EXPECTED_TARGETS = {
         "trim_only_value_end": "generated_inputs_match_oracle_for_both_parsers",
         "trim_only_key_end": "generated_inputs_match_oracle_for_both_parsers",
         "swap_stored_key_and_value": "generated_inputs_match_oracle_for_both_parsers",
+        "trim_only_value_start": "generated_inputs_match_oracle_for_both_parsers",
     },
     "m08": {
         "overwrite_aggregate_count": "adversarial_contracts::l05_all_permutations_preserve_counts_totals_and_sorted_case_sensitive_keys",
@@ -93,6 +97,8 @@ EXPECTED_TARGETS = {
         "discard_blank_service_keys": "model_properties::model_differential_generated_aggregation_and_reordering",
         "merge_service_case_variants": "model_properties::model_differential_generated_aggregation_and_reordering",
         "drop_rejected_only_sensors": "model_properties::model_differential_generated_sensor_rules_and_reordering",
+        "cap_service_bytes_at_1024": "model_properties::model_differential_generated_aggregation_and_reordering",
+        "ignore_negative_sensor_values": "model_properties::model_differential_generated_sensor_rules_and_reordering",
     },
     "m09": {
         "misclassify_missing_delimiter": "adversarial_contracts::l05_first_error_stays_first_across_crlf_unicode_and_malformed_followups",
@@ -106,8 +112,56 @@ EXPECTED_TARGETS = {
         "accept_ascii_plus_prefix": "model_properties::model_differential_generated_config_grammar_and_first_failure",
         "duplicate_empty_is_reported_as_invalid": "model_properties::model_differential_generated_config_grammar_and_first_failure",
         "lose_large_timeout_support": "model_properties::model_metamorphic_valid_field_order_blank_lines_and_limits",
+        "off_by_one_eof_line": "adversarial_contracts::l05_exact_numeric_bounds_missing_fields_and_extra_delimiters",
+        "wrong_profile_http_status": "adversarial_contracts::l06_all_domain_variants_have_stable_exact_cli_and_http_contracts",
     },
 }
+
+
+EXPECTED_TRIAGE = {
+    "entry_or_insert_with_pure_tuple": ("m08", "reviewed_equivalent", "passed"),
+    "compound_addition_to_explicit_addition": ("m08", "reviewed_equivalent", "passed"),
+    "explicit_boolean_comparison": ("m08", "reviewed_equivalent", "passed"),
+    "empty_line_length_check": ("m09", "reviewed_equivalent", "passed"),
+    "strict_ascii_bytes_via_slice": ("m09", "reviewed_equivalent", "passed"),
+    "trim_whitespace_lines_is_not_equivalent": ("m09", "killed_non_equivalent", "failed"),
+}
+
+
+def load_triage(directory: Path) -> dict:
+    file = directory / "equivalence-triage.json"
+    if not file.is_file():
+        raise AssertionError("missing equivalence triage evidence")
+    payload = json.loads(file.read_text(encoding="utf8"))
+    if payload.get("schema_version") != 1 or not isinstance(payload.get("candidates"), list):
+        raise AssertionError("invalid equivalence triage document")
+    found = {}
+    for item in payload["candidates"]:
+        name = item.get("name")
+        if name in found or name not in EXPECTED_TRIAGE:
+            raise AssertionError("unexpected or duplicate equivalence candidate")
+        module, classification, outcome = EXPECTED_TRIAGE[name]
+        if (item.get("module") != module or
+                item.get("classification") != classification or
+                item.get("full_suite") != outcome or
+                item.get("compiles") is not True or
+                not isinstance(item.get("reasoning"), str) or
+                len(item["reasoning"]) < 40):
+            raise AssertionError("invalid or unreviewed equivalence evidence for " + name)
+        found[name] = item
+    if found.keys() != EXPECTED_TRIAGE.keys():
+        raise AssertionError("missing pinned equivalence triage candidates")
+    return {
+        "candidates": sorted(found.values(), key=lambda item: item["name"]),
+        "reviewed_equivalent": sum(
+            item["classification"] == "reviewed_equivalent" for item in found.values()),
+        "killed_non_equivalent": sum(
+            item["classification"] == "killed_non_equivalent" for item in found.values()),
+        "excluded_from_selected_mutation_score": sorted(
+            item["name"] for item in found.values()
+            if item["classification"] == "reviewed_equivalent"
+        ),
+    }
 
 
 def validate(directory: Path) -> dict:
@@ -179,8 +233,22 @@ def validate(directory: Path) -> dict:
             evidence.append({"module": module, **row})
         if names != EXPECTED_MUTANTS[module]:
             raise AssertionError(f"{module}: missing or substituted selected mutations")
+        per_test_hits = {
+            test: sum(test in mutant["detected_by"] for mutant in mutants)
+            for test in tests
+        }
+        # In-sample strength only. Zero/one hit is an audit signal, not proof
+        # that the test is ineffective on faults outside this selected set.
+        weak = sorted(
+            test for test, hits in per_test_hits.items() if hits <= 1
+        )
         module_scores.append({
             "module": module, "killed": len(mutants), "selected": len(mutants),
+            "per_test_hits": per_test_hits,
+            "weak_association_tests": weak,
+            "distinct_detection_signatures": len({
+                tuple(sorted(mutant["detected_by"])) for mutant in mutants
+            }),
             "seed": report["seed"], "generated_cases": report["generated_cases"],
             "test_count": len(tests), "tests_detecting_selected_mutants": len(covered),
             "reduced_witnesses": with_reduced_witness,
@@ -188,7 +256,8 @@ def validate(directory: Path) -> dict:
         reports[module] = {"tests": tests, "mutants": mutants, "covered": sorted(covered)}
     selected = sum(v["selected"] for v in module_scores)
     return {
-        "schema_version": 2,
+        "schema_version": 3,
+        "equivalence_triage": load_triage(directory),
         "scope": "enumerated compiling mutants and executed independent tests, not total code coverage",
         "killed": len(evidence),
         "selected": selected,
@@ -242,7 +311,11 @@ def export(directory: Path, summary: dict) -> str:
             f"{score['test_count']} | {score['tests_detecting_selected_mutants']} | "
             f"{score['reduced_witnesses']} |"
         )
+    eq = summary["equivalence_triage"]
     markdown.extend([
+        "",
+        f"**Reviewed-equivalent candidates excluded from denominator: {eq['reviewed_equivalent']}.** "
+        f"Confirmed non-equivalent triage control: {eq['killed_non_equivalent']}.",
         "",
         f"**Selected mutation score: {summary['killed']}/{summary['selected']} "
         f"({summary['score_percent']}%).**",
@@ -269,6 +342,22 @@ def export(directory: Path, summary: dict) -> str:
         markdown.append("")
         markdown.extend("- `" + aliases[test] + "`: `" + test.split("::", 1)[1] + "`"
                         for test in tests_in_module)
+        markdown.append("")
+    markdown.extend([
+        "### Weak association audit (selected mutant sample only)",
+        "",
+    ])
+    for score in summary["modules"]:
+        markdown.append(
+            f"**{score['module'].upper()}**: {score['distinct_detection_signatures']} "
+            f"distinct detection signatures; tests with at most one mutant hit:"
+        )
+        weak = score["weak_association_tests"]
+        if weak:
+            markdown.extend(f"- `{test}`: {score['per_test_hits'][test]} selected mutation hit(s)"
+                            for test in weak)
+        else:
+            markdown.append("- None within this selected mutation set.")
         markdown.append("")
     markdown.extend([
         "A blank cell means this independent test passed against that selected mutant, "

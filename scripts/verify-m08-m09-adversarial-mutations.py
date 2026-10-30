@@ -57,6 +57,12 @@ MUTANTS = [
      "let entry = grouped.entry(reading.sensor).or_insert((0, 0));",
      "if !reading.accepted { continue; }\n        let entry = grouped.entry(reading.sensor).or_insert((0, 0));",
      "model_differential_generated_sensor_rules_and_reordering"),
+    ("m08", "cap_service_bytes_at_1024",
+     "entry.1 += event.bytes;", "entry.1 += event.bytes.min(1024);",
+     "model_differential_generated_aggregation_and_reordering"),
+    ("m08", "ignore_negative_sensor_values",
+     "entry.1 += value;", "entry.1 += value.max(0);",
+     "model_differential_generated_sensor_rules_and_reordering"),
     ("m09", "misclassify_missing_delimiter",
      "ConfigErrorKind::MissingDelimiter,\n                \"<line>\",",
      "ConfigErrorKind::UnknownField,\n                \"<line>\",",
@@ -99,6 +105,14 @@ MUTANTS = [
      "value.parse::<u64>().map_err(|_| {",
      "value.parse::<u32>().map(u64::from).map_err(|_| {",
      "model_metamorphic_valid_field_order_blank_lines_and_limits"),
+    ("m09", "off_by_one_eof_line",
+     "let eof_line = input.lines().count() + 1;",
+     "let eof_line = input.lines().count();",
+     "l05_exact_numeric_bounds_missing_fields_and_extra_delimiters"),
+    ("m09", "wrong_profile_http_status",
+     '            404,\n            "profile_not_found",',
+     '            409,\n            "profile_not_found",',
+     "l06_all_domain_variants_have_stable_exact_cli_and_http_contracts"),
 ]
 
 
