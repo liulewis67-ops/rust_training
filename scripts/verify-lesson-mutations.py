@@ -19,7 +19,7 @@ MUTATIONS = [
     ("m01", "subtotal_cents - subtotal_cents * i64::from(discount_percent) / 100",
      "subtotal_cents", "l05_"),
     ("m02", "base.checked_add(adjustment).ok_or(\"sum overflow\")",
-     "Some(base).ok_or(\"sum overflow\")", "l06_"),
+     "Ok(base.saturating_add(adjustment))", "l06_"),
     ("m03", 'None => "not found",', 'None => "claim",', "l06_"),
     ("m04", "let bytes = source.len();", "let bytes = 0;", "l06_"),
     ("m05", "if separator.is_empty() { return None; }",
