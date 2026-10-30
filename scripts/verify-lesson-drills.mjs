@@ -46,12 +46,11 @@ const tested = run('cargo', [
   '--offline',
   '--manifest-path',
   manifest,
-  '--lib',
 ])
 if (tested.status !== 0) {
   process.stderr.write(tested.stdout)
   process.stderr.write(tested.stderr)
-  throw new Error('The executable Rust lesson tests did not pass')
+  throw new Error('The executable Rust lesson and graduation acceptance tests did not pass')
 }
 process.stdout.write(tested.stdout)
 
