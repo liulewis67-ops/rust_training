@@ -181,7 +181,7 @@ def main() -> None:
                 "module": module,
                 "reference": module + "-reference Cargo crate with external integration tests",
                 "baseline": "passed",
-                "seed": "0xC0FF_EE" + module[-1] + "_2026_1030",
+                "seed": "0xC0FF_EE0" + module[-1] + "_2026_1030",
                 "generated_cases": 320 if module == "m08" else 384,
                 "mutants": killed[module],
             }, indent=2, ensure_ascii=False) + "\n", encoding="utf8")
