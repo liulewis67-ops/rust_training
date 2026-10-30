@@ -39,6 +39,22 @@ MUTANTS = [
     ("m08", "overwrite_sensor_total",
      "entry.1 += value;", "entry.1 = value;",
      "l06_permutations_preserve_zero_missing_rejected_and_signed_cancellation"),
+    ("m08", "skip_zero_byte_events",
+     "entry.0 += 1;\n        entry.1 += event.bytes;",
+     "entry.0 += usize::from(event.bytes != 0);\n        entry.1 += event.bytes;",
+     "model_differential_generated_aggregation_and_reordering"),
+    ("m08", "discard_blank_service_keys",
+     "for event in events {",
+     "for event in events { if event.service.trim().is_empty() { continue; }",
+     "model_differential_generated_aggregation_and_reordering"),
+    ("m08", "merge_service_case_variants",
+     "grouped.entry(event.service).or_insert((0, 0))",
+     'grouped.entry(if event.service == "API" { "api" } else { event.service }).or_insert((0, 0))',
+     "model_differential_generated_aggregation_and_reordering"),
+    ("m08", "drop_rejected_only_sensors",
+     "let entry = grouped.entry(reading.sensor).or_insert((0, 0));",
+     "if !reading.accepted { continue; }\n        let entry = grouped.entry(reading.sensor).or_insert((0, 0));",
+     "model_differential_generated_sensor_rules_and_reordering"),
     ("m09", "misclassify_missing_delimiter",
      "ConfigErrorKind::MissingDelimiter,\n                \"<line>\",",
      "ConfigErrorKind::UnknownField,\n                \"<line>\",",
@@ -66,13 +82,30 @@ MUTANTS = [
      '"history_unavailable",\n            "history service is temporarily unavailable; retry later.",',
      '"internal_storage_error",\n            "history service is temporarily unavailable; retry later.",',
      "l06_all_domain_variants_have_stable_exact_cli_and_http_contracts"),
+    ("m09", "skip_whitespace_only_lines",
+     "if line.is_empty() {\n            continue;\n        }",
+     "if line.trim().is_empty() {\n            continue;\n        }",
+     "model_differential_generated_config_grammar_and_first_failure"),
+    ("m09", "accept_ascii_plus_prefix",
+     "value.bytes().all(|byte| byte.is_ascii_digit())",
+     "value.bytes().all(|byte| byte.is_ascii_digit() || byte == b'+')",
+     "model_differential_generated_config_grammar_and_first_failure"),
+    ("m09", "duplicate_empty_is_reported_as_invalid",
+     "if duplicate {", "if duplicate && !value.is_empty() {",
+     "model_differential_generated_config_grammar_and_first_failure"),
+    ("m09", "lose_large_timeout_support",
+     "value.parse::<u64>().map_err(|_| {",
+     "value.parse::<u32>().map(u64::from).map_err(|_| {",
+     "model_metamorphic_valid_field_order_blank_lines_and_limits"),
 ]
 
 
 def cargo_test(project: Path, name: str, target: Path) -> tuple[int, str]:
     result = subprocess.run(
         ["cargo", "test", "--offline", "--manifest-path",
-         str(project / "Cargo.toml"), "--test", "adversarial_contracts", name],
+         str(project / "Cargo.toml"), "--test",
+         "model_properties" if name.startswith("model_") else "adversarial_contracts",
+         name],
         cwd=project,
         env={**os.environ, "CARGO_TARGET_DIR": str(target)},
         stdout=subprocess.PIPE,
@@ -102,6 +135,14 @@ def main() -> None:
             code, out = cargo_test(project, "", temp / (module + "-target"))
             if code != 0 or "test result: ok. 4 passed; 0 failed" not in out:
                 raise AssertionError(module + ": baseline external tests failed:\n" + out[-3000:])
+            model_code, model_output = cargo_test(
+                project, "model_", temp / (module + "-target"))
+            expected_model_cases = 2 if module == "m08" else 3
+            if model_code != 0 or (
+                f"test result: ok. {expected_model_cases} passed; 0 failed"
+                not in model_output
+            ):
+                raise AssertionError(module + ": seeded model suite failed:\n" + model_output[-3000:])
 
         for module, name, original, wrong, test in MUTANTS:
             project = projects[module]
