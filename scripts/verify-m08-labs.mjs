@@ -34,9 +34,7 @@ if (
   !starter.output.includes(
     'l06_zero_value_counts_and_rejected_sensor_is_listed',
   ) ||
-  !starter.output.includes(
-    'l05_repeated_zero_and_large_events_count_each',
-  ) ||
+  !starter.output.includes('l05_repeated_zero_and_large_events_count_each') ||
   !starter.output.includes(
     'l06_all_rejected_and_missing_values_still_have_sorted_rows',
   ) ||

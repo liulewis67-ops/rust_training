@@ -347,6 +347,10 @@ mod tests {
             parse_config("retry_limit=1\nretry_limit=999\ntimeout_ms=5"),
             ConfigErrorKind::DuplicateField, "retry_limit", 2, 1,
         );
+        check_error(
+            parse_config("timeout_ms=9\nretry_limit=1\r\nretry_limit=2"),
+            ConfigErrorKind::DuplicateField, "retry_limit", 3, 1,
+        );
     }
 
     #[test]
@@ -362,10 +366,6 @@ mod tests {
         check_error(
             parse_config("中文配置"),
             ConfigErrorKind::MissingDelimiter, "<line>", 1, 5,
-        );
-        check_error(
-            parse_config("timeout_ms=9\nretry_limit=1\r\nretry_limit=2"),
-            ConfigErrorKind::DuplicateField, "retry_limit", 3, 1,
         );
     }
 
