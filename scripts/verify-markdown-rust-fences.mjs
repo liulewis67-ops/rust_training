@@ -7,6 +7,21 @@ import { join, resolve } from 'node:path'
 const root = resolve(import.meta.dirname, '..')
 // Each lesson enumerates all its Rust fences in reading order.
 const audited = {
+  'm01-l01': ['ok'],
+  'm01-l03': ['E0308', 'test-fail', 'panic'],
+  'm01-l04': ['ok', 'ok'],
+  'm02-l02': ['ok', 'ok', 'reject:expected expression', 'ok', 'E0308'],
+  'm02-l03': ['ok', 'E0308', 'ok', 'ok', 'ok'],
+  'm02-l04': ['ok', 'ok', 'ok', 'ok', 'ok'],
+  'm03-l01': ['ok', 'ok', 'ok'],
+  'm03-l03': ['ok', 'ok', 'panic'],
+  'm03-l04': ['ok', 'ok', 'ok'],
+  'm04-l01': ['ok'],
+  'm04-l03': ['ok', 'ok', 'ok', 'ok', 'ok'],
+  'm04-l04': ['ok', 'E0382', 'ok'],
+  'm05-l02': ['ok', 'E0502', 'ok'],
+  'm06-l02': ['ok', 'ok', 'ok', 'E0106', 'ok', 'E0515'],
+  'm06-l04': ['ok', 'ok', 'ok', 'E0597', 'ok'],
   'm02-l01': ['ok', 'ok', 'ok', 'ok', 'ok', 'ok'],
   'm03-l02': ['ok', 'ok'],
   'm04-l02': ['ok', 'E0382', 'ok', 'E0382', 'ok', 'E0382'],
@@ -15,6 +30,16 @@ const audited = {
   'm07-l01': ['ok', 'E0369', 'ok'],
 }
 const stdoutContracts = {
+  'm01-l01:1': 'INFO: started\n',
+  'm02-l02:1': '750\n',
+  'm02-l03:1': 'cool\n',
+  'm02-l03:5': '1\n2\n3\n',
+  'm03-l01:1': '8 by 5\n',
+  'm03-l01:2': '10\n',
+  'm03-l03:1': 'standard\nnot found\n',
+  'm04-l03:5': 'map\n',
+  'm06-l04:1': 'worker ready\n',
+  'm06-l04:2': 'built-in\n',
   'm02-l01:1': 'attempts = 3\n',
   'm02-l01:2': 'attempts = 4\n',
   'm02-l01:5': '42\n',
@@ -43,6 +68,8 @@ function run(program, args, cwd) {
 const workspace = mkdtempSync(join(tmpdir(), 'rust-markdown-fences-'))
 let compiled = 0
 let rejected = 0
+let observedPanics = 0
+let observedFailedTests = 0
 try {
   for (const [lesson, outcomes] of Object.entries(audited)) {
     const chinese = readFileSync(
@@ -76,9 +103,11 @@ try {
       if (code !== enBlocks[index])
         throw new Error(id + ': bilingual Rust fences differ')
       const hasMain = /\bfn\s+main\s*\(/.test(code)
+      const hasTests = /^\s*#\[test\]/m.test(code)
       const output = join(workspace, lesson + '-' + (index + 1))
       const args = ['--edition=2024', '--crate-name', 'lesson_fence']
-      if (hasMain) args.push('--crate-type=bin')
+      if (hasTests) args.push('--test')
+      else if (hasMain) args.push('--crate-type=bin')
       else args.push('--crate-type=lib', '--emit=metadata')
       args.push('-o', output, '-')
       const result = spawnSync('rustc', args, {
@@ -89,41 +118,58 @@ try {
         maxBuffer: 1024 * 1024,
       })
       if (result.error) throw result.error
-      if (expected === 'ok') {
-        if (result.status !== 0) {
+      if (expected.startsWith('E') || expected.startsWith('reject:')) {
+        const diagnostic = expected.startsWith('reject:')
+          ? expected.slice('reject:'.length)
+          : 'error[' + expected + ']'
+        if (result.status === 0 || !result.stderr.includes(diagnostic)) {
           throw new Error(
-            id + ': runnable fence failed to compile:\n' + result.stderr,
-          )
-        }
-        compiled++
-        if (hasMain) {
-          const execution = run(output, [], root)
-          if (execution.status !== 0) {
-            throw new Error(
-              id + ': executable fence failed:\n' + execution.stderr,
-            )
-          }
-          const stdout = stdoutContracts[id]
-          if (stdout !== undefined && execution.stdout !== stdout) {
-            throw new Error(
-              id +
-                ': expected ' +
-                JSON.stringify(stdout) +
-                ' stdout, got ' +
-                JSON.stringify(execution.stdout),
-            )
-          }
-        }
-      } else {
-        if (
-          result.status === 0 ||
-          !result.stderr.includes('error[' + expected + ']')
-        ) {
-          throw new Error(
-            id + ': expected ' + expected + ', got:\n' + result.stderr,
+            id + ': expected compiler diagnostic ' + diagnostic + ', got:\n' +
+              result.stderr,
           )
         }
         rejected++
+        continue
+      }
+      if (result.status !== 0) {
+        throw new Error(id + ': expected a compiling fence, got:\n' + result.stderr)
+      }
+      compiled++
+      if (!hasMain && !hasTests) {
+        if (expected !== 'ok') {
+          throw new Error(id + ': runtime outcome requires fn main or #[test]')
+        }
+        continue
+      }
+      const execution = run(output, [], root)
+      if (expected === 'panic') {
+        if (execution.status === 0 || !execution.stderr.includes('panicked at')) {
+          throw new Error(id + ': expected an actual runtime panic, got:\n' +
+            execution.stderr)
+        }
+        observedPanics++
+      } else if (expected === 'test-fail') {
+        if (!hasTests || execution.status === 0 ||
+          !execution.stdout.includes('test result: FAILED')) {
+          throw new Error(id + ': expected a failing #[test] assertion, got:\n' +
+            execution.stdout + execution.stderr)
+        }
+        observedFailedTests++
+      } else if (expected === 'ok') {
+        if (execution.status !== 0) {
+          throw new Error(
+            id + ': executable fence failed:\n' + execution.stderr,
+          )
+        }
+        const stdout = stdoutContracts[id]
+        if (stdout !== undefined && execution.stdout !== stdout) {
+          throw new Error(
+            id + ': expected ' + JSON.stringify(stdout) +
+              ' stdout, got ' + JSON.stringify(execution.stdout),
+          )
+        }
+      } else {
+        throw new Error(id + ': unsupported outcome ' + expected)
       }
     }
     process.stdout.write(
@@ -138,7 +184,9 @@ try {
       compiled +
       ' compiling/executing examples and ' +
       rejected +
-      ' intentional rustc failures.\n',
+      ' intentional rustc failures; ' +
+      observedPanics + ' runtime panics; ' +
+      observedFailedTests + ' failed assertions.\n',
   )
 } finally {
   rmSync(workspace, { recursive: true, force: true })
