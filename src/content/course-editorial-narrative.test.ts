@@ -13,53 +13,50 @@ const english = import.meta.glob<string>(
 function narrative(markdown: string, prefix: string) {
   const lines = markdown.split(/\r?\n/)
   const thread = lines.findIndex((line) => line.startsWith('## ' + prefix))
-  expect(thread, 'missing engineering context before narrative').toBeGreaterThan(0)
-  const article = lines.findIndex(
-    (line, index) => index > thread && line.startsWith('## '),
-  )
-  expect(article, 'missing editorial article section').toBeGreaterThan(thread)
+  expect(thread).toBeGreaterThan(0)
+  const nextHeading = (line: string, index: number) =>
+    index > thread && line.startsWith('## ')
+  const article = lines.findIndex(nextHeading)
+  expect(article).toBeGreaterThan(thread)
   const end = lines.findIndex(
     (line, index) => index > article && line.startsWith('## '),
   )
-  expect(end, 'article body must end at a subsequent section').toBeGreaterThan(article)
+  expect(end).toBeGreaterThan(article)
+  const body = lines.slice(article + 1, end).join('\n').trim()
   return {
     title: lines[article].slice(3),
-    paragraphs: lines
-      .slice(article + 1, end)
-      .join('\n')
-      .trim()
-      .split(/\n\s*\n/)
-      .filter((text) => text.trim()),
+    paragraphs: body.split(/\n\s*\n/).filter((text) => text.trim()),
   }
 }
 
-describe('published lessons read as technical articles, not numbered slide outlines', () => {
-  it('covers all 54 articles in Chinese and English', () => {
+describe('published articles keep a story, not numbered slide headings', () => {
+  it('covers all 54 lessons in each language', () => {
     expect(Object.keys(chinese)).toHaveLength(54)
     expect(Object.keys(english)).toHaveLength(54)
   })
 
-  it('provides a distinct engineering story and reasoning in each language', () => {
+  it('gives each lesson a unique, substantive engineering narrative', () => {
     const titles = { zh: new Set<string>(), en: new Set<string>() }
     for (let moduleNo = 1; moduleNo <= 9; moduleNo += 1) {
+      const moduleId = `m${String(moduleNo).padStart(2, '0')}`
       for (let lessonNo = 1; lessonNo <= 6; lessonNo += 1) {
-        const id = `m${String(moduleNo).padStart(2, '0')}-l${String(lessonNo).padStart(2, '0')}`
+        const lessonId = `l${String(lessonNo).padStart(2, '0')}`
+        const id = `${moduleId}-${lessonId}`
         for (const [lang, lessons, prefix] of [
           ['zh', chinese, '工程推进：'],
           ['en', english, 'Engineering thread:'],
         ] as const) {
-          const markdown = lessons[
-            `../../content/releases/${lang === 'en' ? 'en/' : ''}${id}.md`
-          ]
-          expect(markdown, `missing ${lang} narrative for ${id}`).toBeDefined()
+          const dir = lang === 'en' ? 'en/' : ''
+          const path = `../../content/releases/${dir}${id}.md`
+          const markdown = lessons[path]
+          expect(markdown).toBeDefined()
           const article = narrative(markdown, prefix)
           expect(article.title.length).toBeGreaterThan(8)
-          expect(titles[lang].has(article.title), `duplicated article title ${id}`).toBe(false)
+          expect(titles[lang].has(article.title)).toBe(false)
           titles[lang].add(article.title)
-          expect(article.paragraphs.length, `short article narrative ${id} ${lang}`)
-            .toBeGreaterThanOrEqual(2)
-          expect(article.paragraphs.join('').length, `thin article narrative ${id} ${lang}`)
-            .toBeGreaterThan(lang === 'zh' ? 120 : 175)
+          expect(article.paragraphs.length).toBeGreaterThanOrEqual(2)
+          const length = article.paragraphs.join('').length
+          expect(length).toBeGreaterThan(lang === 'zh' ? 120 : 175)
           for (const paragraph of article.paragraphs) {
             expect(paragraph).not.toMatch(/^[-*] |^\d+\. /)
           }
