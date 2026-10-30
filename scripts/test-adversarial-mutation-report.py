@@ -64,6 +64,18 @@ class StrictEvidenceTests(unittest.TestCase):
             (self.folder / (module + ".json")).write_text(
                 json.dumps(payload, ensure_ascii=False), encoding="utf8"
             )
+        triage = {"schema_version": 1, "candidates": [
+            {
+                "name": name, "module": module, "classification": classification,
+                "full_suite": status, "compiles": True,
+                "reasoning": "Synthetic reasoning recorded to verify that the report is fail-closed and must not silently ignore reviewed candidates.",
+            }
+            for name, (module, classification, status)
+            in reporter.EXPECTED_TRIAGE.items()
+        ]}
+        (self.folder / "equivalence-triage.json").write_text(
+            json.dumps(triage, ensure_ascii=False), encoding="utf8"
+        )
         return reporter.validate(self.folder)
 
     def test_complete_known_fixture_exports_full_rectangular_matrix(self) -> None:
@@ -115,6 +127,24 @@ class StrictEvidenceTests(unittest.TestCase):
         del candidate["counterexample"]
         with self.assertRaisesRegex(AssertionError, "lacks reduced counterexample"):
             self.validate()
+
+    def test_missing_equivalence_triage_rejected(self) -> None:
+        self.validate()
+        (self.folder / "equivalence-triage.json").unlink()
+        with self.assertRaisesRegex(AssertionError, "missing equivalence triage"):
+            reporter.validate(self.folder)
+
+    def test_forged_equivalence_review_rejected(self) -> None:
+        self.validate()
+        file = self.folder / "equivalence-triage.json"
+        data = json.loads(file.read_text(encoding="utf8"))
+        item = next(item for item in data["candidates"]
+                    if item["classification"] == "killed_non_equivalent")
+        item["classification"] = "reviewed_equivalent"
+        item["full_suite"] = "passed"
+        file.write_text(json.dumps(data), encoding="utf8")
+        with self.assertRaisesRegex(AssertionError, "invalid or unreviewed equivalence"):
+            reporter.validate(self.folder)
 
     def test_invalid_zip_digest_rejected(self) -> None:
         self.records["m07"]["archive_sha256"] = "not-a-digest"
