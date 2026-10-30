@@ -22,8 +22,16 @@ describe('M01 guided lessons', () => {
 
   it('teaches concepts through scenarios and practice', () => {
     lessons.slice(0, 4).forEach((lesson) => {
-      expect(lesson).toMatch(/^## (?:场景|核心知识点)/m)
-      expect(lesson).toMatch(/^## 核心知识点/m)
+      // Concept sections can use natural article headings; do not mandate
+      // numbered "knowledge point" labels that make a lesson read like slides.
+      const story = lesson.slice(
+        lesson.indexOf('\n## 工程推进：'),
+        lesson.indexOf('\n## 学习目标'),
+      )
+      expect(story).toMatch(/\n## (?!工程推进：)[^\n]+\n\n/)
+      expect(story.split('\n\n').filter((paragraph) => paragraph.length > 65).length)
+        .toBeGreaterThanOrEqual(2)
+      expect(lesson).not.toMatch(/^## 核心知识点[一二三四五六]/m)
       expect(lesson).toMatch(/^## (?:检验理解|检验理解与本地练习|本地练习)/m)
       expect(lesson).toMatch(/Java\s*\/\s*Go|Java[^\n]*Go/)
       expect(lesson).toContain('--- |')
