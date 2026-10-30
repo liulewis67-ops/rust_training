@@ -88,7 +88,7 @@ def main() -> None:
     for row in scores:
         markdown.append(
             f"| {row['module'].upper()} | {row['killed']}/{row['selected']} | "
-            f"{row['generated_cases']} | \`{row['seed']}\` |"
+            f"{row['generated_cases']} | `{row['seed']}` |"
         )
     markdown.extend([
         "",
