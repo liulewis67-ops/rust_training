@@ -23,7 +23,7 @@ describe('M05 borrowing and text curriculum', () => {
     lessons.slice(0, 4).forEach((lesson) => {
       expect(lesson).toMatch(/^## 学习目标$/m)
       expect(lesson).toMatch(/^## 场景：/m)
-      expect(lesson).toMatch(/^## 核心知识点一：/m)
+      expect(lesson).toMatch(/^## 原理推导与反例辨析/m)
       expect(lesson).toMatch(/^## 检验理解与本地练习$/m)
     })
   })
