@@ -145,4 +145,84 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn l05_case_sensitive_extreme_bytes_and_borrowed_keys() {
+        let events = [
+            LogEvent { service: "API", bytes: u64::MAX },
+            LogEvent { service: "api", bytes: 0 },
+            LogEvent { service: "温度", bytes: 1 },
+        ];
+        let summary = aggregate(&events);
+        assert_eq!(
+            summary,
+            vec![
+                ServiceSummary { service: "API", event_count: 1, total_bytes: u64::MAX },
+                ServiceSummary { service: "api", event_count: 1, total_bytes: 0 },
+                ServiceSummary { service: "温度", event_count: 1, total_bytes: 1 },
+            ],
+        );
+        for row in &summary {
+            let source = events.iter().find(|event| event.service == row.service).unwrap();
+            assert_eq!(row.service.as_ptr(), source.service.as_ptr());
+        }
+        assert_eq!(events[0].bytes, u64::MAX);
+    }
+
+    #[test]
+    fn l05_repeated_zero_and_large_events_count_each() {
+        let events = [
+            LogEvent { service: "api", bytes: u64::MAX - 9 },
+            LogEvent { service: "api", bytes: 0 },
+            LogEvent { service: "api", bytes: 9 },
+        ];
+        assert_eq!(
+            aggregate(&events),
+            vec![ServiceSummary {
+                service: "api",
+                event_count: 3,
+                total_bytes: u64::MAX,
+            }],
+        );
+    }
+
+    #[test]
+    fn l06_all_rejected_and_missing_values_still_have_sorted_rows() {
+        let readings = [
+            Reading { sensor: "温度", accepted: false, value: Some(i64::MIN) },
+            Reading { sensor: "z", accepted: true, value: None },
+            Reading { sensor: "温度", accepted: false, value: None },
+            Reading { sensor: "a", accepted: false, value: Some(0) },
+        ];
+        let summary = summarize(&readings);
+        assert_eq!(
+            summary,
+            vec![
+                SensorSummary { sensor: "a", accepted_count: 0, total: 0 },
+                SensorSummary { sensor: "z", accepted_count: 0, total: 0 },
+                SensorSummary { sensor: "温度", accepted_count: 0, total: 0 },
+            ],
+        );
+        assert_eq!(summary[2].sensor.as_ptr(), readings[0].sensor.as_ptr());
+    }
+
+    #[test]
+    fn l06_signed_extremes_cancel_and_input_stays_borrowed() {
+        let readings = [
+            Reading { sensor: "温度", accepted: true, value: Some(i64::MIN) },
+            Reading { sensor: "温度", accepted: true, value: Some(i64::MAX) },
+            Reading { sensor: "温度", accepted: true, value: Some(1) },
+        ];
+        let summary = summarize(&readings);
+        assert_eq!(
+            summary,
+            vec![SensorSummary {
+                sensor: "温度",
+                accepted_count: 3,
+                total: 0,
+            }],
+        );
+        assert_eq!(summary[0].sensor.as_ptr(), readings[0].sensor.as_ptr());
+        assert_eq!(readings[1].value, Some(i64::MAX));
+    }
 }
