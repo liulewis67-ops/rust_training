@@ -6,11 +6,11 @@ use std::{collections::BTreeMap, error::Error, io};
 
 const SEED: u64 = 0xC0FF_EE09_2026_1030;
 const CASES: usize = 384;
-const LINES: [&str; 14] = [
+const LINES: [&str; 17] = [
     "", "timeout_ms=0", "retry_limit=0", "timeout_ms=18446744073709551615",
     "retry_limit=255", "retry_limit=256", "timeout_ms=18446744073709551616",
     "timeout_ms=8", "retry_limit=3", "timeout_ms=1=2", "密钥=private",
-    "bad🧭", "retry_limit=３", "retry_limit= 3",
+    "bad🧭", "retry_limit=３", "retry_limit= 3", "  ", "retry_limit=+1", "retry_limit=",
 ];
 
 struct Generator(u64);
