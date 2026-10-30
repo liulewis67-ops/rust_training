@@ -204,7 +204,7 @@ def prepare(lesson: str, index: int, pieces: list[str], mode: str) -> str:
             raise AssertionError(lesson + ": expected an unfinished signature")
         after += " { unimplemented!() }\n"
     if lesson == "m02-l06" and index == 1:
-        snippet = pieces[2] + "\nmod exercise_tests {\n" + snippet + "\n}\n"
+        snippet = pieces[2] + "\n" + snippet
     if mode == "todo":
         if "todo!()" not in snippet and not (lesson == "m07-l06" and index == 0):
             raise AssertionError(lesson + ": exercise no longer has a TODO")
