@@ -51,6 +51,49 @@ fn sensor_oracle<'a>(readings: &[Reading<'a>]) -> Vec<SensorSummary<'a>> {
     }).collect()
 }
 
+fn shrink_by_deletion<T: Copy>(initial: &[T], differs: impl Fn(&[T]) -> bool) -> Vec<T> {
+    assert!(differs(initial), "do not shrink a passing sample");
+    let mut minimal = initial.to_vec();
+    let mut index = 0;
+    while index < minimal.len() {
+        let mut smaller = minimal.clone();
+        smaller.remove(index);
+        if differs(&smaller) {
+            minimal = smaller;
+            index = 0;
+        } else {
+            index += 1;
+        }
+    }
+    // 1-minimal with respect to removing any single record, NOT globally minimal.
+    assert!(differs(&minimal));
+    minimal
+}
+
+fn check_events(events: &[LogEvent<'_>], case: usize, phase: &str) {
+    let expected = group_oracle(events);
+    let actual = aggregate(events);
+    if actual != expected {
+        let smaller = shrink_by_deletion(events, |candidate| aggregate(candidate) != group_oracle(candidate));
+        panic!(
+            "MINIMIZED_COUNTEREXAMPLE m08/events seed={SEED:#x} case={case} phase={phase} original={events:?} minimal={smaller:?} expected={:?} actual={:?}",
+            group_oracle(&smaller), aggregate(&smaller)
+        );
+    }
+}
+
+fn check_readings(readings: &[Reading<'_>], case: usize, phase: &str) {
+    let expected = sensor_oracle(readings);
+    let actual = summarize(readings);
+    if actual != expected {
+        let smaller = shrink_by_deletion(readings, |candidate| summarize(candidate) != sensor_oracle(candidate));
+        panic!(
+            "MINIMIZED_COUNTEREXAMPLE m08/sensor seed={SEED:#x} case={case} phase={phase} original={readings:?} minimal={smaller:?} expected={:?} actual={:?}",
+            sensor_oracle(&smaller), summarize(&smaller)
+        );
+    }
+}
+
 #[test]
 fn model_differential_generated_aggregation_and_reordering() {
     let mut rng = Generator(SEED);
@@ -63,25 +106,17 @@ fn model_differential_generated_aggregation_and_reordering() {
                 _ => rng.next() % 10_000,
             },
         }).collect();
-        let expected = group_oracle(&events);
-        let actual = aggregate(&events);
-        assert_eq!(actual, expected, "seed={SEED:#x}, case={case}, input={events:?}");
+        check_events(&events, case, "original");
         let backwards: Vec<_> = events.iter().copied().rev().collect();
-        assert_eq!(
-            aggregate(&backwards), expected,
-            "reverse invariant; seed={SEED:#x}, case={case}, input={events:?}"
-        );
+        check_events(&backwards, case, "reverse");
         if !events.is_empty() {
             let mut rotated = events.clone();
             rotated.rotate_left(case % len);
-            assert_eq!(aggregate(&rotated), expected, "rotation invariant; case={case}");
+            check_events(&rotated, case, "rotation");
         }
         let mut with_zero = events.clone();
         with_zero.push(LogEvent { service: "api", bytes: 0 });
-        assert_eq!(
-            aggregate(&with_zero), group_oracle(&with_zero),
-            "adding a zero-byte event still counts as an event; case={case}"
-        );
+        check_events(&with_zero, case, "zero-byte extension");
     }
 }
 
@@ -99,25 +134,18 @@ fn model_differential_generated_sensor_rules_and_reordering() {
             };
             Reading { sensor: KEYS[rng.index(KEYS.len())], accepted, value }
         }).collect();
-        let expected = sensor_oracle(&readings);
-        assert_eq!(
-            summarize(&readings), expected,
-            "seed={SEED:#x}, case={case}, input={readings:?}"
-        );
+        check_readings(&readings, case, "original");
         let backwards: Vec<_> = readings.iter().copied().rev().collect();
-        assert_eq!(summarize(&backwards), expected, "reverse invariant; case={case}");
+        check_readings(&backwards, case, "reverse");
         if !readings.is_empty() {
             let mut rotated = readings.clone();
             rotated.rotate_left(case % len);
-            assert_eq!(summarize(&rotated), expected, "rotation invariant; case={case}");
+            check_readings(&rotated, case, "rotation");
         }
         let mut with_rejected = readings.clone();
         with_rejected.push(Reading {
             sensor: "ghost", accepted: false, value: Some(1000),
         });
-        assert_eq!(
-            summarize(&with_rejected), sensor_oracle(&with_rejected),
-            "rejected-only rows still exist; case={case}"
-        );
+        check_readings(&with_rejected, case, "rejected-row extension");
     }
 }

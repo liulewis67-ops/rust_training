@@ -10,6 +10,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import tempfile
 import zipfile
@@ -115,6 +116,46 @@ mod adversarial_contracts {
             (*seed % limit as u64) as usize
         }
 
+        // Unicode-scalar delta debugging; returns a single-deletion-minimal
+        // witness for the *same* parser or label discrepancy.
+        fn shrink_input(source: &str, delimiter: char, label: bool) -> String {
+            fn diverges(source: &str, delimiter: char, label: bool) -> bool {
+                let expected = oracle(source, delimiter);
+                let parsed = match delimiter {
+                    ':' => ColonParser.parse(source),
+                    '=' => EqualsParser.parse(source),
+                    _ => unreachable!(),
+                };
+                if !label {
+                    return parsed != expected;
+                }
+                let wanted = expected.map(|entry| format!("{}={}", entry.key, entry.value));
+                let rendered = match delimiter {
+                    ':' => render_label(&ColonParser, source),
+                    '=' => render_label(&EqualsParser, source),
+                    _ => unreachable!(),
+                };
+                rendered != wanted
+            }
+            assert!(diverges(source, delimiter, label));
+            let mut chars: Vec<char> = source.chars().collect();
+            let mut index = 0;
+            while index < chars.len() {
+                let mut candidate = chars.clone();
+                candidate.remove(index);
+                let text: String = candidate.iter().collect();
+                if diverges(&text, delimiter, label) {
+                    chars = candidate;
+                    index = 0;
+                } else {
+                    index += 1;
+                }
+            }
+            let minimal: String = chars.iter().collect();
+            assert!(diverges(&minimal, delimiter, label));
+            minimal
+        }
+
         for case in 0..448 {
             let left = keys[draw(&mut seed, keys.len())];
             let right = values[draw(&mut seed, values.len())];
@@ -129,20 +170,24 @@ mod adversarial_contracts {
                     '=' => EqualsParser.parse(&input),
                     _ => unreachable!(),
                 };
-                assert_eq!(
-                    actual, expected,
-                    "seed=0x7AB1202610300007 case={case}, delimiter={delimiter}, input={input:?}"
-                );
+                if actual != expected {
+                    let minimal = shrink_input(&input, delimiter, false);
+                    panic!(
+                        "MINIMIZED_COUNTEREXAMPLE m07/parser seed=0x7AB1202610300007 case={case} delimiter={delimiter} original={input:?} minimal={minimal:?}"
+                    );
+                }
                 let expected_label = expected.map(|entry| format!("{}={}", entry.key, entry.value));
                 let actual_label = match delimiter {
                     ':' => render_label(&ColonParser, &input),
                     '=' => render_label(&EqualsParser, &input),
                     _ => unreachable!(),
                 };
-                assert_eq!(
-                    actual_label, expected_label,
-                    "label seed=0x7AB1202610300007 case={case}, delimiter={delimiter}, input={input:?}"
-                );
+                if actual_label != expected_label {
+                    let minimal = shrink_input(&input, delimiter, true);
+                    panic!(
+                        "MINIMIZED_COUNTEREXAMPLE m07/label seed=0x7AB1202610300007 case={case} delimiter={delimiter} original={input:?} minimal={minimal:?}"
+                    );
+                }
             }
         }
     }
@@ -206,6 +251,22 @@ MUTANTS = [
 ]
 
 
+def contract_results(output: str) -> dict[str, str]:
+    matches = re.findall(
+        r"^test adversarial_contracts::(\w+) \.\.\. (ok|FAILED)$",
+        output, flags=re.MULTILINE,
+    )
+    results = {"adversarial_contracts::" + name: status for name, status in matches}
+    if len(results) != len(matches):
+        raise AssertionError("M07: duplicate public test result names")
+    return results
+
+
+def counterexample_from(output: str) -> str | None:
+    found = re.search(r"MINIMIZED_COUNTEREXAMPLE [^\r\n]+", output)
+    return found.group(0) if found else None
+
+
 def main() -> None:
     released = audit.RELEASES / "m07-l05-starter.zip"
     original_digest = hashlib.sha256(released.read_bytes()).hexdigest()
@@ -235,6 +296,9 @@ def main() -> None:
         code, out = audit.run_cargo(project, "test", root)
         if code != 0 or "test result: ok." not in out:
             raise AssertionError("real repaired ZIP fails independent contracts:\n" + out[-4000:])
+        baseline_tests = contract_results(out)
+        if len(baseline_tests) != 7 or set(baseline_tests.values()) != {"ok"}:
+            raise AssertionError("M07: missing or failing independent acceptance tests")
         print("m07: original ZIP repaired; seven external behavioral contracts pass")
 
         killed = []
@@ -246,13 +310,22 @@ def main() -> None:
                 raise AssertionError(name + ": accepted an incorrect implementation:\n" + out[-3000:])
             if "could not compile" in out or "error[" in out:
                 raise AssertionError(name + ": compile failure is not a valid mutation kill:\n" + out[-3000:])
-            if not any(
-                "adversarial_contracts::" + case + " ... FAILED" in line
-                for line in out.splitlines()
-            ):
+            results = contract_results(out)
+            if set(results) != set(baseline_tests):
+                raise AssertionError(name + ": independent test discovery changed during mutation")
+            failed = sorted(test for test, state in results.items() if state == "FAILED")
+            target = "adversarial_contracts::" + case
+            if target not in failed:
                 raise AssertionError(name + ": targeted independent assertion did not fail:\n" + out[-3000:])
-            print("m07: KILLED " + name + " via " + case)
-            killed.append({"name": name, "target": case, "status": "killed"})
+            minimal = counterexample_from(out)
+            if case == "generated_inputs_match_oracle_for_both_parsers" and not minimal:
+                raise AssertionError(name + ": generated-case failure did not provide a minimal witness")
+            print("m07: KILLED " + name + " via " + ", ".join(failed))
+            killed.append({
+                "name": name, "target": target, "status": "killed",
+                "detected_by": failed,
+                **({"counterexample": minimal} if minimal else {}),
+            })
 
         library.write_text(baseline, encoding="utf8")
         code, out = audit.run_cargo(project, "test", root)
@@ -273,6 +346,7 @@ def main() -> None:
             "seed": "0x7AB1202610300007",
             "generated_cases": 448,
             "archive_sha256": original_digest,
+            "tests": sorted(baseline_tests),
             "mutants": killed,
         }, indent=2, ensure_ascii=False) + "\n", encoding="utf8")
     print(f"M07 original ZIP: {len(killed)}/{len(MUTANTS)} compiling mutants killed; archive unchanged.")
