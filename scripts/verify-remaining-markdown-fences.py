@@ -160,7 +160,6 @@ struct SensorSummary<'a> { sensor: &'a str, accepted_count: u32, total: i64 }
 """
         if index == 0:
             before = structs
-            after = " { Vec::new() }\n"
         else:
             before = structs + """
 fn totals<'a>(readings: &[Reading<'a>]) -> Vec<(&'a str, (u32, i64))> {
