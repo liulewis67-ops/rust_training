@@ -92,6 +92,8 @@ def main() -> None:
                         raise AssertionError(label + ": known different behavior escaped tests:\n" + output[-2800:])
                     if "could not compile" in output or re.search(r"error\[E\d+\]", output):
                         raise AssertionError(label + ": failure must be behavioral")
+                    if "test model_differential_generated_config_grammar_and_first_failure ... FAILED" not in output:
+                        raise AssertionError(label + ": the documented independent grammar oracle did not reject it")
                 else:
                     raise AssertionError(label + ": any unreviewed survivor needs explicit review")
                 results.append({
