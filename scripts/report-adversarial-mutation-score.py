@@ -12,9 +12,9 @@ import os
 from pathlib import Path
 
 EXPECTED = {
-    "m07": {"count": 10, "cases": 448, "tests": 7, "seed": "0x7AB1202610300007"},
-    "m08": {"count": 10, "cases": 320, "tests": 6, "seed": "0xC0FF_EE08_2026_1030"},
-    "m09": {"count": 11, "cases": 384, "tests": 7, "seed": "0xC0FF_EE09_2026_1030"},
+    "m07": {"count": 11, "cases": 448, "tests": 7, "seed": "0x7AB1202610300007"},
+    "m08": {"count": 12, "cases": 320, "tests": 6, "seed": "0xC0FF_EE08_2026_1030"},
+    "m09": {"count": 13, "cases": 384, "tests": 7, "seed": "0xC0FF_EE09_2026_1030"},
 }
 
 
@@ -52,12 +52,14 @@ EXPECTED_MUTANTS = {
         "trim_only_key_start", "erase_missing_delimiter_identity",
         "misclassify_empty_key_as_value", "replace_canonical_equals_with_colon",
         "trim_only_value_end", "trim_only_key_end", "swap_stored_key_and_value",
+        "trim_only_value_start",
     },
     "m08": {
         "overwrite_aggregate_count", "overwrite_aggregate_bytes", "reverse_public_sort",
         "treat_rejected_as_present", "convert_none_to_accepted_zero", "overwrite_sensor_total",
         "skip_zero_byte_events", "discard_blank_service_keys",
         "merge_service_case_variants", "drop_rejected_only_sensors",
+        "cap_service_bytes_at_1024", "ignore_negative_sensor_values",
     },
     "m09": {
         "misclassify_missing_delimiter", "allow_duplicate_with_invalid_value",
@@ -65,6 +67,7 @@ EXPECTED_MUTANTS = {
         "leak_storage_error_in_display", "rewrite_request_id", "change_api_public_code",
         "skip_whitespace_only_lines", "accept_ascii_plus_prefix",
         "duplicate_empty_is_reported_as_invalid", "lose_large_timeout_support",
+        "off_by_one_eof_line", "wrong_profile_http_status",
     },
 }
 
@@ -81,6 +84,7 @@ EXPECTED_TARGETS = {
         "trim_only_value_end": "generated_inputs_match_oracle_for_both_parsers",
         "trim_only_key_end": "generated_inputs_match_oracle_for_both_parsers",
         "swap_stored_key_and_value": "generated_inputs_match_oracle_for_both_parsers",
+        "trim_only_value_start": "generated_inputs_match_oracle_for_both_parsers",
     },
     "m08": {
         "overwrite_aggregate_count": "adversarial_contracts::l05_all_permutations_preserve_counts_totals_and_sorted_case_sensitive_keys",
@@ -93,6 +97,8 @@ EXPECTED_TARGETS = {
         "discard_blank_service_keys": "model_properties::model_differential_generated_aggregation_and_reordering",
         "merge_service_case_variants": "model_properties::model_differential_generated_aggregation_and_reordering",
         "drop_rejected_only_sensors": "model_properties::model_differential_generated_sensor_rules_and_reordering",
+        "cap_service_bytes_at_1024": "model_properties::model_differential_generated_aggregation_and_reordering",
+        "ignore_negative_sensor_values": "model_properties::model_differential_generated_sensor_rules_and_reordering",
     },
     "m09": {
         "misclassify_missing_delimiter": "adversarial_contracts::l05_first_error_stays_first_across_crlf_unicode_and_malformed_followups",
@@ -106,6 +112,8 @@ EXPECTED_TARGETS = {
         "accept_ascii_plus_prefix": "model_properties::model_differential_generated_config_grammar_and_first_failure",
         "duplicate_empty_is_reported_as_invalid": "model_properties::model_differential_generated_config_grammar_and_first_failure",
         "lose_large_timeout_support": "model_properties::model_metamorphic_valid_field_order_blank_lines_and_limits",
+        "off_by_one_eof_line": "adversarial_contracts::l05_exact_numeric_bounds_missing_fields_and_extra_delimiters",
+        "wrong_profile_http_status": "adversarial_contracts::l06_all_domain_variants_have_stable_exact_cli_and_http_contracts",
     },
 }
 
