@@ -41,17 +41,13 @@ if (!course || course.edition !== '2024' || course.version !== '0.1.0') {
 }
 process.stdout.write('Verified Cargo edition 2024 and package version 0.1.0\n')
 
-const tested = run('cargo', [
-  'test',
-  '--offline',
-  '--manifest-path',
-  manifest,
-  '--lib',
-])
+const tested = run('cargo', ['test', '--offline', '--manifest-path', manifest])
 if (tested.status !== 0) {
   process.stderr.write(tested.stdout)
   process.stderr.write(tested.stderr)
-  throw new Error('The executable Rust lesson tests did not pass')
+  throw new Error(
+    'The executable Rust lesson and graduation acceptance tests did not pass',
+  )
 }
 process.stdout.write(tested.stdout)
 

@@ -337,4 +337,65 @@ mod tests {
         assert!(HistoryError::InvalidRetentionDays.source().is_none());
         assert!(HistoryError::ProfileNotFound.source().is_none());
     }
+
+    #[test]
+    fn l05_duplicate_precedes_later_unknown_fields_and_bad_values() {
+        check_error(
+            parse_config("timeout_ms=1\nretry_limit=2\ntimeout_ms=3\nunknown=private"),
+            ConfigErrorKind::DuplicateField, "timeout_ms", 3, 1,
+        );
+        check_error(
+            parse_config("retry_limit=1\nretry_limit=999\ntimeout_ms=5"),
+            ConfigErrorKind::DuplicateField, "retry_limit", 2, 1,
+        );
+        check_error(
+            parse_config("timeout_ms=9\nretry_limit=1\r\nretry_limit=2"),
+            ConfigErrorKind::DuplicateField, "retry_limit", 3, 1,
+        );
+    }
+
+    #[test]
+    fn l05_extreme_values_and_multibyte_missing_delimiter() {
+        assert_eq!(
+            parse_config("timeout_ms=18446744073709551615\nretry_limit=255"),
+            Ok(Config { timeout_ms: u64::MAX, retry_limit: u8::MAX }),
+        );
+        check_error(
+            parse_config("timeout_ms=18446744073709551616\nretry_limit=1"),
+            ConfigErrorKind::InvalidValue, "timeout_ms", 1, 12,
+        );
+        check_error(
+            parse_config("中文配置"),
+            ConfigErrorKind::MissingDelimiter, "<line>", 1, 5,
+        );
+    }
+
+    #[test]
+    fn l06_unicode_request_id_and_internal_diagnostics_are_separate() {
+        let error = HistoryError::StorageUnavailable(io::Error::other(
+            "server=db.internal password=secret SELECT * FROM history",
+        ));
+        let cause = error.source().expect("storage cause stays available");
+        assert!(cause.to_string().contains("password=secret"));
+        for request_id in ["", "请求-🧭-42", "line\ntrace"] {
+            let api = present_api(&error, request_id);
+            assert_eq!(api.request_id, request_id);
+            assert_eq!((api.status, api.code, api.retryable),
+                (503, "history_unavailable", true));
+            let cli = present_cli(&error);
+            assert_eq!(cli.exit_code, 1);
+            for public in [
+                api.message.to_owned(), api.code.to_owned(), cli.stderr,
+            ] {
+                assert!(!public.contains("password"));
+                assert!(!public.contains("secret"));
+                assert!(!public.contains("db.internal"));
+                assert!(!public.contains("SELECT"));
+            }
+        }
+        for error in [HistoryError::InvalidRetentionDays, HistoryError::ProfileNotFound] {
+            assert!(!present_api(&error, "req").retryable);
+            assert!(error.source().is_none());
+        }
+    }
 }
