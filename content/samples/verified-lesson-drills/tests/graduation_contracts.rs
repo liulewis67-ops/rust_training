@@ -134,6 +134,27 @@ fn m09_l05_first_failure_is_not_masked_by_a_later_bad_line() {
 }
 
 #[test]
+fn m08_l05_repeated_borrowed_keys_max_bytes_and_stable_sort() {
+    use m08_capstone::{LogEvent, ServiceSummary};
+    let unicode = String::from("温度");
+    let events = [
+        LogEvent { service: &unicode, bytes: u64::MAX - 5 },
+        LogEvent { service: "api", bytes: 0 },
+        LogEvent { service: &unicode, bytes: 5 },
+        LogEvent { service: "API", bytes: 1 },
+    ];
+    let rows = m08_capstone::aggregate(&events);
+    assert_eq!(rows, vec![
+        ServiceSummary { service: "API", event_count: 1, total_bytes: 1 },
+        ServiceSummary { service: "api", event_count: 1, total_bytes: 0 },
+        ServiceSummary { service: "温度", event_count: 2, total_bytes: u64::MAX },
+    ]);
+    assert_eq!(rows[2].service.as_ptr(), unicode.as_ptr());
+    assert!(m08_capstone::aggregate(&[]).is_empty());
+    assert_eq!(events[0].bytes, u64::MAX - 5);
+}
+
+#[test]
 fn m08_l06_accepted_zero_missing_and_rejected_only_have_different_counts() {
     use m08_capstone::{Reading, SensorSummary};
     let readings = [
