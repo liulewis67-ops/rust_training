@@ -2,7 +2,6 @@
 """Negative tests: the mutation matrix must reject dishonest or incomplete data."""
 from __future__ import annotations
 
-import copy
 import importlib.util
 import json
 from pathlib import Path
@@ -44,7 +43,7 @@ def fixture() -> dict:
             "baseline": "passed",
             "seed": spec["seed"],
             "generated_cases": spec["cases"],
-            "tests": reporter.EXPECTED_CATALOG[module],
+            "tests": list(reporter.EXPECTED_CATALOG[module]),
             "mutants": mutants,
         }
         if module == "m07":
