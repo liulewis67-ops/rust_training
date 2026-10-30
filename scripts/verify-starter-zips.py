@@ -112,12 +112,12 @@ def audit_one(module: str, expected: str, temp: Path) -> None:
         print(module + " src/lib.rs: " + (project / "src/lib.rs").read_text(encoding="utf8")[:6500])
 
     code, output = run_cargo(project, "check" if expected != "behavior" else "test", temp)
-    errors = set(re.findall(r"error\\[([A-Z]\\d+)\\]", output))
+    errors = set(re.findall(r"error\[([A-Z]\d+)\]", output))
     if expected == "behavior":
         if code == 0 or "test result: FAILED" not in output:
-            raise AssertionError(module + " expected the starter to compile but fail public behavior tests:\\n" + output[-2500:])
+            raise AssertionError(module + " expected the starter to compile but fail public behavior tests:\n" + output[-2500:])
     elif code == 0 or expected not in errors:
-        raise AssertionError(module + " expected compiler error " + expected + ", got " + repr(errors) + ":\\n" + output[-2500:])
+        raise AssertionError(module + " expected compiler error " + expected + ", got " + repr(errors) + ":\n" + output[-2500:])
     print(module + ": original intentional " + expected + " failure reproduced")
 
 
