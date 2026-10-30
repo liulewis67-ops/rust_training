@@ -68,6 +68,72 @@ fn m07_l06_dyn_gate_order_first_error_and_no_late_calls() {
 }
 
 #[test]
+fn m07_l06_heterogeneous_gates_recheck_in_order_for_changed_builds() {
+    use m07_capstone::{Build, ChannelIs, Gate, MinimumNumber};
+    let calls = Rc::new(RefCell::new(Vec::new()));
+    let gates: Vec<Box<dyn Gate>> = vec![
+        Box::new(MinimumNumber(7)),
+        Box::new(RecordingGate {
+            id: "audit",
+            outcome: Ok(()),
+            calls: Rc::clone(&calls),
+        }),
+        Box::new(ChannelIs("stable".into())),
+        Box::new(RecordingGate {
+            id: "postcheck",
+            outcome: Err("postcheck denied"),
+            calls: Rc::clone(&calls),
+        }),
+    ];
+
+    // The first concrete gate passes, then a traced dyn gate runs, and the
+    // channel gate rejects before the last side effect.
+    let beta = Build { number: 7, channel: "beta".into() };
+    assert_eq!(m07_capstone::evaluate_pipeline(&gates, &beta), Err("wrong channel".into()));
+    assert_eq!(*calls.borrow(), ["audit"]);
+
+    // The same heterogeneous objects can be evaluated again; changing input
+    // changes which gate first rejects, without caching the previous result.
+    let stable = Build { number: 7, channel: "stable".into() };
+    assert_eq!(
+        m07_capstone::evaluate_pipeline(&gates, &stable),
+        Err("postcheck denied".into())
+    );
+    assert_eq!(*calls.borrow(), ["audit", "audit", "postcheck"]);
+
+    // If the first gate rejects, no later stateful gate may run at all.
+    calls.borrow_mut().clear();
+    let too_old = Build { number: 6, channel: "stable".into() };
+    assert_eq!(
+        m07_capstone::evaluate_pipeline(&gates, &too_old),
+        Err("number too low".into())
+    );
+    assert!(calls.borrow().is_empty());
+
+    // A single statically dispatched gate preserves the same business error.
+    assert_eq!(m07_capstone::evaluate_one(&MinimumNumber(8), &beta), Err("number too low".into()));
+    assert_eq!(m07_capstone::evaluate_one(&ChannelIs("beta".into()), &beta), Ok(()));
+}
+
+#[test]
+fn m09_l05_first_failure_is_not_masked_by_a_later_bad_line() {
+    use m09_capstone::{ConfigError, ParseKind};
+    let error = m09_capstone::parse_config(
+        "timeout_ms=1\ntimeout_ms=not-a-number\n未知=private\nretry_limit=1",
+    ).unwrap_err();
+    assert_eq!(error, ConfigError {
+        kind: ParseKind::DuplicateField,
+        line: 2,
+        column: 1,
+    });
+    assert!(!format!("{error:?}").contains("private"));
+    assert_eq!(
+        m09_capstone::parse_config("timeout_ms=1\nretry_limit=256").unwrap_err(),
+        ConfigError { kind: ParseKind::InvalidValue, line: 2, column: 13 },
+    );
+}
+
+#[test]
 fn m08_l06_accepted_zero_missing_and_rejected_only_have_different_counts() {
     use m08_capstone::{Reading, SensorSummary};
     let readings = [
