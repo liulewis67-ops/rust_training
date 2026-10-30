@@ -263,6 +263,35 @@ def audit_one(module: str, expected: str, temp: Path) -> None:
     check_repair_path(module, project, temp)
 
 
+
+def audit_reference_project(temp: Path) -> None:
+    archive_path = RELEASES / "m01-l06-reference.zip"
+    for lang in ["", "en/"]:
+        lesson = RELEASES / lang / "m01-l06.md"
+        if "(./m01-l06-reference.zip)" not in lesson.read_text(encoding="utf8"):
+            raise AssertionError(str(lesson) + " lacks the M01-L06 reference download")
+    extracted = temp / "m01-l06-reference"
+    extracted.mkdir()
+    with zipfile.ZipFile(archive_path) as archive:
+        safe_members(archive)
+        archive.extractall(extracted)
+    tomls = list(extracted.rglob("Cargo.toml"))
+    if len(tomls) != 1:
+        raise AssertionError("M01-L06 reference must contain exactly one Cargo manifest")
+    project = tomls[0].parent
+    for source in ["src/lib.rs", "src/main.rs"]:
+        if not (project / source).is_file():
+            raise AssertionError("M01-L06 reference missing " + source)
+    code, output = run_cargo(project, "test", temp)
+    if code != 0 or "test result: ok." not in output:
+        raise AssertionError("M01-L06 reference must pass its published tests:\n" + output[-2800:])
+    code, output = run_cargo(project, "run", temp)
+    if code != 0 or "12.34" not in output:
+        raise AssertionError("M01-L06 reference CLI must print its expected sample:\n" + output[-2800:])
+    print("m01-l06: reference ZIP passes Cargo tests and CLI execution")
+
+
+
 def main() -> None:
     if shutil.which("cargo") is None:
         raise RuntimeError("cargo must be installed to test released starter ZIPs")
@@ -270,6 +299,7 @@ def main() -> None:
         temp = Path(dirname)
         for module, expected in LABS.items():
             audit_one(module, expected, temp)
+        audit_reference_project(temp)
     print("All seven released L05 starter archives: integrity, initial failure, staged repair and public tests verified.")
 
 
