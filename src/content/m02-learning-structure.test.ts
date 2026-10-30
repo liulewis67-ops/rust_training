@@ -22,7 +22,7 @@ describe('M02 guided lessons', () => {
     lessons.slice(0, 4).forEach((lesson) => {
       expect(lesson).toMatch(/^## 学习目标$/m)
       expect(lesson).toMatch(/^## 场景：/m)
-      expect(lesson).toMatch(/^## 核心知识点一：/m)
+      expect(lesson).toMatch(/^## 原理推导与反例辨析/m)
       expect(lesson).toMatch(/^## 检验理解/m)
       expect(lesson).toMatch(/^## 本地练习$/m)
       expect(lesson).toMatch(/Java\s*\/\s*Go/)
