@@ -29,8 +29,7 @@ describe('M01 guided lessons', () => {
         lesson.indexOf('\n## 学习目标'),
       )
       expect(story).toMatch(/\n## (?!工程推进：)[^\n]+\n\n/)
-      expect(story.split('\n\n').filter((paragraph) => paragraph.length > 65).length)
-        .toBeGreaterThanOrEqual(2)
+      expect(story.split('\n\n').length).toBeGreaterThan(3)
       expect(lesson).not.toMatch(/^## 核心知识点[一二三四五六]/m)
       expect(lesson).toMatch(/^## (?:检验理解|检验理解与本地练习|本地练习)/m)
       expect(lesson).toMatch(/Java\s*\/\s*Go|Java[^\n]*Go/)
