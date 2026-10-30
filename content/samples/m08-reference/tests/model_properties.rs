@@ -126,7 +126,9 @@ fn check_events(events: &[LogEvent<'_>], case: usize, phase: &str) {
     let expected = group_oracle(events);
     let actual = aggregate(events);
     if actual != expected {
-        let smaller = shrink_event_numbers(shrink_by_deletion(events, |candidate| aggregate(candidate) != group_oracle(candidate)));
+        let minimal_records = shrink_by_deletion(events, |candidate| aggregate(candidate) != group_oracle(candidate));
+        let simplified = shrink_event_numbers(minimal_records);
+        let smaller = shrink_by_deletion(&simplified, |candidate| aggregate(candidate) != group_oracle(candidate));
         panic!(
             "MINIMIZED_COUNTEREXAMPLE m08/events number-reduced seed={SEED:#x} case={case} phase={phase} original={events:?} minimal={smaller:?} expected={:?} actual={:?}",
             group_oracle(&smaller), aggregate(&smaller)
@@ -138,7 +140,9 @@ fn check_readings(readings: &[Reading<'_>], case: usize, phase: &str) {
     let expected = sensor_oracle(readings);
     let actual = summarize(readings);
     if actual != expected {
-        let smaller = shrink_sensor_numbers(shrink_by_deletion(readings, |candidate| summarize(candidate) != sensor_oracle(candidate)));
+        let minimal_records = shrink_by_deletion(readings, |candidate| summarize(candidate) != sensor_oracle(candidate));
+        let simplified = shrink_sensor_numbers(minimal_records);
+        let smaller = shrink_by_deletion(&simplified, |candidate| summarize(candidate) != sensor_oracle(candidate));
         panic!(
             "MINIMIZED_COUNTEREXAMPLE m08/sensor number-reduced seed={SEED:#x} case={case} phase={phase} original={readings:?} minimal={smaller:?} expected={:?} actual={:?}",
             sensor_oracle(&smaller), summarize(&smaller)
