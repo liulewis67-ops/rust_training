@@ -7,7 +7,7 @@
 | 层次 | 证明目标 | 真实执行位置 |
 | --- | --- | --- |
 | M07 trait/dyn | 多种具体 Gate 可以按 `Box<dyn Gate>` 配置顺序执行；第二个拒绝时阻止后续调用并保留第一个错误；空集合无副作用；同一异构对象列表在不同 Build 下重新评估，不能缓存旧错误或执行被短路的副作用 | `content/samples/verified-lesson-drills/tests/graduation_contracts.rs` |
-| M08-L05 聚合 | 大小写区分、Unicode 排序、真实指针借用、三个重复事件累计到 `u64::MAX`、零字节事件仍计数 | **实际** `m08-starter` 和 `m08-reference` 的公开测试 |
+| M08-L05 聚合 | 大小写区分、Unicode 排序、真实指针借用、重复事件累计到 `u64::MAX`、零字节事件仍计数；独立集成测试检查动态 String 借用与大小写区分 | **实际** `m08-starter` 和 `m08-reference` 的公开测试 |
 | M08-L06 传感器 | 拒绝记录/缺失值仍留行；有效零计数；`i64::MIN`/ `i64::MAX` 合法抵消；输入借用与确定性排序 | 实际 M08 Cargo 工程 + 独立 L06 集成测试 |
 | M09-L05 严格配置 | 重复键的**首次失败优先级**（即使重复字段的新值非法，且后续还有未知字段）、极值/溢出、CRLF、多字节 Unicode 的字符列计数 | 实际 `m09-starter` 和 `m09-reference` 的公开测试 |
 | M09-L06 错误传播 | 三类错误固定状态、退出码、重试标志；Unicode/空 `request_id` 精确保留；内部原因保留但 CLI/API 均不能泄漏凭据 | 实际 M09 Cargo 工程 + 独立 L06 集成测试 |
