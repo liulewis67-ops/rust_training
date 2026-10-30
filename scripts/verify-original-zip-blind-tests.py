@@ -69,6 +69,8 @@ def test_one(module: str, temporary: Path) -> None:
     original = source_path.read_text(encoding="utf8")
     fixed = audit.full_repair(module, audit.type_repair(module, original))
     source_path.write_text(fixed, encoding="utf8")
+    if module == "m07":
+        print("M07_REPAIRED_SOURCE_BEGIN\\n" + fixed + "\\nM07_REPAIRED_SOURCE_END", flush=True)
 
     code, output = audit.run_cargo(project, "test", temporary)
     if code != 0 or "test result: ok." not in output:
