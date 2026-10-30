@@ -22,6 +22,14 @@
 
 区别在于：后者让**情境、错误实现、机制、取舍和可执行验证**连成一个因果链。
 
+## 第二轮：让正文推理连续起来
+
+课程具有工程故事之后，如果正文仍以“问题、原理、示例、反例、独立练习、复盘”六个标签排开，阅读就会再次中断。应当在自然段落里串起原因、代码行为、失效路径与可运行的判断，而不是把每个知识点包装成固定问答。
+
+代码前先提出具体预测：谁拥有字符串、哪个分支返回 Result、出现重复键时会覆盖还是累加？运行后再给出观察点、适用边界和这个示例不能证明的内容。一个通过编译的程序可能依然有业务错误，一个输出正确的示例也不能证明性能优越。
+
+本轮对全部 54 节的中英文推导段做了这种连续论述改写，并针对 11 组 Rust 代码补充“阅读代码前先预测 / 运行或编译后观察”。原有分层提示、独立验收和代码围栏保持不变。
+
 ## 中英文对照原则
 
 - 两种语言都应具备完整的故事，而不只是将中文段落概括成三条英文 bullet。
@@ -51,5 +59,7 @@ A good tutorial is a connected explanation of **an engineering problem, a tempti
 Begin with concrete input and an observable failure instead of a list of language features. Lead the reader from an initial hypothesis through a small example and its limitations. Explain tradeoffs, especially where Java/Go intuition differs. End with replayable commands, edge cases, and independent acceptance criteria.
 
 Headings should describe meaningful questions or decisions, not “Core concept 1/2/3.” Avoid repeating the same generic story across lessons. Preserve Rust code fences, source links, exercises, and published starter behavior in both languages. Expanded prose must be technically precise: a successful build is not proof of correct business behavior, a lifetime annotation does not extend an owned value's lifetime, and `String::len()` counts bytes.
+
+**Second pass: argument before outline.** After scenario-led introductions, remove six-label worksheets from the reasoning body. The article should explain an actual incorrect implementation, the relevant compiler or domain mechanism, and an executable boundary test in connected paragraphs. Before each worked snippet, ask what the reader predicts; afterward, separate observed behavior from claims that the small example cannot prove. This pass expands all 54 bilingual reasoning sections and annotates eleven key code examples without changing the original Rust snippets or lab contracts.
 
 The automated editorial test checks for distinct narrative sections in all 54 Chinese and 54 English lessons. It supplements, never replaces, the existing code, continuity, translation, and build checks.

@@ -18,7 +18,10 @@ function reasoningSection(markdown: string, heading: string): string {
 }
 
 function checkProse(section: string, minimumLength: number): void {
-  const paragraphs = section.trim().split(/\n\s*\n/).filter(Boolean)
+  const paragraphs = section
+    .trim()
+    .split(/\n\s*\n/)
+    .filter(Boolean)
   expect(paragraphs.length).toBeGreaterThanOrEqual(4)
   expect(section.length).toBeGreaterThan(minimumLength)
   expect(section).not.toContain('**问题：**')
