@@ -99,12 +99,12 @@ fn l05_exact_numeric_bounds_missing_fields_and_extra_delimiters() {
 fn l06_nested_error_chain_survives_multiple_public_presentations() {
     let error = nested_storage_failure();
     let level_one = error.source().expect("domain error -> io error");
-    let level_two = level_one.source().expect("io error -> context");
-    let level_three = level_two.source().expect("context -> underlying source");
-    assert_eq!(level_two.to_string(), "private transport context");
-    assert!(level_three.to_string().contains("root:secret@db.internal"));
+    // std::io::Error may expose the wrapped cause's source directly instead
+    // of retaining every custom context wrapper as a separate chain node.
+    let root_cause = level_one.source().expect("io error -> private root cause");
+    assert!(root_cause.to_string().contains("root:secret@db.internal"));
     assert_eq!(error.to_string(), "history storage unavailable");
-    assert!(level_three.source().is_none());
+    assert!(root_cause.source().is_none());
 
     for id in ["", "请求-🧭", "line\ntrace", " space / % & = "] {
         let expected = ApiError {
