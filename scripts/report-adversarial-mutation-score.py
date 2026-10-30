@@ -233,8 +233,22 @@ def validate(directory: Path) -> dict:
             evidence.append({"module": module, **row})
         if names != EXPECTED_MUTANTS[module]:
             raise AssertionError(f"{module}: missing or substituted selected mutations")
+        per_test_hits = {
+            test: sum(test in mutant["detected_by"] for mutant in mutants)
+            for test in tests
+        }
+        # In-sample strength only. Zero/one hit is an audit signal, not proof
+        # that the test is ineffective on faults outside this selected set.
+        weak = sorted(
+            test for test, hits in per_test_hits.items() if hits <= 1
+        )
         module_scores.append({
             "module": module, "killed": len(mutants), "selected": len(mutants),
+            "per_test_hits": per_test_hits,
+            "weak_association_tests": weak,
+            "distinct_detection_signatures": len({
+                tuple(sorted(mutant["detected_by"])) for mutant in mutants
+            }),
             "seed": report["seed"], "generated_cases": report["generated_cases"],
             "test_count": len(tests), "tests_detecting_selected_mutants": len(covered),
             "reduced_witnesses": with_reduced_witness,
@@ -328,6 +342,22 @@ def export(directory: Path, summary: dict) -> str:
         markdown.append("")
         markdown.extend("- `" + aliases[test] + "`: `" + test.split("::", 1)[1] + "`"
                         for test in tests_in_module)
+        markdown.append("")
+    markdown.extend([
+        "### Weak association audit (selected mutant sample only)",
+        "",
+    ])
+    for score in summary["modules"]:
+        markdown.append(
+            f"**{score['module'].upper()}**: {score['distinct_detection_signatures']} "
+            f"distinct detection signatures; tests with at most one mutant hit:"
+        )
+        weak = score["weak_association_tests"]
+        if weak:
+            markdown.extend(f"- \`{test}\`: {score['per_test_hits'][test]} selected mutation hit(s)"
+                            for test in weak)
+        else:
+            markdown.append("- None within this selected mutation set.")
         markdown.append("")
     markdown.extend([
         "A blank cell means this independent test passed against that selected mutant, "
