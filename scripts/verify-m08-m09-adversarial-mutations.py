@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Mutation sensitivity against *real M08/M09 reference crates*.
+"""Record full independent test × compiling-mutant outcomes for M08/M09.
 
-A mutation must compile and fail a named external integration assertion. No
-starter is repaired, and no assertion can be considered killed by a rustc
-error, test-discovery failure, or unrelated panic.
+A mutation is killed only if an enumerated test fails after successful Cargo
+compilation. Both integration suites always run, including for non-target tests.
 """
 from __future__ import annotations
 
@@ -17,6 +16,8 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 SAMPLES = ROOT / "content" / "samples"
+SUITES = ("adversarial_contracts", "model_properties")
+EXPECTED_TESTS = {"m08": 6, "m09": 7}
 
 # module, mutation, exact one-time source span, replacement, targeted test.
 MUTANTS = [
@@ -101,12 +102,11 @@ MUTANTS = [
 ]
 
 
-def cargo_test(project: Path, name: str, target: Path) -> tuple[int, str]:
+
+def cargo_test(project: Path, suite: str, target: Path) -> tuple[int, str]:
     result = subprocess.run(
         ["cargo", "test", "--offline", "--manifest-path",
-         str(project / "Cargo.toml"), "--test",
-         "model_properties" if name.startswith("model_") else "adversarial_contracts",
-         name],
+         str(project / "Cargo.toml"), "--test", suite],
         cwd=project,
         env={**os.environ, "CARGO_TARGET_DIR": str(target)},
         stdout=subprocess.PIPE,
@@ -118,75 +118,118 @@ def cargo_test(project: Path, name: str, target: Path) -> tuple[int, str]:
     return result.returncode, result.stdout
 
 
+def test_outcomes(output: str, suite: str) -> dict[str, str]:
+    rows = re.findall(r"^test (\\S+) \\.\\.\\. (ok|FAILED)$",
+                      output, flags=re.MULTILINE)
+    results = {suite + "::" + name: state for name, state in rows}
+    if len(results) != len(rows):
+        raise AssertionError(suite + ": duplicate result names")
+    return results
+
+
+def run_contracts(project: Path, target: Path) -> tuple[dict[str, str], str]:
+    outcomes: dict[str, str] = {}
+    logs = []
+    for suite in SUITES:
+        code, output = cargo_test(project, suite, target)
+        if ("could not compile" in output or
+                re.search(r"error\[E\d+\]", output)):
+            raise AssertionError(suite + ": compiler errors cannot kill mutations:\n" +
+                                 output[-3000:])
+        if code != 0 and "test result: FAILED" not in output:
+            raise AssertionError(suite + ": Cargo did not run an assertion failure:\n" +
+                                 output[-3000:])
+        tests = test_outcomes(output, suite)
+        if not tests:
+            raise AssertionError(suite + ": no tests executed")
+        outcomes.update(tests)
+        logs.append(output)
+    return outcomes, "\n".join(logs)
+
+
 def replace_once(source: str, before: str, after: str, name: str) -> str:
     if source.count(before) != 1:
-        raise AssertionError(name + ": mutation site changed (expected exactly one)")
+        raise AssertionError(name + ": expected exactly one mutation location")
     return source.replace(before, after, 1)
 
 
 def main() -> None:
-    with tempfile.TemporaryDirectory(prefix="rust-advanced-mutants-") as dirname:
+    with tempfile.TemporaryDirectory(prefix="rust-mutation-matrix-") as dirname:
         temp = Path(dirname)
         projects = {}
+        baseline_catalog: dict[str, list[str]] = {}
         for module in ("m08", "m09"):
-            source = SAMPLES / (module + "-reference")
             project = temp / (module + "-reference")
-            shutil.copytree(source, project, ignore=shutil.ignore_patterns("target"))
+            shutil.copytree(SAMPLES / (module + "-reference"), project,
+                            ignore=shutil.ignore_patterns("target"))
             projects[module] = project
-            code, out = cargo_test(project, "", temp / (module + "-target"))
-            if code != 0 or "test result: ok. 4 passed; 0 failed" not in out:
-                raise AssertionError(module + ": baseline external tests failed:\n" + out[-3000:])
-            model_code, model_output = cargo_test(
-                project, "model_", temp / (module + "-target"))
-            expected_model_cases = 2 if module == "m08" else 3
-            if model_code != 0 or (
-                f"test result: ok. {expected_model_cases} passed; 0 failed"
-                not in model_output
-            ):
-                raise AssertionError(module + ": seeded model suite failed:\n" + model_output[-3000:])
+            outcomes, output = run_contracts(project, temp / (module + "-target"))
+            if (len(outcomes) != EXPECTED_TESTS[module] or
+                    set(outcomes.values()) != {"ok"}):
+                raise AssertionError(module + ": independent reference baseline failed:\n" +
+                                     output[-3000:])
+            baseline_catalog[module] = sorted(outcomes)
 
-        killed = {"m08": [], "m09": []}
-        for module, name, original, wrong, test in MUTANTS:
+        killed: dict[str, list[dict]] = {"m08": [], "m09": []}
+        for module, name, before, wrong, target in MUTANTS:
             project = projects[module]
-            source_file = project / "src" / "lib.rs"
-            unchanged = source_file.read_text(encoding="utf8")
-            source_file.write_text(replace_once(unchanged, original, wrong, name), encoding="utf8")
+            source = project / "src" / "lib.rs"
+            pristine = source.read_text(encoding="utf8")
+            source.write_text(replace_once(pristine, before, wrong, name), encoding="utf8")
             try:
-                code, out = cargo_test(project, test, temp / (module + "-target"))
-                if code == 0 or "test result: FAILED" not in out:
-                    raise AssertionError(module + "/" + name + ": wrong implementation passed:\n" + out[-3000:])
-                if "could not compile" in out or re.search(r"error\[E\d+\]", out):
-                    raise AssertionError(module + "/" + name + ": compiler failure is not evidence:\n" + out[-3000:])
-                if not re.search(
-                    r"test " + re.escape(test) + r" \.\.\. FAILED",
-                    out,
-                ):
-                    raise AssertionError(module + "/" + name + ": named assertion did not fail:\n" + out[-3000:])
-                print(module + ": KILLED " + name + " via " + test)
-                killed[module].append({"name": name, "target": test, "status": "killed"})
+                outcomes, logs = run_contracts(project, temp / (module + "-target"))
+                if set(outcomes) != set(baseline_catalog[module]):
+                    raise AssertionError(module + "/" + name + ": discovered test catalog changed")
+                failed = sorted(k for k, status in outcomes.items() if status == "FAILED")
+                scoped_target = (
+                    ("model_properties" if target.startswith("model_") else "adversarial_contracts")
+                    + "::" + target
+                )
+                if scoped_target not in failed:
+                    raise AssertionError(
+                        module + "/" + name + ": required behavior contract passed:\n" +
+                        logs[-3400:])
+                witness = re.search(r"MINIMIZED_COUNTEREXAMPLE [^\r\n]+", logs)
+                if (target.startswith("model_differential_generated") and not witness):
+                    raise AssertionError(module + "/" + name +
+                                         ": seeded failure lacks reduced counterexample")
+                entry = {
+                    "name": name, "target": scoped_target, "status": "killed",
+                    "detected_by": failed,
+                }
+                if witness:
+                    entry["counterexample"] = witness.group(0)
+                killed[module].append(entry)
+                print(module + ": KILLED " + name + " by " + ", ".join(failed), flush=True)
             finally:
-                source_file.write_text(unchanged, encoding="utf8")
+                source.write_text(pristine, encoding="utf8")
 
         for module, project in projects.items():
-            code, out = cargo_test(project, "", temp / (module + "-target"))
-            if code != 0:
-                raise AssertionError(module + ": restored reference failed:\n" + out[-3000:])
+            outcomes, logs = run_contracts(project, temp / (module + "-target"))
+            if (set(outcomes) != set(baseline_catalog[module]) or
+                    set(outcomes.values()) != {"ok"}):
+                raise AssertionError(module + ": restored full baseline failed:\n" + logs[-3000:])
+
     report_dir = os.environ.get("MUTATION_REPORT_DIR")
     if report_dir:
         output = Path(report_dir)
         output.mkdir(parents=True, exist_ok=True)
         for module in ("m08", "m09"):
-            (output / (module + ".json")).write_text(json.dumps({
+            payload = {
                 "schema_version": 1,
                 "module": module,
-                "reference": module + "-reference Cargo crate with external integration tests",
+                "reference": module + "-reference Cargo crate, all external integration suites",
                 "baseline": "passed",
                 "seed": "0xC0FF_EE0" + module[-1] + "_2026_1030",
                 "generated_cases": 320 if module == "m08" else 384,
+                "tests": baseline_catalog[module],
                 "mutants": killed[module],
-            }, indent=2, ensure_ascii=False) + "\n", encoding="utf8")
+            }
+            (output / (module + ".json")).write_text(
+                json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf8")
     total = sum(len(rows) for rows in killed.values())
-    print(f"M08/M09: {total}/{len(MUTANTS)} compiling mutants killed.")
+    print(f"M08/M09: {total}/{len(MUTANTS)} compiling mutants killed; full matrix captured.")
 
 
 if __name__ == "__main__":
