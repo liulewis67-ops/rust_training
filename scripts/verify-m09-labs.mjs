@@ -42,7 +42,7 @@ if (
   !starter.output.includes('7 passed; 4 failed')
 ) {
   throw new Error(
-    `M09 starter must compile and fail exactly five deliberate contract tests:\n${starter.output}`,
+    `M09 starter must compile and fail exactly four deliberate contract tests:\n${starter.output}`,
   )
 }
 
