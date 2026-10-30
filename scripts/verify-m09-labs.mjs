@@ -49,7 +49,8 @@ if (
 const reference = cargoTests('m09-reference')
 if (
   reference.code !== 0 ||
-  !reference.output.includes('test result: ok. 11 passed; 0 failed')
+  !reference.output.includes('test result: ok. 11 passed; 0 failed') ||
+  !reference.output.includes('test result: ok. 4 passed; 0 failed')
 ) {
   throw new Error(`M09 reference tests failed:\n${reference.output}`)
 }
