@@ -84,6 +84,66 @@ mod adversarial_contracts {
             Ok(Entry { key: "key".into(), value: "ok".into() }),
         );
     }
+
+    #[test]
+    fn generated_inputs_match_oracle_for_both_parsers() {
+        // Independent character-index model. A fixed seed makes failures
+        // reproducible without external crates or non-deterministic CI.
+        fn oracle(source: &str, delim: char) -> Result<Entry, ParseError> {
+            let Some((at, _)) = source.char_indices().find(|(_, ch)| *ch == delim) else {
+                return Err(ParseError::MissingDelimiter(delim));
+            };
+            let before = source[..at].trim();
+            let after = source[at + delim.len_utf8()..].trim();
+            match (before.is_empty(), after.is_empty()) {
+                (true, _) => Err(ParseError::EmptyKey),
+                (_, true) => Err(ParseError::EmptyValue),
+                _ => Ok(Entry { key: before.into(), value: after.into() }),
+            }
+        }
+
+        let mut seed = 0x7AB1_2026_1030_0007_u64;
+        let keys = ["", "a", "  key \t", "中文", "\u{3000}", "x=y", "a:b", "e\u{301}"];
+        let values = ["", "  ", "value", "two:三", "a=b", " 甲 ", "\u{3000}\t", "🧭"];
+        let padding = ["", " ", "\t", "\u{3000}"];
+        fn draw(seed: &mut u64, limit: usize) -> usize {
+            *seed ^= *seed << 13;
+            *seed ^= *seed >> 7;
+            *seed ^= *seed << 17;
+            (*seed % limit as u64) as usize
+        }
+
+        for case in 0..448 {
+            let left = keys[draw(&mut seed, keys.len())];
+            let right = values[draw(&mut seed, values.len())];
+            let sep = [":", "=", "|", ""][draw(&mut seed, 4)];
+            let before = padding[draw(&mut seed, padding.len())];
+            let after = padding[draw(&mut seed, padding.len())];
+            let input = format!("{before}{left}{sep}{right}{after}");
+            for delimiter in [':', '='] {
+                let expected = oracle(&input, delimiter);
+                let actual = match delimiter {
+                    ':' => ColonParser.parse(&input),
+                    '=' => EqualsParser.parse(&input),
+                    _ => unreachable!(),
+                };
+                assert_eq!(
+                    actual, expected,
+                    "seed=0x7AB1202610300007 case={case}, delimiter={delimiter}, input={input:?}"
+                );
+                let expected_label = expected.map(|entry| format!("{}={}", entry.key, entry.value));
+                let actual_label = match delimiter {
+                    ':' => render_label(&ColonParser, &input),
+                    '=' => render_label(&EqualsParser, &input),
+                    _ => unreachable!(),
+                };
+                assert_eq!(
+                    actual_label, expected_label,
+                    "label seed=0x7AB1202610300007 case={case}, delimiter={delimiter}, input={input:?}"
+                );
+            }
+        }
+    }
 }
 """
 
@@ -126,6 +186,21 @@ MUTANTS = [
         'Ok(format!("{}:{}", entry.key, entry.value))',
         "equals_first_delimiter_not_last_and_canonical_label",
     ),
+    (
+        "trim_only_value_end",
+        "let value = value.trim();", "let value = value.trim_end();",
+        "generated_inputs_match_oracle_for_both_parsers",
+    ),
+    (
+        "trim_only_key_end",
+        "let key = key.trim();", "let key = key.trim_end();",
+        "generated_inputs_match_oracle_for_both_parsers",
+    ),
+    (
+        "swap_stored_key_and_value",
+        "key: key.to_owned(),", "key: value.to_owned(),",
+        "generated_inputs_match_oracle_for_both_parsers",
+    ),
 ]
 
 
@@ -158,7 +233,7 @@ def main() -> None:
         code, out = audit.run_cargo(project, "test", root)
         if code != 0 or "test result: ok." not in out:
             raise AssertionError("real repaired ZIP fails independent contracts:\n" + out[-4000:])
-        print("m07: original ZIP repaired; six external behavioral contracts pass")
+        print("m07: original ZIP repaired; seven external behavioral contracts pass")
 
         for name, old, wrong, case in MUTANTS:
             mutant = audit.replace_once(baseline, old, wrong, name)
@@ -182,7 +257,7 @@ def main() -> None:
 
     if hashlib.sha256(released.read_bytes()).hexdigest() != original_digest:
         raise AssertionError("published starter archive was modified")
-    print("M07 original ZIP: 7/7 compiling mutants killed; archive unchanged.")
+    print(f"M07 original ZIP: {len(MUTANTS)}/{len(MUTANTS)} compiling mutants killed; archive unchanged.")
 
 
 if __name__ == "__main__":
