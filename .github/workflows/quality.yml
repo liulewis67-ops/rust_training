@@ -20,6 +20,8 @@ jobs:
           cache: pnpm
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - name: Inspect proposed Prettier output
+        run: pnpm exec prettier src/content/course-reasoning-closure.test.ts
       - name: Formatting
         run: pnpm format:check
       - name: Lint and React hooks
