@@ -20,6 +20,15 @@ jobs:
           cache: pnpm
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - name: Capture normalized reader files (temporary diagnostic)
+        run: |
+          pnpm exec prettier --write src/pages/CourseLessonPage.tsx src/features/reading/lessonStructure.test.ts src/pages/courseCatalog.css
+          for file in src/pages/CourseLessonPage.tsx src/features/reading/lessonStructure.test.ts src/pages/courseCatalog.css; do
+            echo "FMT_START:$file"
+            base64 -w0 "$file"
+            echo
+            echo "FMT_END:$file"
+          done
       - name: Formatting
         run: pnpm format:check
       - name: Lint and React hooks
